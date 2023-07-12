@@ -1,0 +1,8 @@
+[submodule "stb"]
+	path = external/stb
+	url = https://github.com/nothings/stb.git
+	branch = master
+[submodule "ospray"]
+	path = external/ospray
+	url = https://github.com/ospray/ospray.git
+	branch = master
