@@ -392,7 +392,7 @@ static OSPRenderer xNewRenderer(const std::string &type) {
     OSPRenderer renderer;
     renderer = ospNewRenderer(type.c_str());
 
-    int pixelSamples[] = { 2 };
+    int pixelSamples[] = { 16 };
     ospSetParam(renderer, "pixelSamples", OSP_INT, pixelSamples);
 
     // int maxPathLength[] = { 60 };
