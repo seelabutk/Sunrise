@@ -240,6 +240,7 @@ static OSPData xNew(const BinaryFileData &_) {
 
 struct Mesh {
     BinaryFileData vertex_position;
+    BinaryFileData vertex_color;
     BinaryFileData index;
 };
 
@@ -256,6 +257,56 @@ static OSPGeometry xNew(const Mesh &_) {
             xCommit(data);
         });
         ospSetObject(geometry, "vertex.position", vertex_position);
+
+        OSPData vertex_color = ({
+            OSPData data;
+            data = xNew(_.vertex_color);
+
+            xCommit(data);
+        });
+        ospSetObject(geometry, "vertex.color", vertex_color);
+
+        OSPData index = ({
+            OSPData data;
+            data = xNew(_.index);
+        
+            xCommit(data);
+        });
+        ospSetObject(geometry, "index", index);
+
+        geometry;
+    });
+
+    return mesh;
+}
+
+struct Earth {
+    BinaryFileData vertex_position;
+    BinaryFileData vertex_color;
+    BinaryFileData index;
+};
+
+static OSPGeometry xNew(const Earth &_) {
+    OSPGeometry mesh = ({
+        OSPGeometry geometry;
+        const char *type = "mesh";
+        geometry = ospNewGeometry(type);
+
+        OSPData vertex_position = ({
+            OSPData data;
+            data = xNew(_.vertex_position);
+
+            xCommit(data);
+        });
+        ospSetObject(geometry, "vertex.position", vertex_position);
+
+        OSPData vertex_color = ({
+            OSPData data;
+            data = xNew(_.vertex_color);
+
+            xCommit(data);
+        });
+        ospSetObject(geometry, "vertex.color", vertex_color);
 
         OSPData index = ({
             OSPData data;
@@ -430,30 +481,74 @@ int main(int argc, const char **argv) {
                 OSPGroup group;
                 group = ospNewGroup();
 
-                OSPGeometricModel geometry = ({
-                    OSPGeometricModel model;
-                    model = ospNewGeometricModel(nullptr);
+                OSPData geometry;
+                geometry = ({
+                    OSPGeometricModel model[2];
+                    model[0] = ({
+                        OSPGeometricModel model;
+                        model = ospNewGeometricModel(nullptr);
 
-                    OSPGeometry geometry;
-                    geometry = ({
-                        auto mesh = xNew(Mesh{
-                            .vertex_position{
-                                .path{ "data/OSPGeometry.mesh.vertex.position.vec3f.bin" },
-                                .type{ OSP_VEC3F },
-                            },
-                            .index{
-                                .path{ "data/OSPGeometry.mesh.index.vec4ui.bin" },
-                                .type{ OSP_VEC4UI },
-                            },
+                        OSPGeometry geometry;
+                        geometry = ({
+                            auto mesh = xNew(Mesh{
+                                .vertex_position{
+                                    .path{ "data/OSPGeometry.mesh.vertex.position.vec3f.bin" },
+                                    .type{ OSP_VEC3F },
+                                },
+                                .vertex_color{
+                                    .path{ "data/OSPGeometry.mesh.vertex.color.vec4f.bin" },
+                                    .type{ OSP_VEC4F },
+                                },
+                                .index{
+                                    .path{ "data/OSPGeometry.mesh.index.vec4ui.bin" },
+                                    .type{ OSP_VEC4UI },
+                                },
+                            });
+
+                            xCommit(mesh);
                         });
+                        ospSetObject(model, "geometry", geometry);
 
-                        xCommit(mesh);
+                        xCommit(model);
                     });
-                    ospSetObject(model, "geometry", geometry);
 
-                    xCommit(model);
+                    model[1] = ({
+                        OSPGeometricModel model;
+                        model = ospNewGeometricModel(nullptr);
+
+                        OSPGeometry geometry;
+                        geometry = ({
+                            auto earth = xNew(Earth{
+                                .vertex_position{
+                                    .path{ "data/earth/OSPGeometry.mesh.vertex.position.vec3f.bin" },
+                                    .type{ OSP_VEC3F },
+                                },
+                                .vertex_color{
+                                    .path{ "data/earth/OSPGeometry.mesh.vertex.color.vec3f.bin" },
+                                    .type{ OSP_VEC3F },
+                                },
+                                .index{
+                                    .path{ "data/earth/OSPGeometry.mesh.index.vec4ui.bin" },
+                                    .type{ OSP_VEC4UI },
+                                },
+                            });
+
+                            xCommit(earth);
+                        });
+                        ospSetObject(model, "geometry", geometry);
+
+                        xCommit(model);
+                    });
+
+                    OSPData data, tmp;
+                    tmp = ospNewSharedData1D(model, OSP_GEOMETRIC_MODEL, 2);
+                    data = ospNewData(OSP_GEOMETRIC_MODEL, 2);
+                    ospCopyData(tmp, data);
+                    ospRelease(tmp);
+
+                    xCommit(data);
                 });
-                ospSetObjectAsData(group, "geometry", OSP_GEOMETRIC_MODEL, geometry);
+                ospSetObject(group, "geometry", geometry);
 
                 xCommit(group);
             });
@@ -483,7 +578,7 @@ int main(int argc, const char **argv) {
     renderer = ({
         OSPRenderer renderer;
         const char *type = "ao";
-        float backgroundColor[4] = { 0.7, 0.3, 0.7, 1.0 };
+        float backgroundColor[4] = { 0.0, 0.0, 0.0, 0.0 };
         renderer = xGetRenderer(type, backgroundColor);
 
         xCommit(renderer);
