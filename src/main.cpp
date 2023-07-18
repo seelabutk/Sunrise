@@ -326,7 +326,7 @@ static OSPGeometry xNew(const Earth &_) {
 static OSPFrameBuffer xNewFrameBuffer(int width, int height) {
     OSPFrameBuffer frameBuffer;
     OSPFrameBufferFormat format = OSP_FB_SRGBA;
-    uint32_t channels = OSP_FB_COLOR | OSP_FB_ACCUM;
+    uint32_t channels = OSP_FB_COLOR;
     frameBuffer = ospNewFrameBuffer(width, height, format, channels);
 
     return frameBuffer;
@@ -347,43 +347,42 @@ static OSPFrameBuffer xGetFrameBuffer(int width, int height) {
     return cache[key];
 }
 
-static OSPCamera xNewCamera(
-    const std::string &type
-) {
+struct Camera {
+    std::string type;
+    float *position;
+    float *up;
+    float *direction;
+    float *imageStart;
+    float *imageEnd;
+};
+
+static OSPCamera xNew(const Camera &_) {
     OSPCamera camera;
-    camera = ospNewCamera(type.c_str());
+    camera = ospNewCamera(_.type.c_str());
 
     return camera;
 }
 
-static OSPCamera xGetCamera(
-    const std::string &type,
-    float position[3],
-    float up[3],
-    float direction[3],
-    float imageStart[2],
-    float imageEnd[2]
-) {
+static OSPCamera xGet(const Camera &_) {
     using Key = std::tuple<std::string>;
     static std::map<Key, OSPCamera> cache;
 
-    Key key = std::make_tuple(type);
+    Key key{_.type};
     if (cache.find(key) == cache.end()) {
         OSPCamera camera;
-        camera = xNewCamera(type);
+        camera = xNew(_);
 
-        ospRetain(camera);
-        cache[key] = camera;
+        cache[key] = xRetain(camera);
     }
 
     OSPCamera camera;
     camera = cache[key];
 
-    ospSetParam(camera, "position", OSP_VEC3F, position);
-    ospSetParam(camera, "up", OSP_VEC3F, up);
-    ospSetParam(camera, "direction", OSP_VEC3F, direction);
-    ospSetParam(camera, "imageStart", OSP_VEC2F, imageStart);
-    ospSetParam(camera, "imageEnd", OSP_VEC2F, imageEnd);
+    ospSetParam(camera, "position", OSP_VEC3F, _.position);
+    ospSetParam(camera, "up", OSP_VEC3F, _.up);
+    ospSetParam(camera, "direction", OSP_VEC3F, _.direction);
+    ospSetParam(camera, "imageStart", OSP_VEC2F, _.imageStart);
+    ospSetParam(camera, "imageEnd", OSP_VEC2F, _.imageEnd);
 
     return camera;
 }
@@ -505,6 +504,38 @@ static OSPWorld xNew(const World &_) {
     return world;
 }
 
+struct Image {
+    std::string type;
+    int width;
+    int height;
+    OSPFrameBuffer frameBuffer;
+};
+
+static std::tuple<size_t, void *> xGet(const Image &_) {
+    const void *rgba;
+    OSPFrameBufferChannel channel = OSP_FB_COLOR;
+    rgba = ospMapFrameBuffer(_.frameBuffer, channel);
+
+    static size_t size;
+    static void *data;
+
+    size_t length;
+    if (_.type == "jpg") {
+        length = xToJPG(rgba, _.width, _.height, &size, &data);
+
+    } else if (_.type == "png") {
+        length = xToPNG(rgba, _.width, _.height, &size, &data);
+
+    } else {
+        xDie("Unrecognized image type: %s", _.type.c_str());
+    }
+
+    ospUnmapFrameBuffer(rgba, _.frameBuffer);
+
+    return std::make_tuple(length, data);
+}
+
+
 static void xErrorCallback(void *userData, OSPError error, const char *errorDetails) {
     (void)userData;
 
@@ -608,84 +639,69 @@ int main(int argc, const char **argv) {
     });
 
     OSPCamera camera;
-    camera = ({
-        OSPCamera camera;
-        const char *type = "perspective";
-        float position[3] = {
-            // 593.2446088154106, 3715.2960740949684, -5153.813822396572,  // head-on view above middle of GSMNP
-// 605.4723018876853, 3698.6337364380356, -5156.950336713477 // south of GSMNP
-// 568.6076171767648, 3708.727634179291, -5153.896556311878 // trail
-568.4292304733369, 3707.5641117842542, -5152.27964758833
-            // /* x */ 544542.9623210428 / 1000.0,
-            // /* y */ 3742697.586061448 / 1000.0,
-            // /* z */ -5128164.558736043 / 1000.0,
-        };
-        float up[3] = {
-            568.4292304733369, 3707.5641117842542, -5152.27964758833
-            // 0.0, 1.0, 0.0  // simple
-        };
-        float direction[3] = {
-            // -position[0], -position[1], -position[2],  // head-on view
-            3.9733260879521595, 0.3637315000100898, 1.3202542093249576
-            // 3.839851315207852, -0.5088589340002727, 2.5330076254285814 // trail
-// -12.971456882104349, 12.004389280069972, 9.597964023717395// from south to middle
-        };
-        float imageStart[2] = { 0.0, 0.0 };
-        float imageEnd[2] = { 1.0, 1.0 };
-        camera = xGetCamera(type, position, up, direction, imageStart, imageEnd);
+    std::string action;
+    while (std::cin >> action) {
+        // std::fprintf(stderr, "Action: %s\n", action.c_str());
+        // std::fflush(stderr);
 
-        xCommit(camera);
-    });
+        if (action == "camera") {
+            camera = ({
+                OSPCamera camera;
+                const char *type = "perspective";
+                float position[3];
+                position[0] = xRead<float>();
+                position[1] = xRead<float>();
+                position[2] = xRead<float>();
+                float up[3];
+                up[0] = xRead<float>();
+                up[1] = xRead<float>();
+                up[2] = xRead<float>();
+                float direction[3];
+                direction[0] = xRead<float>();
+                direction[1] = xRead<float>();
+                direction[2] = xRead<float>();
+                float imageStart[2];
+                imageStart[0] = xRead<float>(); // left
+                imageStart[1] = xRead<float>(); // bottom
+                float imageEnd[2];
+                imageEnd[0] = xRead<float>(); // right
+                imageEnd[1] = xRead<float>(); // top
+                camera = xGet(Camera{
+                    .type{ type },
+                    .position{ position },
+                    .up{ up },
+                    .direction{ direction },
+                    .imageStart{ imageStart },
+                    .imageEnd{ imageEnd },
+                });
 
-    ({
-        using Clock = std::chrono::steady_clock;
+                xCommit(camera);
+            });
+        
+        } else if (action == "render") {
+            // std::fprintf(stderr, "Before render\n");
+            // std::fflush(stderr);
+            ospRenderFrameBlocking(frameBuffer, renderer, camera, world);
+            // std::fprintf(stderr, "After render\n");
+            // std::fflush(stderr);
 
-        Clock::time_point beforeRender = Clock::now();
-        ospResetAccumulation(frameBuffer);
-        ospRenderFrameBlocking(frameBuffer, renderer, camera, world);
-        Clock::time_point afterRender = Clock::now();
+            size_t imageLength;
+            void *imageData;
+            std::tie(imageLength, imageData) = xGet(Image{
+                .type{ "png" },
+                .width{ width },
+                .height{ height },
+                .frameBuffer{ frameBuffer },
+            });
 
-        Clock::time_point beforeEncode = Clock::now();
+            std::cout.write(reinterpret_cast<const char *>(&imageLength), sizeof(imageLength));
+            std::cout.write(static_cast<const char *>(imageData), imageLength);
 
-        size_t imageLength;
-        void *imageData;
-        std::tie(imageLength, imageData) = ({
-            const void *rgbaOriginal;
-            OSPFrameBufferChannel channel = OSP_FB_COLOR;
-            rgbaOriginal = ospMapFrameBuffer(frameBuffer, channel);
-
-            std::vector<uint8_t> rgba(static_cast<const uint8_t *>(rgbaOriginal), static_cast<const uint8_t *>(rgbaOriginal) + 4 * width * height);
-            // for (int i=0, n=width*height; i<n; ++i) {
-            //     float ratio = rgba[4*i+3] / 255.0f;
-            //     for (int j=0; j<4; ++j) {
-            //         float f = rgba[4*i+j] * ratio + 0.0 * (1.0f - ratio);
-            //         uint8_t u = f >= 255.0f ? 255 : f <= 0.0 ? 0 : static_cast<uint8_t>(f);
-            //         rgba[4*i+j] = u;
-            //     }
-            // }
-
-            size_t length;
-            static size_t size = 4UL * 1024UL * 1024UL;
-            static void *data = std::malloc(size);
-            length = xToPNG(rgba.data(), width, height, &size, &data);
-
-            const char *filename = "out.png";
-            xWriteBytes(filename, length, data);
-            std::fprintf(stdout, "Wrote %zu bytes to %s\n", length, filename);
-
-            // stbi_write_png("out.png", 256, 256, 4, rgba, 0);
-
-            ospUnmapFrameBuffer(rgbaOriginal, frameBuffer);
-
-            std::make_tuple(length, data);
-        });
-
-        Clock::time_point afterEncode = Clock::now();
-
-        using TimeUnit = std::chrono::microseconds;
-        size_t renderDuration = std::chrono::duration_cast<TimeUnit>(afterRender - beforeRender).count();
-        size_t encodeDuration = std::chrono::duration_cast<TimeUnit>(afterEncode - beforeEncode).count();
-    });
+        } else {
+            xDie("Unrecognized action: %s", action.c_str());
+        
+        }
+    }
 
     return 0;
 }
