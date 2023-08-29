@@ -59,7 +59,7 @@ class Position:
 
 
 @Location.from_.register(str)
-def __position_from_name(
+def __location_from_name(
     cls,
     name: str,
     /,
@@ -96,7 +96,7 @@ def __position_from_location(
     
     # Thanks https://en.wikipedia.org/wiki/Earth_radius
     #> A globally-average value is usually considered to be 6,371 kilometres (3,959 mi)
-    rho: Meter = 6_371_000 + loc.alt
+    rho: Meter = 6_371 + loc.alt
     
     #> x = math.cos(phi) * math.cos(theta) * rho
     x: Meter = math.cos(phi) * math.cos(theta) * rho
@@ -476,9 +476,15 @@ def Render(
     lib.ospSetInt(renderer, b'pixelSamples', 32)
     lib.ospCommit(renderer)
     
-    camera = lib.ospNewCamera(b'panoramic')
+    camera = lib.ospNewCamera(
+        (
+            b'panoramic'
+            # b'orthographic'
+        ),
+    )
     defer(lib.ospRelease, camera)
     lib.ospSetInt(camera, b'architectural', 1)
+    # lib.ospSetFloat(camera, b'height', 100.0)
     lib.ospSetVec4f(camera, b'backgroundColor', *(
         0.0, 0.0, 0.0, 0.0,
     ))
@@ -570,12 +576,17 @@ def main(*, stack):
     )
     next(render)
 
-    x, y, z = 563.2271446178601, 3706.84551063691, -5153.367883611318
+    pos = Position(563.2271446178601, 3706.84551063691, -5153.367883611318)
+
+    # loc = __location_from_name(Location, "Clingman's Dome", alt=2_000.0)
+    # pos = __position_from_location(Position, loc)
 
     for i, hour in enumerate(auto.itertools.chain(
         [0, 2, 4],
         [6, 7, 8],
-        [9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5],
+        [9, 9.5, 10, 10.5, 11, 11.5],
+        [12],
+        [12.5, 13, 13.5, 14, 14.5],
         [15, 16, 17],
         [18, 20, 22],
     )):
@@ -584,13 +595,14 @@ def main(*, stack):
             height=512,
             hour=hour,
             position=(
-                x, y, z,
+                pos.x, pos.y, pos.z,
             ),
             up=(
-                x, y, z,
+                pos.x, pos.y, pos.z,
             ),
             direction=(
                 3.3002321090438045, 0.29997060238702034, 1.1959763137756454
+                # -pos.x, -pos.y, -pos.z,
             ),
         )
         
