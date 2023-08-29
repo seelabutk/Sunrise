@@ -9,19 +9,39 @@ pexec() { >&2 printf exec; >&2 printf ' %q' "$@"; >&2 printf '\n'; exec "$@"; }
 
 go---docker() {
     pexec "${self:?}" docker \
-    exec "${self:?}" "$@"
-}
-
-go-build() {
-    pexec "${self:?}" docker \
-    exec "${self:?}" cmake build \
-        ##
+    exec "${self:?}" "$@" \
+    ##
 }
 
 go-main() {
     pexec "${self:?}" docker \
-    exec "${cmake_binary_dir:?}/main" \
-        ##
+    exec "${root:?}/src/main.py" \
+    ##
+}
+
+go---debug() {
+    ignore_dir=$(python3 \
+        -c 'import sys; print(":".join(sys.path)[1:])' \
+    )
+
+    pexec gdb \
+    -ex='set breakpoint pending on' \
+    -ex='set pagination off' \
+    -ex=start \
+    -ex=continue \
+    --args \
+        python3 \
+        -m trace \
+        --trace \
+        --ignore-dir="${ignore_dir:?}" \
+            "${root:?}/src/main.py" \
+    ##
+
+}
+
+go-debug() {
+    pexec "${self:?}" docker \
+    exec "${self:?}" --debug
 }
 
 
@@ -34,6 +54,7 @@ docker_build=(
     --progress=plain
 )
 docker_start=(
+    --cap-add=SYS_PTRACE
     --mount="type=bind,src=${root:?},dst=${root:?},readonly=false"
     --mount="type=bind,src=${HOME:?},dst=${HOME:?},readonly=false"
     --mount="type=bind,src=/etc/passwd,dst=/etc/passwd,readonly=true"
@@ -103,53 +124,6 @@ go-docker-exec() {
         --env HOSTNAME \
         "${docker_name:?}" \
         "$@"
-}
-
-
-#---
-
-cmake_source_dir=${root:?}
-cmake_binary_dir=${cmake_source_dir:?}/build
-cmake_prefix_dir=${cmake_binary_dir:?}/stage
-cmake_configure=(
-    -DCMAKE_BUILD_TYPE:STRING=Debug
-)
-cmake_build=(
-)
-cmake_install=(
-)
-
-go-cmake() {
-    "${FUNCNAME[0]:?}-$@"
-}
-
-go-cmake-clean() {
-    pexec rm -rfv -- \
-        "${cmake_binary_dir:?}" \
-        ##
-}
-
-go-cmake-configure() {
-    pexec cmake \
-        -H"${cmake_source_dir:?}" \
-        -B"${cmake_binary_dir:?}" \
-        -DCMAKE_INSTALL_PREFIX:PATH="${cmake_prefix_dir:?}" \
-        "${cmake_configure[@]}" \
-        ##
-}
-
-go-cmake-build() {
-    pexec cmake \
-        --build "${cmake_binary_dir:?}" \
-        "${cmake_build[@]}" \
-        ##
-}
-
-go-cmake-install() {
-    pexec cmake \
-        --install "${cmake_binary_dir:?}" \
-        "${cmake_install[@]}" \
-        ##
 }
 
 

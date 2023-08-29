@@ -124,35 +124,3 @@ ENV PATH="/opt/ospray-${OSPRAY_VERSION:?}/bin${PATH:+:${PATH}}" \
     CPATH="/opt/ospray-${OSPRAY_VERSION:?}/include${CPATH:+:${CPATH}}" \
     LIBRARY_PATH="/opt/ospray-${OSPRAY_VERSION:?}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}" \
     LD_LIBRARY_PATH="/opt/ospray-${OSPRAY_VERSION:?}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-
-
-WORKDIR /opt/src/tapestry
-COPY . .
-RUN <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-
-source_dir=/opt/src/tapestry
-binary_dir=${source_dir:?}/build
-prefix_dir=/opt/tapestry
-
-cmake \
-    -H"${source_dir:?}" \
-    -B"${binary_dir:?}" \
-    -DCMAKE_INSTALL_PREFIX:PATH="${prefix_dir:?}" \
-    -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo \
-    ##
-
-cmake \
-    --build "${binary_dir:?}" \
-    ##
-
-cmake \
-    --install "${binary_dir:?}" \
-    ##
-
-EOF
-
-ENV PATH="/opt/tapestry/bin${PATH:+:${PATH}}"
-
-CMD ["tapestryServer"]

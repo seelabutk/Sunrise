@@ -23,7 +23,7 @@ auto.register('skyfield',
 lib: auto.ctypes.CDLL = None
 
 
-def not_implemented(*args, **kwargs)
+def not_implemented(*args, **kwargs):
     raise NotImplementedError()
 
 
@@ -35,11 +35,12 @@ def dispatch(default_func: callable, /):
         
         return default_func(*args, **kwargs)
     
-    dispatch = auto.functools.singledispatch(wrapper)
+    dispatch = auto.functools.singledispatchmethod(wrapper)
     wrapper.register = dispatch.register
     return wrapper
 
 
+@auto.dataclasses.dataclass
 class Location:
     lat: float
     lng: float
@@ -48,6 +49,7 @@ class Location:
     from_ = auto.functools.singledispatchmethod(not_implemented)
 
 
+@auto.dataclasses.dataclass
 class Position:
     x: float
     y: float
@@ -56,7 +58,7 @@ class Position:
     from_ = auto.functools.singledispatchmethod(not_implemented)
 
 
-@Location.from_.register
+@Location.from_.register(str)
 def __position_from_name(
     cls,
     name: str,
@@ -74,7 +76,7 @@ def __position_from_name(
     )
 
 
-@Position.from_.register
+@Position.from_.register(Location)
 def __position_from_location(
     cls,
     loc: Location,
@@ -89,12 +91,12 @@ def __position_from_location(
     #> :) (A minor difference: altitude is usually measured from the surface of the 
     #> sphere; rho is measured from the center -- to convert, just add/subtract the 
     #> radius of the sphere.)
-    phi: Radian = math.radians(lat)
-    theta: Radian = math.radians(lng)
+    phi: Radian = math.radians(loc.lat)
+    theta: Radian = math.radians(loc.lng)
     
     # Thanks https://en.wikipedia.org/wiki/Earth_radius
     #> A globally-average value is usually considered to be 6,371 kilometres (3,959 mi)
-    rho: Meter = 6_371_000 + alt
+    rho: Meter = 6_371_000 + loc.alt
     
     #> x = math.cos(phi) * math.cos(theta) * rho
     x: Meter = math.cos(phi) * math.cos(theta) * rho
@@ -118,7 +120,7 @@ def __position_from_location(
     )
 
 
-@Location.from_.register
+@Location.from_.register(auto.datetime.datetime)
 def __location_from_datetime(
     cls,
     when: auto.datetime.datetime,
@@ -131,7 +133,9 @@ def __location_from_datetime(
     sun = planets['sun']
     earth = planets['earth']
 
-    position = earth.at(t).observe(sun).apparent()
+    now = timescale.from_datetime(when)
+
+    position = earth.at(now).observe(sun).apparent()
 
     location = auto.skyfield.toposlib.wgs84.geographic_position_of(position)
     lat = location.latitude.degrees
@@ -150,17 +154,32 @@ def Read(path: auto.pathlib.Path, /, *, dtype: auto.numpy.DType) -> auto.numpy.N
             size = auto.struct.calcsize(fmt)
             data = f.read(size)
             assert len(data) == size
-            return auto.struct.unpack(size)
+            return auto.struct.unpack(fmt, data)
         
         N ,= Read('I')
         shape = Read(f'{N}I')
+        # print(f'Reading {shape=!r} from {path=!r}')
         data = auto.numpy.fromfile(f, dtype=dtype)
 
     data = data.reshape(shape)
     return data
 
 
+
 def Data(array: auto.numpy.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
+    if isinstance(array, list):
+        for i, x in enumerate(array):
+            if not isinstance(x, lib.OSPObject):
+                break
+            
+        else:
+            array = (auto.ctypes.cast(x, auto.ctypes.c_void_p).value for x in array)
+            array = auto.numpy.fromiter(array, dtype=auto.numpy.uintp)
+            return Data(array, type=type)
+    
+        array = auto.numpy.asarray(array)
+        return Data(array, type=type)
+    
     if len(array.shape) == 0:
         array = array[None, None, None]
 
@@ -194,12 +213,17 @@ def Data(array: auto.numpy.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
 
 @auto.dataclasses.dataclass
 class RenderingRequest:
-    pass
+    width: int
+    height: int
+    hour: int
+    position: tuple[float, float, float]
+    up: tuple[float, float, float]
+    direction: tuple[float, float, float]
 
 
 @auto.dataclasses.dataclass
 class RenderingResponse:
-    pass
+   image: auto.PIL.Image
 
 
 def with_exit_stack(func: callable, /):
@@ -238,7 +262,6 @@ def with_factory(func: callable, *args, **kwargs):
     return with_call
 
 
-@with_exit_stack
 def Render(
     *,
     path: auto.pathlib.Path,
@@ -247,6 +270,19 @@ def Render(
     close = auto.contextlib.closing
     enter = stack.enter_context
     defer = stack.callback
+
+    # def defer(func, *args, **kwargs):
+    #     caller = auto.inspect.getframeinfo(auto.inspect.stack()[1][0])
+    #     filename = caller.filename
+    #     lineno = caller.lineno
+
+    #     print(f'{filename}:{lineno}: Deferring {func.__name__}', flush=True, file=auto.sys.stderr)
+
+    #     def wrapper():
+    #         print(f'{filename}:{lineno}: Executing {func.__name__}', flush=True, file=auto.sys.stderr)
+    #         func(*args, **kwargs)
+    #     
+    #     stack.callback(wrapper)
 
     def Terrain(
         *,
@@ -269,7 +305,7 @@ def Render(
 
         index = path / 'OSPGeometry.mesh.index.vec4ui.bin'
         index = Read(index, dtype=[ ('a', 'u4'), ('b', 'u4'), ('c', 'u4'), ('d', 'u4') ])
-        index = Data(index, type=lib.OSP_VEC3F)
+        index = Data(index, type=lib.OSP_VEC4UI)
         defer(lib.ospRelease, index)
 
         geometry = lib.ospNewGeometry(b'mesh')
@@ -294,6 +330,7 @@ def Render(
         texture = lib.ospNewTexture(b'texture2d')
         defer(lib.ospRelease, texture)
         lib.ospSetObject(texture, b'data', data)
+        lib.ospSetInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
         lib.ospCommit(texture)
 
         material = lib.ospNewMaterial(None, b'obj')
@@ -312,7 +349,7 @@ def Render(
         index = path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
         index = Data(index, type=lib.OSP_UCHAR)
-        defer(lib.osPRelease, index)
+        defer(lib.ospRelease, index)
 
         return index
 
@@ -323,7 +360,7 @@ def Render(
         observation: lib.OSPData,
     ) -> lib.OSPGroup:
         colormaps = Data(colormaps, type=lib.OSP_MATERIAL)
-        defer(lib.osPRelease, colormaps)
+        defer(lib.ospRelease, colormaps)
 
         geometric_models = []
 
@@ -339,90 +376,95 @@ def Render(
         geometric_models = Data(geometric_models, type=lib.OSP_GEOMETRIC_MODEL)
         defer(lib.ospRelease, geometric_models)
 
-        group = lib.ospNewGroup()
+        groups = []
+
+        groups.append(
+            (group := lib.ospNewGroup()),
+        )
         defer(lib.ospRelease, group)
-        lib.ospSetObjectAsData(group, b'geometry', geometric_models)
+        lib.ospSetObject(group, b'geometry', geometric_models)
         lib.ospCommit(group)
 
-        return group
-    
-    groups = []
-    groups.append(
-        (group := Park(
-            terrain=Terrain(
-                path=path / 'park',
-            ),
-            pinks=[
-                Pink(
-                    path=path / 'pink0',
-                ),
-                Pink(
-                    path=path / 'pink1',
-                ),
-                Pink(
-                    path=path / 'pink2',
-                ),
-                Pink(
-                    path=path / 'pink3',
-                ),
-            ],
-            observation=Observation(
-                path=path / 'observation',
-            ),
-        )),
-    ))
+        groups = Data(groups, type=lib.OSP_GROUP)
+        defer(lib.ospRelease, groups)
+        lib.ospCommit(groups)
+
+        instance = lib.ospNewInstance(None)
+        defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        return instance
 
     def Sun(
         *,
-        lat: float,
-        lng: float,
-        alt: float,
+        now: auto.datetime.datetime,
     ) -> lib.OSPGroup:
+        loc = __location_from_datetime(Location, now, alt=10_000.0)
+        pos = __position_from_location(Position, loc)
+
         lights = []
 
         lights.append(
             (light := lib.ospNewLight(b'distant')),
         )
         defer(lib.ospRelease, light)
+        lib.ospSetVec3f(light, b'position', pos.x, pos.y, pos.z)
+        lib.ospSetVec3f(light, b'direction', -pos.x, -pos.y, -pos.z)
+        lib.ospSetFloat(light, b'intensity', 1.8)
         lib.ospCommit(light)
 
         lights = Data(lights, type=lib.OSP_LIGHT)
         defer(lib.ospRelease, lights)
         lib.ospCommit(lights)
 
-        group = lib.ospNewGroup()
+        groups = []
+        groups.append(
+            (group := lib.ospNewGroup()),
+        )
         defer(lib.ospRelease, group)
         lib.ospSetObject(group, b'light', lights)
         lib.ospCommit(group)
 
-        return group
+        groups = Data(groups, type=lib.OSP_GROUP)
+        defer(lib.ospRelease, groups)
+        lib.ospCommit(groups)
 
-    groups = Data(groups, type=lib.OSP_GROUP)
-    defer(lib.ospRelease, groups)
-    lib.ospCommit(groups)
+        instance = lib.ospNewInstance(None)
+        defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        return instance
 
     instances = []
 
     instances.append(
-        (instance := lib.ospNewInstance(None)),
+        (park := Park(
+            terrain=Terrain(path=path / 'park'),
+            colormaps=[
+                Colormap(path=path / 'pink0'),
+                Colormap(path=path / 'pink1'),
+                Colormap(path=path / 'pink2'),
+                Colormap(path=path / 'pink3'),
+            ],
+            observation=Observation(path=path / 'observation'),
+        )),
     )
-    defer(lib.ospRelease, instance)
-    lib.ospSetObject(instance, b'group', group)
-    lib.ospCommit(instance)
+
+    sun_index = len(instances)
+    instances.append(
+        (sun := Sun(
+            now=auto.datetime.datetime(year=2023, month=6, day=1, hour=12, tzinfo=auto.datetime.timezone(
+                offset=auto.datetime.timedelta(hours=-5),
+                name='EST',
+            )),
+        )),
+    )
 
     instances = Data(instances, type=lib.OSP_INSTANCE)
     defer(lib.ospRelease, instances)
-    lib.ospCommit(instance)
-
-    lights = []
-
-    lights.append(
-        (light := lib.ospNewLight(b'distant')),
-    )
-    defer(lib.ospRelease, light)
-    lib.ospSetVec3f(light, b'position', 539691.0014023371, 3742308.928542019, -5140137.985147873)
-    lib.ospSetVec3f(light, b'direction', 
-    lib.ospCommit(light)
+    lib.ospCommit(instances)
 
     world = lib.ospNewWorld()
     defer(lib.ospRelease, world)
@@ -442,18 +484,123 @@ def Render(
     ))
     lib.ospCommit(camera)
 
+    response = None
+    while True:
+        request = yield response
+
+        lib.ospSetVec3f(camera, b'position', *request.position)
+        lib.ospSetVec3f(camera, b'up', *request.up)
+        lib.ospSetVec3f(camera, b'direction', *request.direction)
+        lib.ospCommit(camera)
+
+        instances = []
+        instances.append(
+            park,
+        )
+
+        instances.append(
+            (sun := Sun(
+                now=(
+                    auto.datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=auto.datetime.timezone(
+                        offset=auto.datetime.timedelta(hours=-5),
+                        name='EST',
+                    ))
+                    +
+                    auto.datetime.timedelta(hours=request.hour)
+                ),
+            )),
+        )
+
+        instances = Data(instances, type=lib.OSP_INSTANCE)
+        defer(lib.ospRelease, instances)
+        lib.ospCommit(instances)
+
+        lib.ospSetObject(world, b'instance', instances)
+        lib.ospCommit(world)
+
+        width = request.width
+        height = request.height
+
+        framebuffer = lib.ospNewFrameBuffer(
+            width,
+            height,
+            lib.OSP_FB_RGBA8,
+            lib.OSP_FB_COLOR,
+        )
+
+        _variance: float = lib.ospRenderFrameBlocking(
+            framebuffer,
+            renderer,
+            camera,
+            world,
+        )
+
+        rgba = lib.ospMapFrameBuffer(framebuffer, lib.OSP_FB_COLOR)
+        image = auto.PIL.Image.frombytes(
+            'RGBA',
+            (width, height),
+            auto.ctypes.string_at(rgba, size=(width * height * 4)),
+            'raw',
+            'RGBA',
+            0,
+            -1,  # flip y
+        )
+        image.load()
+
+        lib.ospUnmapFrameBuffer(rgba, framebuffer)
+
+        lib.ospRelease(framebuffer)
+
+        response = RenderingResponse(
+            image=image,
+        )
 
 
-
-
-
-
-
-
-def main():
+@with_exit_stack
+def main(*, stack):
     global lib
     lib = auto.ospray.load_library('libospray.so')
 
+    lib.ospInit(None, None)
+    stack.callback(lib.ospShutdown)
+
+    render = Render(
+        path=auto.pathlib.Path.cwd() / 'data',
+        stack=stack.enter_context(auto.contextlib.ExitStack()),
+    )
+    next(render)
+
+    x, y, z = 563.2271446178601, 3706.84551063691, -5153.367883611318
+
+    for i, hour in enumerate(auto.itertools.chain(
+        [0, 2, 4],
+        [6, 7, 8],
+        [9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5],
+        [15, 16, 17],
+        [18, 20, 22],
+    )):
+        request = RenderingRequest(
+            width=1024,
+            height=512,
+            hour=hour,
+            position=(
+                x, y, z,
+            ),
+            up=(
+                x, y, z,
+            ),
+            direction=(
+                3.3002321090438045, 0.29997060238702034, 1.1959763137756454
+            ),
+        )
+        
+        response = render.send(request)
+
+        response.image.save(
+            (path := f'tmp/out-{i:02d}.png'),
+            format='PNG',
+        )
+        print(f'Wrote to {path}')
 
 
 def cli():
