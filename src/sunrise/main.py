@@ -5,22 +5,24 @@
 
 from __future__ import annotations
 
-from mediocreatbest import auto
-auto.register('ospray',
-    install_names=[
-        'ospray@git+https://gist.github.com/player1537/c06faa784cc993fd6fd9c112d9feb5d9.git',
-    ],
-)
-auto.register('np',
-    import_names=['numpy'],
-    install_names=['numpy'],
-)
-auto.register('skyfield',
-    import_names=['skyfield', 'skyfield.api', 'skyfield.toposlib'],
-)
+import functools
+import ctypes
+import dataclasses
+import math
+import datetime
+import pathlib
+import struct
+import contextlib
+import typing
+import itertools
+
+import skyfield, skyfield.api, skyfield.toposlib
+import numpy as np
+import ospray
+import PIL.Image
 
 
-lib: auto.ctypes.CDLL = None
+lib: ctypes.CDLL = None
 
 
 def not_implemented(*args, **kwargs):
@@ -28,34 +30,34 @@ def not_implemented(*args, **kwargs):
 
 
 def dispatch(default_func: callable, /):
-    @auto.functools.wraps(default_func)
+    @functools.wraps(default_func)
     def wrapper(*args, **kwargs):
         if args:
             return dispatch(*args, **kwargs)
         
         return default_func(*args, **kwargs)
     
-    dispatch = auto.functools.singledispatchmethod(wrapper)
+    dispatch = functools.singledispatchmethod(wrapper)
     wrapper.register = dispatch.register
     return wrapper
 
 
-@auto.dataclasses.dataclass
+@dataclasses.dataclass
 class Location:
     lat: float
     lng: float
     alt: float
 
-    from_ = auto.functools.singledispatchmethod(not_implemented)
+    from_ = functools.singledispatchmethod(not_implemented)
 
 
-@auto.dataclasses.dataclass
+@dataclasses.dataclass
 class Position:
     x: float
     y: float
     z: float
 
-    from_ = auto.functools.singledispatchmethod(not_implemented)
+    from_ = functools.singledispatchmethod(not_implemented)
 
 
 @Location.from_.register(str)
@@ -82,7 +84,7 @@ def __position_from_location(
     loc: Location,
     /,
     *,
-    math=auto.math,
+    math=math,
 ):
     # Thanks https://gis.stackexchange.com/a/4148
     
@@ -120,15 +122,15 @@ def __position_from_location(
     )
 
 
-@Location.from_.register(auto.datetime.datetime)
+@Location.from_.register(datetime.datetime)
 def __location_from_datetime(
     cls,
-    when: auto.datetime.datetime,
+    when: datetime.datetime,
     /,
     *,
     alt: float,
-    planets=auto.skyfield.api.load('de421.bsp'),
-    timescale=auto.skyfield.api.load.timescale(),
+    planets=skyfield.api.load('de421.bsp'),
+    timescale=skyfield.api.load.timescale(),
 ):
     sun = planets['sun']
     earth = planets['earth']
@@ -137,7 +139,7 @@ def __location_from_datetime(
 
     position = earth.at(now).observe(sun).apparent()
 
-    location = auto.skyfield.toposlib.wgs84.geographic_position_of(position)
+    location = skyfield.toposlib.wgs84.geographic_position_of(position)
     lat = location.latitude.degrees
     lng = location.longitude.degrees
 
@@ -148,36 +150,36 @@ def __location_from_datetime(
     )
 
 
-def Read(path: auto.pathlib.Path, /, *, dtype: auto.numpy.DType) -> auto.numpy.NDArray:
+def Read(path: pathlib.Path, /, *, dtype: np.DType) -> np.NDArray:
     with open(path, 'rb') as f:
         def Read(fmt: str, /) -> tuple:
-            size = auto.struct.calcsize(fmt)
+            size = struct.calcsize(fmt)
             data = f.read(size)
             assert len(data) == size
-            return auto.struct.unpack(fmt, data)
+            return struct.unpack(fmt, data)
         
         N ,= Read('I')
         shape = Read(f'{N}I')
         # print(f'Reading {shape=!r} from {path=!r}')
-        data = auto.numpy.fromfile(f, dtype=dtype)
+        data = np.fromfile(f, dtype=dtype)
 
     data = data.reshape(shape)
     return data
 
 
 
-def Data(array: auto.numpy.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
+def Data(array: np.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
     if isinstance(array, list):
         for i, x in enumerate(array):
             if not isinstance(x, lib.OSPObject):
                 break
             
         else:
-            array = (auto.ctypes.cast(x, auto.ctypes.c_void_p).value for x in array)
-            array = auto.numpy.fromiter(array, dtype=auto.numpy.uintp)
+            array = (ctypes.cast(x, ctypes.c_void_p).value for x in array)
+            array = np.fromiter(array, dtype=np.uintp)
             return Data(array, type=type)
     
-        array = auto.numpy.asarray(array)
+        array = np.asarray(array)
         return Data(array, type=type)
     
     if len(array.shape) == 0:
@@ -211,7 +213,7 @@ def Data(array: auto.numpy.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
     return dst
 
 
-@auto.dataclasses.dataclass
+@dataclasses.dataclass
 class RenderingRequest:
     width: int
     height: int
@@ -221,22 +223,22 @@ class RenderingRequest:
     direction: tuple[float, float, float]
 
 
-@auto.dataclasses.dataclass
+@dataclasses.dataclass
 class RenderingResponse:
-   image: auto.PIL.Image
+   image: PIL.Image
 
 
 def with_exit_stack(func: callable, /):
-    @auto.functools.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        with auto.contextlib.ExitStack() as stack:
+        with contextlib.ExitStack() as stack:
             return func(*args, stack=stack, **kwargs)
     
     return wrapper
 
 
 def with_commit(func: callable, /):
-    @auto.functools.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         ret = func(*args, **kwargs)
         lib.ospCommit(ret)
@@ -244,7 +246,7 @@ def with_commit(func: callable, /):
     return wrapper
 
 def with_release(func: callable, /):
-    @auto.functools.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         ret = func(*args, **kwargs)
         defer(lib.ospRelease, ret)
@@ -252,10 +254,10 @@ def with_release(func: callable, /):
     return wrapper
 
 def with_factory(func: callable, *args, **kwargs):
-    factory = auto.functools.partial(func, *args, **kwargs)
+    factory = functools.partial(func, *args, **kwargs)
 
     def with_call(func: callable, /):
-        @auto.functools.wraps(func)
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return func(factory(), *args, **kwargs)
         return wrapper
@@ -264,29 +266,29 @@ def with_factory(func: callable, *args, **kwargs):
 
 def Render(
     *,
-    path: auto.pathlib.Path,
-    stack: auto.contextlib.ExitStack,
-) -> auto.typing.Generator[RenderingResponse, RenderingRequest, None]:
-    close = auto.contextlib.closing
+    path: pathlib.Path,
+    stack: contextlib.ExitStack,
+) -> typing.Generator[RenderingResponse, RenderingRequest, None]:
+    close = contextlib.closing
     enter = stack.enter_context
     defer = stack.callback
 
     # def defer(func, *args, **kwargs):
-    #     caller = auto.inspect.getframeinfo(auto.inspect.stack()[1][0])
+    #     caller = inspect.getframeinfo(inspect.stack()[1][0])
     #     filename = caller.filename
     #     lineno = caller.lineno
 
-    #     print(f'{filename}:{lineno}: Deferring {func.__name__}', flush=True, file=auto.sys.stderr)
+    #     print(f'{filename}:{lineno}: Deferring {func.__name__}', flush=True, file=sys.stderr)
 
     #     def wrapper():
-    #         print(f'{filename}:{lineno}: Executing {func.__name__}', flush=True, file=auto.sys.stderr)
+    #         print(f'{filename}:{lineno}: Executing {func.__name__}', flush=True, file=sys.stderr)
     #         func(*args, **kwargs)
     #     
     #     stack.callback(wrapper)
 
     def Terrain(
         *,
-        path: auto.pathlib.Path,
+        path: pathlib.Path,
     ) -> lib.OSPGeometry:
         position = path / 'OSPGeometry.mesh.vertex.position.vec3f.bin'
         position = Read(position, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
@@ -320,7 +322,7 @@ def Render(
 
     def Colormap(
         *,
-        path: auto.pathlib.Path,
+        path: pathlib.Path,
     ) -> lib.OSPMaterial:
         data = path / 'OSPTexture.texture2d.data.vec3f.bin'
         data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
@@ -344,7 +346,7 @@ def Render(
     
     def Observation(
         *,
-        path: auto.pathlib.Path,
+        path: pathlib.Path,
     ) -> lib.OSPData:
         index = path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
@@ -398,7 +400,7 @@ def Render(
 
     def Sun(
         *,
-        now: auto.datetime.datetime,
+        now: datetime.datetime,
     ) -> lib.OSPGroup:
         loc = __location_from_datetime(Location, now, alt=10_000.0)
         pos = __position_from_location(Position, loc)
@@ -455,8 +457,8 @@ def Render(
     sun_index = len(instances)
     instances.append(
         (sun := Sun(
-            now=auto.datetime.datetime(year=2023, month=6, day=1, hour=12, tzinfo=auto.datetime.timezone(
-                offset=auto.datetime.timedelta(hours=-5),
+            now=datetime.datetime(year=2023, month=6, day=1, hour=12, tzinfo=datetime.timezone(
+                offset=datetime.timedelta(hours=-5),
                 name='EST',
             )),
         )),
@@ -507,12 +509,12 @@ def Render(
         instances.append(
             (sun := Sun(
                 now=(
-                    auto.datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=auto.datetime.timezone(
-                        offset=auto.datetime.timedelta(hours=-5),
+                    datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                        offset=datetime.timedelta(hours=-5),
                         name='EST',
                     ))
                     +
-                    auto.datetime.timedelta(hours=request.hour)
+                    datetime.timedelta(hours=request.hour)
                 ),
             )),
         )
@@ -542,10 +544,10 @@ def Render(
         )
 
         rgba = lib.ospMapFrameBuffer(framebuffer, lib.OSP_FB_COLOR)
-        image = auto.PIL.Image.frombytes(
+        image = PIL.Image.frombytes(
             'RGBA',
             (width, height),
-            auto.ctypes.string_at(rgba, size=(width * height * 4)),
+            ctypes.string_at(rgba, size=(width * height * 4)),
             'raw',
             'RGBA',
             0,
@@ -565,14 +567,14 @@ def Render(
 @with_exit_stack
 def main(*, stack):
     global lib
-    lib = auto.ospray.load_library('libospray.so')
+    lib = ospray.load_library('libospray.so')
 
     lib.ospInit(None, None)
     stack.callback(lib.ospShutdown)
 
     render = Render(
-        path=auto.pathlib.Path.cwd() / 'data',
-        stack=stack.enter_context(auto.contextlib.ExitStack()),
+        path=pathlib.Path.cwd() / 'data',
+        stack=stack.enter_context(contextlib.ExitStack()),
     )
     next(render)
 
@@ -581,7 +583,7 @@ def main(*, stack):
     # loc = __location_from_name(Location, "Clingman's Dome", alt=2_000.0)
     # pos = __position_from_location(Position, loc)
 
-    for i, hour in enumerate(auto.itertools.chain(
+    for i, hour in enumerate(itertools.chain(
         [0, 2, 4],
         [6, 7, 8],
         [9, 9.5, 10, 10.5, 11, 11.5],

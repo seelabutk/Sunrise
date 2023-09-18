@@ -15,7 +15,7 @@ go---docker() {
 
 go-main() {
     pexec "${self:?}" docker \
-    exec "${root:?}/src/main.py" \
+    exec "${root:?}/src/sunrise/main.py" \
     ##
 }
 

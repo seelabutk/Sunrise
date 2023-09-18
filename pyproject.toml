@@ -1,0 +1,16 @@
+[project]
+name = "sunrise"
+version = "0.1.0"
+description = "WebXR application for viewing national parks"
+authors = [ { name="https://github.com/player1537" } ]
+license = { text = "wtfpl" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+]
+
+dependencies = [
+    "flask",
+    "ospray@git+https://gist.github.com/player1537/c06faa784cc993fd6fd9c112d9feb5d9.git",
+    "numpy",
+    "skyfield",
+]
