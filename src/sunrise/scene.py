@@ -1,156 +1,54 @@
-#!/usr/bin/env python3
 """
 
 """
 
 from __future__ import annotations
 
-import functools
+import sunrise.util, sunrise.model
+
+import contextlib
 import ctypes
 import dataclasses
-import math
 import datetime
+import functools
+import itertools
+import math
 import pathlib
 import struct
-import contextlib
 import typing
-import itertools
 
-import skyfield, skyfield.api, skyfield.toposlib
 import numpy as np
 import ospray
 import PIL.Image
+import skyfield, skyfield.api, skyfield.toposlib
+
+
+__all__ = [
+    'lib',
+    'load_library',
+    'Render',
+]
 
 
 lib: ctypes.CDLL = None
 
 
-def not_implemented(*args, **kwargs):
-    raise NotImplementedError()
-
-
-def dispatch(default_func: callable, /):
-    @functools.wraps(default_func)
-    def wrapper(*args, **kwargs):
-        if args:
-            return dispatch(*args, **kwargs)
-        
-        return default_func(*args, **kwargs)
+@functools.wraps(ospray.load_library)
+def load_library(*args, **kwargs) -> ctypes.CDLL:
+    global lib
+    if lib is not None:
+        return lib
     
-    dispatch = functools.singledispatchmethod(wrapper)
-    wrapper.register = dispatch.register
-    return wrapper
+    lib = ospray.load_library(*args, **kwargs)
+    return lib
 
 
-@dataclasses.dataclass
-class Location:
-    lat: float
-    lng: float
-    alt: float
-
-    from_ = functools.singledispatchmethod(not_implemented)
-
-
-@dataclasses.dataclass
-class Position:
-    x: float
-    y: float
-    z: float
-
-    from_ = functools.singledispatchmethod(not_implemented)
-
-
-@Location.from_.register(str)
-def __location_from_name(
-    cls,
-    name: str,
-    /,
-    alt: float,
-    latlngs={
-        "Clingman's Dome": (35.562929, -83.497560),
-    },
-):
-    lat, lng = latlngs[name]
-    return cls(
-        lat=lat,
-        lng=lng,
-        alt=alt,
-    )
-
-
-@Position.from_.register(Location)
-def __position_from_location(
-    cls,
-    loc: Location,
+def Read(
+    path: pathlib.Path,
     /,
     *,
-    math=math,
-):
-    # Thanks https://gis.stackexchange.com/a/4148
-    
-    #> Note that "Lat/Lon/Alt" is just another name for spherical coordinates, and 
-    #> phi/theta/rho are just another name for latitude, longitude, and altitude.
-    #> :) (A minor difference: altitude is usually measured from the surface of the 
-    #> sphere; rho is measured from the center -- to convert, just add/subtract the 
-    #> radius of the sphere.)
-    phi: Radian = math.radians(loc.lat)
-    theta: Radian = math.radians(loc.lng)
-    
-    # Thanks https://en.wikipedia.org/wiki/Earth_radius
-    #> A globally-average value is usually considered to be 6,371 kilometres (3,959 mi)
-    rho: Meter = 6_371 + loc.alt
-    
-    #> x = math.cos(phi) * math.cos(theta) * rho
-    x: Meter = math.cos(phi) * math.cos(theta) * rho
-    
-    #> y = math.cos(phi) * math.sin(theta) * rho
-    y: Meter = math.cos(phi) * math.sin(theta) * rho
-
-    #> z = math.sin(phi) * rho # z is 'up'
-    z: Meter = math.sin(phi) * rho
-    
-    #> (Note there's some slightly arbitrary choices here in what each axis means...
-    #> you might want 'y' to point at the north pole instead of 'z', for example.)
-    
-    # I do :)
-    y, z = z, y
-    
-    return cls(
-        x=x,
-        y=y,
-        z=z,
-    )
-
-
-@Location.from_.register(datetime.datetime)
-def __location_from_datetime(
-    cls,
-    when: datetime.datetime,
-    /,
-    *,
-    alt: float,
-    planets=skyfield.api.load('de421.bsp'),
-    timescale=skyfield.api.load.timescale(),
-):
-    sun = planets['sun']
-    earth = planets['earth']
-
-    now = timescale.from_datetime(when)
-
-    position = earth.at(now).observe(sun).apparent()
-
-    location = skyfield.toposlib.wgs84.geographic_position_of(position)
-    lat = location.latitude.degrees
-    lng = location.longitude.degrees
-
-    return cls(
-        lat=lat,
-        lng=lng,
-        alt=alt,
-    )
-
-
-def Read(path: pathlib.Path, /, *, dtype: np.DType) -> np.NDArray:
+    dtype: np.DType,
+) -> np.NDArray:
     with open(path, 'rb') as f:
         def Read(fmt: str, /) -> tuple:
             size = struct.calcsize(fmt)
@@ -168,7 +66,12 @@ def Read(path: pathlib.Path, /, *, dtype: np.DType) -> np.NDArray:
 
 
 
-def Data(array: np.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
+def Data(
+    array: np.ndarray,
+    /,
+    *,
+    type: lib.OSPDataType,
+) -> lib.OSPData:
     if isinstance(array, list):
         for i, x in enumerate(array):
             if not isinstance(x, lib.OSPObject):
@@ -213,21 +116,6 @@ def Data(array: np.ndarray, /, *, type: lib.OSPDataType) -> lib.OSPData:
     return dst
 
 
-@dataclasses.dataclass
-class RenderingRequest:
-    width: int
-    height: int
-    hour: int
-    position: tuple[float, float, float]
-    up: tuple[float, float, float]
-    direction: tuple[float, float, float]
-
-
-@dataclasses.dataclass
-class RenderingResponse:
-   image: PIL.Image
-
-
 def with_exit_stack(func: callable, /):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -237,38 +125,23 @@ def with_exit_stack(func: callable, /):
     return wrapper
 
 
-def with_commit(func: callable, /):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        ret = func(*args, **kwargs)
-        lib.ospCommit(ret)
-        return ret
-    return wrapper
-
-def with_release(func: callable, /):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        ret = func(*args, **kwargs)
-        defer(lib.ospRelease, ret)
-        return ret
-    return wrapper
-
-def with_factory(func: callable, *args, **kwargs):
-    factory = functools.partial(func, *args, **kwargs)
-
-    def with_call(func: callable, /):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(factory(), *args, **kwargs)
-        return wrapper
-    return with_call
-
-
 def Render(
     *,
     path: pathlib.Path,
-    stack: contextlib.ExitStack,
-) -> typing.Generator[RenderingResponse, RenderingRequest, None]:
+    stack: contextlib.ExitStack=None,
+) -> typing.Generator[
+    sunrise.model.RenderingResponse,
+    sunrise.model.RenderingRequest,
+    None,
+]:
+    if stack is None:
+        with contextlib.ExitStack() as stack:
+            yield from Render(
+                path=path,
+                stack=stack,
+            )
+        return
+
     close = contextlib.closing
     enter = stack.enter_context
     defer = stack.callback
@@ -402,8 +275,8 @@ def Render(
         *,
         now: datetime.datetime,
     ) -> lib.OSPGroup:
-        loc = __location_from_datetime(Location, now, alt=10_000.0)
-        pos = __position_from_location(Position, loc)
+        loc = sunrise.model.location_from_datetime(now, alt=10_000.0)
+        pos = sunrise.model.position_from_location(loc)
 
         lights = []
 
@@ -559,72 +432,6 @@ def Render(
 
         lib.ospRelease(framebuffer)
 
-        response = RenderingResponse(
+        response = sunrise.model.RenderingResponse(
             image=image,
         )
-
-
-@with_exit_stack
-def main(*, stack):
-    global lib
-    lib = ospray.load_library('libospray.so')
-
-    lib.ospInit(None, None)
-    stack.callback(lib.ospShutdown)
-
-    render = Render(
-        path=pathlib.Path.cwd() / 'data',
-        stack=stack.enter_context(contextlib.ExitStack()),
-    )
-    next(render)
-
-    pos = Position(563.2271446178601, 3706.84551063691, -5153.367883611318)
-
-    # loc = __location_from_name(Location, "Clingman's Dome", alt=2_000.0)
-    # pos = __position_from_location(Position, loc)
-
-    for i, hour in enumerate(itertools.chain(
-        [0, 2, 4],
-        [6, 7, 8],
-        [9, 9.5, 10, 10.5, 11, 11.5],
-        [12],
-        [12.5, 13, 13.5, 14, 14.5],
-        [15, 16, 17],
-        [18, 20, 22],
-    )):
-        request = RenderingRequest(
-            width=1024,
-            height=512,
-            hour=hour,
-            position=(
-                pos.x, pos.y, pos.z,
-            ),
-            up=(
-                pos.x, pos.y, pos.z,
-            ),
-            direction=(
-                3.3002321090438045, 0.29997060238702034, 1.1959763137756454
-                # -pos.x, -pos.y, -pos.z,
-            ),
-        )
-        
-        response = render.send(request)
-
-        response.image.save(
-            (path := f'tmp/out-{i:02d}.png'),
-            format='PNG',
-        )
-        print(f'Wrote to {path}')
-
-
-def cli():
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    args = vars(parser.parse_args())
-
-    main(**args)
-
-
-if __name__ == '__main__':
-    cli()

@@ -9,8 +9,14 @@ classifiers = [
 ]
 
 dependencies = [
-    "flask",
     "ospray@git+https://gist.github.com/player1537/c06faa784cc993fd6fd9c112d9feb5d9.git",
     "numpy",
     "skyfield",
+    "Pillow",
+]
+
+[project.optional-dependencies]
+server = [
+    "flask",
+    "jinja2",
 ]

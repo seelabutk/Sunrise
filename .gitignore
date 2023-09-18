@@ -4,3 +4,6 @@
 /data
 *.png
 /tmp
+*.egg-info
+__pycache__
+*.bsp

@@ -13,6 +13,26 @@ go---docker() {
     ##
 }
 
+go---virtualenv() {
+    pexec "${self:?}" virtualenv \
+    exec "${self:?}" "$@" \
+    ##
+}
+
+go-server() {
+    pexec "${self:?}" --docker --virtualenv --server
+}
+
+go---server() {
+    PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
+    FLASK_APP=sunrise.server:app \
+    SUNRISE_LIBOSPRAY_PATH=libospray.so \
+    SUNRISE_SCENE_PATH=${root:?}/data \
+    flask run \
+        --debug \
+    ##
+}
+
 go-main() {
     pexec "${self:?}" docker \
     exec "${root:?}/src/sunrise/main.py" \
@@ -124,6 +144,36 @@ go-docker-exec() {
         --env HOSTNAME \
         "${docker_name:?}" \
         "$@"
+}
+
+
+#--- Python
+
+virtualenv_path=${root:?}/venv
+
+go-virtualenv() {
+    "${FUNCNAME[0]:?}-$@"
+}
+
+go-virtualenv-create() {
+    python3 -m virtualenv \
+        "${virtualenv_path:?}" \
+    ##
+}
+
+go-virtualenv-install() {
+    "${virtualenv_path:?}/bin/pip" \
+        install \
+        --editable \
+        "${root:?}[server]" \
+    ##
+}
+
+go-virtualenv-exec() {
+    source "${virtualenv_path:?}/bin/activate" \
+    && \
+    pexec "$@" \
+    ##
 }
 
 
