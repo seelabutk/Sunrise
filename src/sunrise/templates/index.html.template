@@ -19,10 +19,7 @@
     }
 }
 </script>
-<script src="https://unpkg.com/@babel/standalone@7.22.9/babel.min.js"></script>
 <script
-    type="text/babel"
-    data-plugins="syntax-do-expressions,proposal-do-expressions"
-    data-type="module"
+    type="module"
     src="static/index.js"
 ></script>

@@ -1,49 +1,51 @@
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
-import { ReverseTrackball } from './static/ReverseTrackball.js';
-import { RecenterControls } from './static/RecenterControls.js';
-import { EnvironmentMesh } from './static/EnvironmentMesh.js';
-import history from './static/history.js';
+import { ReverseTrackball } from './ReverseTrackball.js';
+import { RecenterControls } from './RecenterControls.js';
+import { EnvironmentMesh } from './EnvironmentMesh.js';
+import history from './history.js';
 
-const renderer = do {
-    const alpha = true;
-    const antialias = true;
-    new THREE.WebGLRenderer({ alpha, antialias });
-};
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.autoClear = false;
 renderer.xr.enabled = true;
-renderer.setAnimationLoop(render);
+
 document.body.appendChild(renderer.domElement);
 
-{
-    const button = ARButton.createButton(renderer);
-    document.body.appendChild(button);
-};
+const THROTTLE_ANIMATION = (
+    // true
+    false
+);
 
-const scene = do {
-    new THREE.Scene();
-};
+if (THROTTLE_ANIMATION) {
+    function animate() {
+        setTimeout(animate, 1000 / 4); // Adjust the delay (in milliseconds) to control the animation speed
+        render();
+    }
+    setTimeout(animate, 1000);
+
+} else {
+    renderer.setAnimationLoop(render);
+}
+
+const button = ARButton.createButton(renderer);
+document.body.appendChild(button);
+
+const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x505050);
 
-const camera = do {
-    const fov = 77;
-    const aspect = do {
-        const { x: width, y: height } = renderer.getSize(new THREE.Vector2());
-        width / height;
-    };
-    const near = 0.1;
-    const far = 100.0;
-    new THREE.PerspectiveCamera(fov, aspect, near, far);
-};
+const fov = 77;
+const { x: width, y: height } = renderer.getSize(new THREE.Vector2());
+const aspect = width / height;
+const near = 0.1;
+const far = 100.0;
+const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 camera.position.set(0.0, 0.0, 0.0);
 camera.up.set(0.0, 1.0, 0.0);
 camera.lookAt(1.0, 0.0, 0.0);
 
-const textureLoader = do {
-    new THREE.TextureLoader();
-};
+const textureLoader = new THREE.TextureLoader();
 
 // const motion = do {
 //     function makeNormalControl() {
@@ -116,29 +118,39 @@ const textureLoader = do {
 
 // const recorder = new RecorderControls();
 
-const recenter = do {
-    new RecenterControls(renderer);
+const recenter = new RecenterControls(renderer);
+
+const trackball = new ReverseTrackball(camera, renderer.domElement);
+
+function Environment() {
+    const url = 'static/HDR_111_Parking_Lot_2_Bg.jpg';
+    const map = textureLoader.load(url);
+    const radius = 10.0;
+    const environment = EnvironmentMesh(map, radius);
+    return environment;
+}
+
+const environment = Environment();
+scene.add(environment);
+
+
+function Terrain() {
+    const position = [563.2271446178601, 3706.84551063691, -5153.367883611318]
+    const up = [563.2271446178601, 3706.84551063691, -5153.367883611318]
+    const direction = [3.3002321090438045, 0.29997060238702034, 1.1959763137756454]
+    const params = new URLSearchParams();
+    params.set('position', `${position}`);
+    params.set('up', `${up}`);
+    params.set('direction', `${direction}`);
+    const url = `api/v1/view/?${params}`;
+    const map = textureLoader.load(url);
+    const radius = 3.0;
+    const mesh = EnvironmentMesh(map, radius);
+    return mesh;
 };
 
-const trackball = do {
-    new ReverseTrackball(camera, renderer.domElement);
-};
-
-const mesh = do {
-    const map = do {
-        const position = [563.2271446178601, 3706.84551063691, -5153.367883611318]
-        const up = [563.2271446178601, 3706.84551063691, -5153.367883611318]
-        const direction = [3.3002321090438045, 0.29997060238702034, 1.1959763137756454]
-        const params = new URLSearchParams();
-        params.set('position', `${position}`);
-        params.set('up', `${up}`);
-        params.set('direction', `${direction}`);
-        const url = `api/v1/view/?${params}`;
-        textureLoader.load(url);
-    };
-    EnvironmentMesh(map);
-};
-scene.add(mesh);
+const terrain = Terrain();
+scene.add(terrain);
 
 // setTimeout(oninterval, 5000);
 // async function oninterval() {
@@ -174,13 +186,13 @@ scene.add(mesh);
 //     setTimeout(oninterval, 5000);
 // }
 
-// const replayer = new ReplayerControls(history);
+const replayer = new ReplayerControls(history);
 
 function render() {
     trackball.update(camera);
     
 //     recorder.update(camera);
-//     replayer.update(camera);
+    replayer.update(camera);
     recenter.update(scene, camera);
     renderer.render(scene, camera);
 }
@@ -188,7 +200,7 @@ function render() {
 //=== Replay camera coordinates
 
 function ReplayerControls(history) {
-    const start = now();
+    let start = now();
     let index = 0;
     
     return Object.assign(this, {
@@ -197,13 +209,26 @@ function ReplayerControls(history) {
     
     function update(camera) {
         const elapsed = now() - start;
-        while (elapsed > history[index].now) {
+        let changed = false;
+
+        while (index < history.length && elapsed > history[index].now - history[0].now) {
             ++index;
+            changed = true;
+        }
+        console.log({ index });
+
+        if (index >= history.length) {
+            start = now();
+            index = 0;
         }
 
-        camera.position.set(history[index].position);
-        camera.up.set(history[index].up);
-        camera.lookAt(history[index].direction);
+        console.log(history[index]);
+
+        if (changed) {
+            camera.position.copy(history[index].position);
+            // camera.up.set(history[index].up);
+            // camera.lookAt(history[index].direction);
+        }
     }
 
 

@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
-export function EnvironmentMesh(map) {
-    const radius = 1.0;
+export function EnvironmentMesh(map, radius=1.0) {
     const widthSegments = 60;
     const heightSegments = 40;
     const geometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
