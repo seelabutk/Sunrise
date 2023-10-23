@@ -82,21 +82,15 @@ def index():
 @app.route('/api/v1/view/', methods=['GET'])
 def view():
     args = flask.request.args
-    position = tuple(map(float, args['position'].split(',')))
-    up = tuple(map(float, args['up'].split(',')))
-    direction = tuple(map(float, args['direction'].split(',')))
+    tile = tuple(map(float, args['tile'].split(',')))
     width = int(args.get('width', default=1024))
     height = int(args.get('height', default=width//2))
-    hour = int(args.get('hour', 12))
 
     with app.render_lock:
         response = app.render.send(sunrise.model.RenderingRequest(
             width=width,
             height=height,
-            hour=hour,
-            position=position,
-            up=up,
-            direction=direction,
+            tile=tile,
         ))
     
     with io.BytesIO() as f:

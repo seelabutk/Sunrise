@@ -324,6 +324,25 @@ def Render(
 
         return instance
 
+    def Ambient(
+    ) -> lib.OSPInstance:
+        light = lib.ospNewLight(b'ambient')
+        lib.ospSetFloat(light, b'intensity', 1000.0)
+        defer(lib.ospRelease, light)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        defer(lib.ospRelease, group)
+        lib.ospSetObject(group, b'light', light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        return instance
+
     instances = []
 
     instances.append(
@@ -339,15 +358,20 @@ def Render(
         )),
     )
 
-    sun_index = len(instances)
     instances.append(
-        (sun := Sun(
-            now=datetime.datetime(year=2023, month=6, day=1, hour=12, tzinfo=datetime.timezone(
-                offset=datetime.timedelta(hours=-5),
-                name='EST',
-            )),
+        (ambient := Ambient(
         )),
     )
+
+    # sun_index = len(instances)
+    # instances.append(
+    #     (sun := Sun(
+    #         now=datetime.datetime(year=2023, month=6, day=1, hour=12, tzinfo=datetime.timezone(
+    #             offset=datetime.timedelta(hours=-5),
+    #             name='EST',
+    #         )),
+    #     )),
+    # )
 
     instances = Data(instances, type=lib.OSP_INSTANCE)
     defer(lib.ospRelease, instances)
@@ -359,22 +383,23 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        b'ao'
+        # b'ao'
         # b'pathtracer'
+        b'scivis'
     )
     defer(lib.ospRelease, renderer)
     lib.ospSetInt(renderer, b'pixelSamples', 32)
     lib.ospCommit(renderer)
     
     camera = lib.ospNewCamera(
-        (
-            b'panoramic'
-            # b'orthographic'
-        ),
+        b'orthographic',
     )
     defer(lib.ospRelease, camera)
-    lib.ospSetInt(camera, b'architectural', 1)
-    # lib.ospSetFloat(camera, b'height', 100.0)
+    # lib.ospSetInt(camera, b'architectural', 1)
+    lib.ospSetFloat(camera, b'height', 0.01)
+    lib.ospSetFloat(camera, b'aspect', *(
+        1.0,
+    ))
     lib.ospSetVec4f(camera, b'backgroundColor', *(
         0.0, 0.0, 0.0, 0.0,
     ))
@@ -384,9 +409,25 @@ def Render(
     while True:
         request = yield response
 
-        lib.ospSetVec3f(camera, b'position', *request.position)
-        lib.ospSetVec3f(camera, b'up', *request.up)
-        lib.ospSetVec3f(camera, b'direction', *request.direction)
+        zoom, row, col = request.tile
+        px = (col + 0.5) / (2 ** (zoom))
+        py = 1 - (row + 0.5) / (2 ** (zoom))
+        pz = 5.0
+        height = 1 / (2 ** zoom)
+        print(f'{px=}, {py=}, {pz=}, {height=}')
+
+        lib.ospSetFloat(camera, b'height', *(
+            height,
+        ))
+        lib.ospSetVec3f(camera, b'position', *(
+            px, py, pz,
+        ))
+        lib.ospSetVec3f(camera, b'up', *(
+            0.0, 1.0, 0.0,
+        ))
+        lib.ospSetVec3f(camera, b'direction', *(
+            0.0, 0.0, -1.0,
+        ))
         lib.ospCommit(camera)
 
         instances = []
@@ -395,17 +436,21 @@ def Render(
         )
 
         instances.append(
-            (sun := Sun(
-                now=(
-                    datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
-                        offset=datetime.timedelta(hours=-5),
-                        name='EST',
-                    ))
-                    +
-                    datetime.timedelta(hours=request.hour)
-                ),
-            )),
+            ambient,
         )
+
+        # instances.append(
+        #     (sun := Sun(
+        #         now=(
+        #             datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+        #                 offset=datetime.timedelta(hours=-5),
+        #                 name='EST',
+        #             ))
+        #             +
+        #             datetime.timedelta(hours=request.hour)
+        #         ),
+        #     )),
+        # )
 
         instances = Data(instances, type=lib.OSP_INSTANCE)
         defer(lib.ospRelease, instances)
@@ -439,7 +484,10 @@ def Render(
             'raw',
             'RGBA',
             0,
-            -1,  # flip y
+            (
+                # -1  # do flip y
+                1  # don't flip y
+            ),
         )
         image.load()
 

@@ -130,10 +130,11 @@ def location_from_datetime(
 class RenderingRequest:
     width: int
     height: int
-    hour: int
-    position: tuple[float, float, float]
-    up: tuple[float, float, float]
-    direction: tuple[float, float, float]
+    tile: tuple[
+        typing.Annotated[int, 'zoom'],
+        typing.Annotated[int, 'row'],
+        typing.Annotated[int, 'col'],
+    ]
 
 
 @dataclasses.dataclass
