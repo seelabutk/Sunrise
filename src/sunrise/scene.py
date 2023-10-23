@@ -276,7 +276,19 @@ def Render(
         now: datetime.datetime,
     ) -> lib.OSPGroup:
         loc = sunrise.model.location_from_datetime(now, alt=10_000.0)
-        pos = sunrise.model.position_from_location(loc)
+        # pos = sunrise.model.position_from_location(loc)
+        LATmin = 35.425112713810655
+        LATmax = 35.79999392988526
+        LNGmin = -84.00146484375
+        LNGmax = -83.03475379943848
+        ALTmin = 1000.0 * 0.2527998
+        ALTmax = 1000.0 * 2.02335
+
+        pos = sunrise.model.Position(
+            x=(loc.lat - LATmin) / (LATmax - LATmin),
+            y=(loc.lng - LNGmin) / (LNGmax - LNGmin),
+            z=(loc.alt - ALTmin) / (ALTmax - ALTmin),
+        )
 
         lights = []
 
@@ -346,7 +358,10 @@ def Render(
     lib.ospSetObject(world, b'instance', instances)
     lib.ospCommit(world)
 
-    renderer = lib.ospNewRenderer(b'pathtracer')
+    renderer = lib.ospNewRenderer(
+        b'ao'
+        # b'pathtracer'
+    )
     defer(lib.ospRelease, renderer)
     lib.ospSetInt(renderer, b'pixelSamples', 32)
     lib.ospCommit(renderer)

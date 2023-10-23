@@ -20,9 +20,15 @@ go---virtualenv() {
 }
 
 go-server() {
-    pexec "${self:?}" --docker --virtualenv --server
+    pexec "${self:?}" \
+        --docker \
+        --virtualenv \
+        --server \
+    ##
 }
 
+server_bind=0.0.0.0
+server_port=5000
 go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     FLASK_APP=sunrise.server:app \
@@ -30,6 +36,8 @@ go---server() {
     SUNRISE_SCENE_PATH=${root:?}/data \
     flask run \
         --debug \
+        --host "${server_bind:?}" \
+        --port "${server_port:?}" \
     ##
 }
 
