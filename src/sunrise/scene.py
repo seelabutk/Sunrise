@@ -423,11 +423,28 @@ def Render(
 
         zoom, row, col = request.tile
         px = (col + 0.5) / (2 ** (zoom))
-        py = 1 - (row + 0.5) / (2 ** (zoom))
-        pz = 5.0
+        px = 1 - px  # flip x
+        py = (row + 0.5) / (2 ** (zoom))
+        # py = 1 - py  # flip y
+        pz = (
+            # 5.0  # looking at peaks
+            -5.0  # looking at valleys
+        )
         height = 1 / (2 ** zoom)
         print(f'{px=}, {py=}, {pz=}, {height=}')
 
+        lib.ospSetVec2f(camera, b'imageStart', *(
+            # 0.0, 0.0,  # flip none
+            1.0, 0.0,  # flip x
+            # 0.0, 1.0,  # flip y
+            # 1.0, 1.0,  # flip x and y
+        ))
+        lib.ospSetVec2f(camera, b'imageEnd', *(
+            # 1.0, 1.0,  # flip none
+            0.0, 1.0  # flip x
+            # 1.0, 0.0,  # flip y
+            # 0.0, 0.0,  # flip x and y
+        ))
         lib.ospSetFloat(camera, b'height', *(
             height,
         ))
@@ -435,10 +452,12 @@ def Render(
             px, py, pz,
         ))
         lib.ospSetVec3f(camera, b'up', *(
-            0.0, 1.0, 0.0,
+            # 0.0, 1.0, 0.0,  # y+ up
+            0.0, -1.0, 0.0,  # y- up
         ))
         lib.ospSetVec3f(camera, b'direction', *(
-            0.0, 0.0, -1.0,
+            # 0.0, 0.0, -1.0,  # looking at peaks
+            0.0, 0.0, 1.0,  # looking at valleys
         ))
         lib.ospCommit(camera)
 
@@ -497,8 +516,8 @@ def Render(
             'RGBA',
             0,
             (
-                # -1  # do flip y
-                1  # don't flip y
+                -1  # flip y
+                # 1  # flip none
             ),
         )
         image.load()
