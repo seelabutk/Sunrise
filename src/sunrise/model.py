@@ -135,6 +135,7 @@ class RenderingRequest:
         typing.Annotated[int, 'row'],
         typing.Annotated[int, 'col'],
     ]
+    angle: int
 
 
 @dataclasses.dataclass

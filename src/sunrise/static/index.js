@@ -1,10 +1,13 @@
 import * as L from 'leaflet';
 
-const $app = document.getElementById('app');
-const $map = document.createElement('div');
-$map.id = 'map';
-$app.appendChild($map);
+const app = {
+    angle: 0,
+    get url() {
+        return `api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=${this.angle}`;
+    },
+};
 
+const $map = document.querySelector('.js--map');
 const map = L.map($map, {
 });
 map.fitBounds([
@@ -15,7 +18,7 @@ map.fitBounds([
 });
 window.map = map;
 
-const url = 'api/v1/view/?width=256&height=256&tile={z},{y},{x}';
+const url = app.url;
 const tileLayer = L.tileLayer(url, {
     tms: (
         // true  // y+ is north
@@ -23,3 +26,12 @@ const tileLayer = L.tileLayer(url, {
     ),
 });
 tileLayer.addTo(map);
+
+const $input = document.querySelector('.js--angle');
+$input.value = app.angle;
+
+$input.addEventListener('change', () => {
+    const value = +$input.value;
+    app.angle = value;
+    tileLayer.setUrl(app.url);
+});

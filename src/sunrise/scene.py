@@ -221,8 +221,15 @@ def Render(
         material = lib.ospNewMaterial(None, b'obj')
         defer(lib.ospRelease, material)
         lib.ospSetObject(material, b'map_kd', texture)
-        lib.ospSetVec3f(material, b'ks', 1.0, 1.0, 1.0)
-        lib.ospSetFloat(material, b'ns', 1.0)
+        # lib.ospSetVec3f(material, b'ks', 1.0, 1.0, 1.0)
+        lib.ospSetFloat(material, b'ns', *(
+            # 0.0,
+            0.25,
+            # 1.0,
+            # 2.0,
+            # 4.0,
+            # 8.0,
+        ))
         lib.ospCommit(material)
 
         return material
@@ -340,7 +347,8 @@ def Render(
         light = lib.ospNewLight(b'ambient')
         lib.ospSetFloat(light, b'intensity', *(
             0.75,
-            # 100.0,
+            # 1.0,
+            # 1.25,
         ))
         lib.ospSetInt(light, b'intensityQuantity', *(
             0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
@@ -475,7 +483,14 @@ def Render(
             -5.0  # looking at valleys
         )
         height = 1 / (2 ** zoom)
-        print(f'{px=}, {py=}, {pz=}, {height=}')
+        # print(f'{px=}, {py=}, {pz=}, {height=}')
+
+        dx = 0.0
+        dy = request.angle * -0.00001
+        dz = (
+            # -1.0  # looking at peaks
+            1.0  # looking at valleys
+        )
 
         lib.ospSetVec2f(camera, b'imageStart', *(
             0.0, 0.0,  # flip none
@@ -500,9 +515,7 @@ def Render(
             # 0.0, -1.0, 0.0,  # y- up
         ))
         lib.ospSetVec3f(camera, b'direction', *(
-            # 0.0, 0.0, -1.0,  # looking at peaks
-            # 0.0, 0.0, 1.0,  # looking at valleys
-            0.0000, -0.0001, 1.0,  # angled
+            dx, dy, dz,
         ))
         lib.ospCommit(camera)
 
