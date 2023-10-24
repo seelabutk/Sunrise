@@ -59,7 +59,8 @@ def Read(
         N ,= Read('I')
         shape = Read(f'{N}I')
         # print(f'Reading {shape=!r} from {path=!r}')
-        data = np.fromfile(f, dtype=dtype)
+        # data = np.fromfile(f, dtype=dtype)
+        data = np.memmap(f, dtype=dtype, shape=shape, mode='r', offset=f.tell())
 
     data = data.reshape(shape)
     return data
@@ -71,6 +72,7 @@ def Data(
     /,
     *,
     type: lib.OSPDataType,
+    share: bool=False,
 ) -> lib.OSPData:
     if isinstance(array, list):
         for i, x in enumerate(array):
@@ -107,6 +109,8 @@ def Data(
         array.shape[2], array.strides[2],
     )
     lib.ospCommit(src)
+    if share:
+        return src
 
     dst = lib.ospNewData(type, *array.shape)
     lib.ospCopyData(src, dst, 0, 0, 0)
@@ -145,6 +149,7 @@ def Render(
     close = contextlib.closing
     enter = stack.enter_context
     defer = stack.callback
+    hold = id
 
     # def defer(func, *args, **kwargs):
     #     caller = inspect.getframeinfo(inspect.stack()[1][0])
@@ -165,22 +170,26 @@ def Render(
     ) -> lib.OSPGeometry:
         position = path / 'OSPGeometry.mesh.vertex.position.vec3f.bin'
         position = Read(position, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
-        position = Data(position, type=lib.OSP_VEC3F)
+        defer(hold, position)
+        position = Data(position, type=lib.OSP_VEC3F, share=True)
         defer(lib.ospRelease, position)
 
         texcoord = path / 'OSPGeometry.mesh.vertex.texcoord.vec2f.bin'
         texcoord = Read(texcoord, dtype=[ ('u', 'f4'), ('v', 'f4') ])
-        texcoord = Data(texcoord, type=lib.OSP_VEC2F)
+        defer(hold, texcoord)
+        texcoord = Data(texcoord, type=lib.OSP_VEC2F, share=True)
         defer(lib.ospRelease, texcoord)
 
         normal = path / 'OSPGeometry.mesh.vertex.normal.vec3f.bin'
         normal = Read(normal, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
-        normal = Data(normal, type=lib.OSP_VEC3F)
+        defer(hold, normal)
+        normal = Data(normal, type=lib.OSP_VEC3F, share=True)
         defer(lib.ospRelease, normal)
 
         index = path / 'OSPGeometry.mesh.index.vec4ui.bin'
         index = Read(index, dtype=[ ('a', 'u4'), ('b', 'u4'), ('c', 'u4'), ('d', 'u4') ])
-        index = Data(index, type=lib.OSP_VEC4UI)
+        defer(hold, index)
+        index = Data(index, type=lib.OSP_VEC4UI, share=True)
         defer(lib.ospRelease, index)
 
         geometry = lib.ospNewGeometry(b'mesh')
@@ -199,7 +208,8 @@ def Render(
     ) -> lib.OSPMaterial:
         data = path / 'OSPTexture.texture2d.data.vec3f.bin'
         data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
-        data = Data(data, type=lib.OSP_VEC3F)
+        defer(hold, data)
+        data = Data(data, type=lib.OSP_VEC3F, share=True)
         defer(lib.ospRelease, data)
 
         texture = lib.ospNewTexture(b'texture2d')
@@ -223,7 +233,8 @@ def Render(
     ) -> lib.OSPData:
         index = path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
-        index = Data(index, type=lib.OSP_UCHAR)
+        defer(hold, index)
+        index = Data(index, type=lib.OSP_UCHAR, share=True)
         defer(lib.ospRelease, index)
 
         return index
@@ -327,7 +338,7 @@ def Render(
     def Ambient(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'ambient')
-        lib.ospSetFloat(light, b'intensity', 1000.0)
+        lib.ospSetFloat(light, b'intensity', 100.0)
         defer(lib.ospRelease, light)
         lib.ospCommit(light)
 
@@ -383,12 +394,13 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        # b'ao'
+        b'ao'
         # b'pathtracer'
-        b'scivis'
+        # b'scivis'
     )
     defer(lib.ospRelease, renderer)
     lib.ospSetInt(renderer, b'pixelSamples', 32)
+    lib.ospSetFloat(renderer, b'aoIntensity', 0.0001)
     lib.ospCommit(renderer)
     
     camera = lib.ospNewCamera(
