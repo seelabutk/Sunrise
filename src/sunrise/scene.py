@@ -222,7 +222,7 @@ def Render(
         defer(lib.ospRelease, material)
         lib.ospSetObject(material, b'map_kd', texture)
         lib.ospSetVec3f(material, b'ks', 1.0, 1.0, 1.0)
-        lib.ospSetFloat(material, b'ns', 2.0)
+        lib.ospSetFloat(material, b'ns', 1.0)
         lib.ospCommit(material)
 
         return material
@@ -338,13 +338,51 @@ def Render(
     def Ambient(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'ambient')
-        lib.ospSetFloat(light, b'intensity', 100.0)
+        lib.ospSetFloat(light, b'intensity', *(
+            0.75,
+            # 100.0,
+        ))
+        lib.ospSetInt(light, b'intensityQuantity', *(
+            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+        ))
         defer(lib.ospRelease, light)
         lib.ospCommit(light)
 
         group = lib.ospNewGroup()
         defer(lib.ospRelease, group)
-        lib.ospSetObject(group, b'light', light)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        return instance
+
+    def Distant(
+    ) -> lib.OSPInstance:
+        light = lib.ospNewLight(b'distant')
+        lib.ospSetFloat(light, b'intensity', *(
+            0.5,
+            # 1.0,
+        ))
+        lib.ospSetInt(light, b'intensityQuantity', *(
+            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+        ))
+        lib.ospSetVec3f(light, b'direction', *(
+            0.0, 0.0, 1.0,  # towards z-
+            # -0.5, -0.5, -1.0,  # angled towards z-
+            # 0.0, 0.0, -1.0,  # towards z+
+        ))
+        defer(lib.ospRelease, light)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        defer(lib.ospRelease, group)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
         lib.ospCommit(group)
 
         instance = lib.ospNewInstance(None)
@@ -374,6 +412,11 @@ def Render(
         )),
     )
 
+    instances.append(
+        (distant := Distant(
+        )),
+    )
+
     # sun_index = len(instances)
     # instances.append(
     #     (sun := Sun(
@@ -394,13 +437,14 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        b'ao'
-        # b'pathtracer'
+        # b'ao'
+        b'pathtracer'
         # b'scivis'
     )
     defer(lib.ospRelease, renderer)
     lib.ospSetInt(renderer, b'pixelSamples', 32)
-    lib.ospSetFloat(renderer, b'aoIntensity', 0.0001)
+    # lib.ospSetFloat(renderer, b'aoIntensity', 0)
+    # lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
     
     camera = lib.ospNewCamera(
@@ -434,14 +478,14 @@ def Render(
         print(f'{px=}, {py=}, {pz=}, {height=}')
 
         lib.ospSetVec2f(camera, b'imageStart', *(
-            # 0.0, 0.0,  # flip none
-            1.0, 0.0,  # flip x
+            0.0, 0.0,  # flip none
+            # 1.0, 0.0,  # flip x
             # 0.0, 1.0,  # flip y
             # 1.0, 1.0,  # flip x and y
         ))
         lib.ospSetVec2f(camera, b'imageEnd', *(
-            # 1.0, 1.0,  # flip none
-            0.0, 1.0  # flip x
+            1.0, 1.0,  # flip none
+            # 0.0, 1.0  # flip x
             # 1.0, 0.0,  # flip y
             # 0.0, 0.0,  # flip x and y
         ))
@@ -452,23 +496,22 @@ def Render(
             px, py, pz,
         ))
         lib.ospSetVec3f(camera, b'up', *(
-            # 0.0, 1.0, 0.0,  # y+ up
-            0.0, -1.0, 0.0,  # y- up
+            0.0, 1.0, 0.0,  # y+ up
+            # 0.0, -1.0, 0.0,  # y- up
         ))
         lib.ospSetVec3f(camera, b'direction', *(
             # 0.0, 0.0, -1.0,  # looking at peaks
-            0.0, 0.0, 1.0,  # looking at valleys
+            # 0.0, 0.0, 1.0,  # looking at valleys
+            0.0000, -0.0001, 1.0,  # angled
         ))
         lib.ospCommit(camera)
 
         instances = []
-        instances.append(
+        instances.extend([
             park,
-        )
-
-        instances.append(
             ambient,
-        )
+            distant,
+        ])
 
         # instances.append(
         #     (sun := Sun(
@@ -496,7 +539,10 @@ def Render(
         framebuffer = lib.ospNewFrameBuffer(
             width,
             height,
-            lib.OSP_FB_RGBA8,
+            (
+                # lib.OSP_FB_RGBA8
+                lib.OSP_FB_SRGBA
+            ),
             lib.OSP_FB_COLOR,
         )
 
@@ -516,8 +562,8 @@ def Render(
             'RGBA',
             0,
             (
-                -1  # flip y
-                # 1  # flip none
+                # -1  # flip y
+                1  # flip none
             ),
         )
         image.load()
