@@ -1,7 +1,7 @@
 [project]
 name = "sunrise"
 version = "0.1.0"
-description = "WebXR application for viewing national parks"
+description = "web application for viewing national parks"
 authors = [ { name="https://github.com/player1537" } ]
 license = { text = "wtfpl" }
 classifiers = [
@@ -13,10 +13,14 @@ dependencies = [
     "numpy",
     "skyfield",
     "Pillow",
-]
-
-[project.optional-dependencies]
-server = [
     "flask",
     "jinja2",
+]
+
+[tool.setuptools.package-data]
+sunrise = ["static/*", "templates/*"]
+
+[project.optional-dependencies]
+prod = [
+    "uwsgi",
 ]

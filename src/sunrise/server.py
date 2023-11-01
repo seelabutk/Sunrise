@@ -41,7 +41,7 @@ app = flask.Flask(
 # )
 
 
-SUNRISE_LIBOSPRAY_PATH = os.environ['SUNRISE_LIBOSPRAY_PATH']
+SUNRISE_LIBOSPRAY_PATH = os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospray.so')
 SUNRISE_SCENE_PATH = os.environ['SUNRISE_SCENE_PATH']
 
 
@@ -57,11 +57,13 @@ def _initialize():
 
         app.render_lock = threading.Lock()
 
+        app.logger.info(f'{os.getpid()}: Loading scene from {SUNRISE_SCENE_PATH}')
         app.render = sunrise.scene.Render(
             path=pathlib.Path(SUNRISE_SCENE_PATH),
             stack=stack,
         )
         next(app.render)
+        app.logger.info('{os.getpid()}: Scene loaded')
 
 
 def _shutdown(stack: contextlib.ExitStack, /):

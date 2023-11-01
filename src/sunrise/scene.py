@@ -445,14 +445,14 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        # b'ao'
-        b'pathtracer'
+        b'ao'
+        # b'pathtracer'
         # b'scivis'
     )
     defer(lib.ospRelease, renderer)
     lib.ospSetInt(renderer, b'pixelSamples', 32)
-    # lib.ospSetFloat(renderer, b'aoIntensity', 0)
-    # lib.ospSetInt(renderer, b'aoSamples', 32)
+    lib.ospSetFloat(renderer, b'aoIntensity', 0)
+    lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
     
     camera = lib.ospNewCamera(

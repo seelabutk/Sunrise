@@ -32,12 +32,27 @@ server_port=5000
 go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     FLASK_APP=sunrise.server:app \
-    SUNRISE_LIBOSPRAY_PATH=libospray.so \
     SUNRISE_SCENE_PATH=${root:?}/data \
     flask run \
         --debug \
         --host "${server_bind:?}" \
         --port "${server_port:?}" \
+    ##
+}
+
+go-uwsgi() {
+    pexec "${self:?}" \
+        docker \
+        --prod \
+        exec \
+        uwsgi \
+        --enable-thread \
+        --logger stdio \
+        --lazy \
+        --module sunrise.server:app \
+        --http-socket "${server_bind:?}:${server_port:?}" \
+        --processes 8 \
+        --env SUNRISE_SCENE_PATH="${root:?}/data" \
     ##
 }
 
@@ -118,6 +133,7 @@ go-docker-build() {
 }
 
 go-docker-start() {
+    default=( sleep infinity )
     pexec docker run \
         --rm \
         --init \
@@ -125,15 +141,15 @@ go-docker-start() {
         --name "${docker_name:?}" \
         "${docker_start[@]}" \
         "${docker_tag:?}" \
-        sleep infinity \
-        ##
+        "${@:-${default[@]}}" \
+    ##
 }
 
 go-docker-stop() {
     pexec docker stop \
         --time 0 \
         "${docker_name:?}" \
-        ##
+    ##
 }
 
 go-docker-exec() {
@@ -152,6 +168,14 @@ go-docker-exec() {
         --env HOSTNAME \
         "${docker_name:?}" \
         "$@"
+}
+
+docker_service_name=${project,,}
+docker_service_create=(
+)
+
+go-docker-service() {
+    "${FUNCNAME[0]:?}-$@"
 }
 
 
