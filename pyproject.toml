@@ -15,6 +15,9 @@ dependencies = [
     "Pillow",
     "flask",
     "jinja2",
+    "bs4",
+    "pickleshare",
+    "matplotlib"
 ]
 
 [tool.setuptools.package-data]
