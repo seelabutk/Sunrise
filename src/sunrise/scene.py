@@ -484,7 +484,7 @@ def Render(
             -5.0  # looking at valleys
         )
         height = 1 / (2 ** zoom)
-        # print(f'{px=}, {py=}, {pz=}, {height=}')
+        print(f'{px=}, {py=}, {pz=}')
 
         dx = 0.0
         dy = request.angle * -0.00001
