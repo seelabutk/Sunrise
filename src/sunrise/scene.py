@@ -474,6 +474,7 @@ def Render(
         request = yield response
 
         zoom, row, col = request.tile
+        # cam_x, cam_y, cam_z = request.cam_pos
         px = (col + 0.5) / (2 ** (zoom))
         px = 1 - px  # flip x
         py = (row + 0.5) / (2 ** (zoom))
