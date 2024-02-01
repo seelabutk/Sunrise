@@ -8,17 +8,19 @@
 namespace http {
 
 void HTTPServer::log(log_level level, const char* message, ...) {
+    if (!m_enable_logging) return;
+
     va_list args;
     va_start(args, message);
 
     // TODO: Use platform-specific printing. For now we can assume Linux
    const char* level_strings[6] = {
-            "[FATAL]",
-            "[ERROR]",
-            "[WARN]",
-            "[INFO]",
-            "[DEBUG]",
-            "[TRACE]",
+        "[FATAL]",
+        "[ERROR]",
+        "[WARN]",
+        "[INFO]",
+        "[DEBUG]",
+        "[TRACE]",
     };
 
     // LINUX ONLY COLOR VALUES
@@ -43,6 +45,8 @@ void HTTPServer::log(log_level level, const char* message, ...) {
     va_end(args);
 
     // Prepend the error message level to the message string
+    // NOTE: If this is ported to Windows, the way color values
+    //       are displayed should be changed
     char out_message[message_length];
     snprintf(
         out_message, 
@@ -57,7 +61,7 @@ void HTTPServer::log(log_level level, const char* message, ...) {
     // fprintf(stdout, "%s", out_message);
     printf("%s", out_message);
     
-
+    return;
 }
 
 }

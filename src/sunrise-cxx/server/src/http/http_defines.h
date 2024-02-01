@@ -3,9 +3,9 @@
 
 namespace http {
 
-enum protocol {
-    TCP,
-    UDP,
+enum stream_protocol_e {
+    STREAM_TCP,
+    STREAM_UDP,
 };
 
 } // http
