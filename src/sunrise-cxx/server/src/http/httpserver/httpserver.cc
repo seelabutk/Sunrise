@@ -83,12 +83,14 @@ HTTPServer HTTPServer::set_num_workers(const u32 num_threads) {
 
 /// @brief The runtime logic for the server
 /// @return the server itself
-HTTPServer HTTPServer::run() {
+std::optional<HTTPServer> HTTPServer::run() {
     // printf("Server listening on %s:%u\n", m_ipaddr, m_port);
     print_self();
 
     m_socket_listen = bind_to_addr();
-    (void)listen_on();
+    if (!listen_on()) {
+        return {};
+    }
 
     while (true) {
         // TODO: Server logic to run goes here

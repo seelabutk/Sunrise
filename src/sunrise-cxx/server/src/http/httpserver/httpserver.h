@@ -3,6 +3,7 @@
 #include "http/http_defines.h"
 #include "httpserver_logger.h"
 
+#include <optional>
 #include <string>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -26,7 +27,7 @@ public:
 
     void print_self();
     
-    HTTPServer run();             // Run the server
+    std::optional<HTTPServer> run();             // Run the server
     HTTPServer set_log_file(const char* log_file_path);
     HTTPServer enable_logging(const bool enable); // set whether the server will log or not
     HTTPServer listen_on(const char* ip, u32 port); // set the port the server will listen on

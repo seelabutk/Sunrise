@@ -75,7 +75,7 @@ bool HTTPServer::listen_on() {
         return false;
     }
 
-    log(LOG_LEVEL_DEBUG, "Listening on %s:%u", m_ipaddr, m_port);
+    log(LOG_LEVEL_DEBUG, "Listening on  port %u", m_ipaddr, m_port);
     return true;
 }
 

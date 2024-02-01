@@ -28,7 +28,7 @@ bin/server: $(OBJ_FILES)
 
 $(OBJ_DIR)/%.cc.o: %.cc
 	@echo $<...
-	$(CC) $< $(CFLAGS) -c -o $@ $(INCLUDES)
+	$(CC) $< $(CFLAGS) -c -o $@ $(INCLUDES) $(LDFLAGS)
 
 
 # obj/%.o: src/%.cc
