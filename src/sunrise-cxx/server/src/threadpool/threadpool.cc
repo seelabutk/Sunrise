@@ -28,7 +28,7 @@ ThreadPool::ThreadPool(ThreadPool&& tp) {
 /// @return the created threadpool
 ThreadPool ThreadPool::create() {
     ThreadPool pool {};
-    pool.m_num_threads = 0;
+    pool.m_num_threads = std::thread::hardware_concurrency() / 2;
     pool.m_terminate = false;
     pool.m_lock = new std::mutex();
     pool.m_lock_condition = new std::condition_variable();

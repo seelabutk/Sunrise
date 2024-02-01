@@ -28,20 +28,20 @@ public:
     ThreadPool num_workers(u32 num_workers); // Set the number of worker threads
 
     void begin();                                   // initialization of pool
-    void end();
-    void add_job(const std::function<void()>& job);
-    bool is_busy();
+    void end();                                     // shutdown behavior
+    void add_job(const std::function<void()>& job); // push a job onto the job queue to be executed
+    bool is_busy();                                 // returns if there are still active threads or not
 
 
 private:
-    void _thread_loop();
+    void _thread_loop(); // each thread executes this loop waiting for jobs, when one comes in they execute
 
     bool m_terminate;
-    u32 m_num_threads; // number of threads to spawn
-    std::mutex* m_lock;
-    std::condition_variable* m_lock_condition;
-    std::vector<std::thread> m_threads;
-    std::queue<std::function<void()> > m_jobs;
+    u32 m_num_threads;                         // number of threads to spawn
+    std::mutex* m_lock;                        // mutex lock
+    std::vector<std::thread> m_threads;        // worker threads
+    std::condition_variable* m_lock_condition; // the condition variable to wake a thread
+    std::queue<std::function<void()> > m_jobs; // the queue of jobs to be executed
 };
 
 }
