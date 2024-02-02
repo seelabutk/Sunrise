@@ -1,0 +1,5 @@
+-Iserver/src
+-Iserver
+
+-std=c++17
+-g

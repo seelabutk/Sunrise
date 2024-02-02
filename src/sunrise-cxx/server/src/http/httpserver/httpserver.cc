@@ -40,6 +40,7 @@ HTTPServer HTTPServer::create_new() {
 HTTPServer HTTPServer::listen_on(const char* ip, u32 port) {
     m_ipaddr = ip;
     m_port = port;
+    log(LOG_LEVEL_TRACE, "PORT: %u", m_port);
 
     return *this;
 }

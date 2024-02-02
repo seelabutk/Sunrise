@@ -6,8 +6,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <signal.h>
-#include <errno.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -69,13 +67,13 @@ int HTTPServer::bind_to_addr() {
 /// @brief Listen on the socket file descriptor that we have bound to before
 /// @return whether the listen call is successfull or not
 bool HTTPServer::listen_on() {
-    log(LOG_LEVEL_TRACE, "LISTEN: %d", m_socket_listen);
+    // log(LOG_LEVEL_TRACE, "LISTEN: %d", m_socket_listen);
     if (listen(m_socket_listen, static_cast<int>(20)) == -1) {
         log(LOG_LEVEL_FATAL, "server (listen)");
         return false;
     }
 
-    log(LOG_LEVEL_DEBUG, "Listening on  port %u", m_ipaddr, m_port);
+    log(LOG_LEVEL_DEBUG, "Listening on  port %u",  m_port);
     return true;
 }
 
