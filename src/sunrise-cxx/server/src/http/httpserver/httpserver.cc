@@ -27,7 +27,7 @@ HTTPServer HTTPServer::create_new() {
     server.m_num_threads = 1; //default to 1 thread if none other is specified later
     server.m_enable_logging = true;
     server.m_log_path = nullptr;
-    server.m_stream_protocol = STREAM_TCP;
+    server.m_stream_protocol = protocol::STREAM_TCP;
     server.m_backlog = 20;
 
     return server;
@@ -49,7 +49,7 @@ HTTPServer HTTPServer::listen_on(const char* ip, u32 port) {
 ///        The default is TCP if this is not used
 /// @param prot The desired protocol
 /// @return the server itself
-HTTPServer HTTPServer::set_stream_protocol(stream_protocol_e prot) {
+HTTPServer HTTPServer::set_stream_protocol(protocol::stream_protocol_e prot) {
     m_stream_protocol = prot;
 
     return *this;
@@ -104,9 +104,11 @@ void HTTPServer::print_self() {
     log(LOG_LEVEL_INFO, "m_port:            %u", m_port);
     log(LOG_LEVEL_INFO, "m_socket_listen:   %i", m_socket_listen);
     log(LOG_LEVEL_INFO, "m_num_threads:     %u", m_num_threads);
-    log(LOG_LEVEL_INFO, "m_stream_protocol: %s", m_stream_protocol == STREAM_TCP ? "STREAM_TCP" : "STREAM_UDP");
+    log(LOG_LEVEL_INFO, "m_stream_protocol: %s", m_stream_protocol == protocol::STREAM_TCP ? "STREAM_TCP" : "STREAM_UDP");
     log(LOG_LEVEL_INFO, "m_enable_logging:  %s", m_enable_logging ? "true" : "false");
     log(LOG_LEVEL_INFO, "m_log_path:        %s", m_log_path);
 }
+
+
 
 } // http

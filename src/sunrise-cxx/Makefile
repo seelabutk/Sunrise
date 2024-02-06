@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++17
+CFLAGS=-std=c++20
 INCLUDES=-Iserver/src -Iserver
 LDFLAGS=
 OBJ_DIR := obj

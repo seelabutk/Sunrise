@@ -23,7 +23,7 @@ int HTTPServer::bind_to_addr() {
     // Create a server address
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = m_stream_protocol == STREAM_TCP ? SOCK_STREAM : SOCK_DGRAM;
+    hints.ai_socktype = m_stream_protocol == protocol::STREAM_TCP ? SOCK_STREAM : SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE;
 
     snprintf(port_buf, sizeof(port_buf), "%u", m_port);

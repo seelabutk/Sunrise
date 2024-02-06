@@ -1,6 +1,8 @@
 #pragma once
 #include "defines.h"
+#include "http/route.h"
 #include "http/http_defines.h"
+#include "http/request_handler.h"
 #include "httpserver_logger.h"
 
 #include <optional>
@@ -32,7 +34,10 @@ public:
     HTTPServer enable_logging(const bool enable); // set whether the server will log or not
     HTTPServer listen_on(const char* ip, u32 port); // set the port the server will listen on
     HTTPServer set_num_workers(const u32 num_threads); // set the number of threads 
-    HTTPServer set_stream_protocol(stream_protocol_e prot); // set whether we want TCP or UDP
+    HTTPServer set_stream_protocol(protocol::stream_protocol_e prot); // set whether we want TCP or UDP
+
+    template <typename F>
+    HTTPServer register_handler(std::string route, F callback); // add a new handler to handle requests
 
 private:
     void log(log_level level, const char* message, ...);
@@ -46,8 +51,10 @@ private:
     u32 m_num_threads;                   // Number of thread workers for the process
     bool m_enable_logging;               // Whether the server is going to log
     const char* m_log_path;              // The path to the file where things will log
-    stream_protocol_e m_stream_protocol; // whether we want to use TCP or UDP
+    protocol::stream_protocol_e m_stream_protocol; // whether we want to use TCP or UDP
     struct addrinfo* m_serverinfo;               // the server info struct for the server
 };
 
 }
+
+#include "httpserver.inl"
