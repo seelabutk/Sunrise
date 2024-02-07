@@ -1,9 +1,8 @@
 #pragma once
 #include "defines.h"
-#include "http/route.h"
 #include "http/http_defines.h"
-#include "http/request_handler.h"
 #include "httpserver_logger.h"
+#include "http/controller.h"
 
 #include <optional>
 #include <string>
@@ -17,8 +16,22 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <bits/stdc++.h>
+#include <memory>
 
 namespace http {
+
+struct Request {
+
+};
+struct Response {
+
+};
+
+template <typename...T>
+using route_callback = std::function<void(Request* req, Response* res, T...)>;
+
+// template <typename ...T>
+// using route_callback = std::function<Response(T...)>;
 
 class HTTPServer {
 public:
@@ -36,8 +49,19 @@ public:
     HTTPServer set_num_workers(const u32 num_threads); // set the number of threads 
     HTTPServer set_stream_protocol(protocol::stream_protocol_e prot); // set whether we want TCP or UDP
 
-    template <typename F>
-    HTTPServer register_handler(std::string route, F callback); // add a new handler to handle requests
+    // HTTPServer register_handler(
+    //     std::string route, 
+    //     const std::function<void()>& callback
+    // ); 
+
+    HTTPServer register_controller(
+        // std::string route,
+        std::unique_ptr<HTTPController> controller
+    );
+    // template <typename... T>
+    // HTTPServer register_handler(std::string route, const route_callback<T...>& callback);
+    // template <typename F>
+    // HTTPServer register_handler(std::string route, F callback); // add a new handler to handle requests NOTE: template allows differing function types
 
 private:
     void log(log_level level, const char* message, ...);
@@ -57,4 +81,4 @@ private:
 
 }
 
-#include "httpserver.inl"
+// #include "httpserver.inl"
