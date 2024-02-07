@@ -63,7 +63,7 @@
         <div class="camera_look">
             <p>Camera Focus</p>
             <label for="angle">Angle</label>
-            <input id="angle" name="angle" type="range" min=0 max=100 step=1 value=0 class="js--angle" />
+            <input id="angle" name="angle" type="range" min=0 max=100 step=1 value=6 class="js--angle" />
             
             <label for="camLookX">Look X: </label>
             <input id="camLookX" name="camLookX" type="range" min=0 max=100 step=1 value=0  />

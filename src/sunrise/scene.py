@@ -138,6 +138,7 @@ def Render(
     sunrise.model.RenderingRequest,
     None,
 ]:
+    render_begin = datetime.datetime.now()
     if stack is None:
         with contextlib.ExitStack() as stack:
             yield from Render(
@@ -346,7 +347,8 @@ def Render(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'ambient')
         lib.ospSetFloat(light, b'intensity', *(
-            0.75,
+            # 0.75,
+            0.25,
             # 1.0,
             # 1.25,
         ))
@@ -368,12 +370,13 @@ def Render(
         lib.ospCommit(instance)
 
         return instance
-
+    
     def Distant(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'distant')
         lib.ospSetFloat(light, b'intensity', *(
             0.5,
+            # 0.35,
             # 1.0,
         ))
         lib.ospSetInt(light, b'intensityQuantity', *(
@@ -384,6 +387,47 @@ def Render(
             0.0, 0.0, 1.0,  # towards z-
             # -0.5, -0.5, -1.0,  # angled towards z-
             # 0.0, 0.0, -1.0,  # towards z+
+        ))
+        defer(lib.ospRelease, light)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        defer(lib.ospRelease, group)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        return instance
+    
+    def Sunlight(
+    ) -> lib.OSPInstance:
+        light = lib.ospNewLight(b'sunSky')
+        lib.ospSetInt(light, b'intensityQuantity', *(
+            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+        ))
+
+        lib.ospSetVec3f(light, b'color', *(
+                # 0.8, 0.8, 0.8,
+                # 0.0, 0.7, 1.0, # light blue
+                0.8, 0.48, 0.0, # orange
+            )
+        )
+
+        lib.ospSetFloat(light, b'intensity', 1.0)
+        lib.ospSetVec3f(light, b'direction', *(
+            # 0.0, 0.0, 1.0,  # towards z-
+            -0.2, -0.8, 1.0,  # angled towards z-
+            # 0.0, 0.0, -1.0,  # towards z+
+        ))
+
+        # Ground Reflectance
+        lib.ospSetFloat(light, b'albedo', *(
+            0.5,
         ))
         defer(lib.ospRelease, light)
         lib.ospCommit(light)
@@ -425,6 +469,11 @@ def Render(
         )),
     )
 
+    instances.append(
+        (sunlight:= Sunlight(
+        )),
+    )
+
     # sun_index = len(instances)
     # instances.append(
     #     (sun := Sun(
@@ -441,20 +490,23 @@ def Render(
 
     world = lib.ospNewWorld()
     defer(lib.ospRelease, world)
-    lib.ospSetObject(world, b'instance', instances)
+    # lib.ospSetObject(world, b'instance', instances)
+    # lib.ospSetObject(world, b'light', sunlight)
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        b'ao'
-        # b'pathtracer'
+        # b'ao' # does not use lights
+        b'pathtracer'
         # b'scivis'
     )
+
     defer(lib.ospRelease, renderer)
+
     lib.ospSetInt(renderer, b'pixelSamples', 32)
     lib.ospSetFloat(renderer, b'aoIntensity', 0)
     lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
-    
+
     camera = lib.ospNewCamera(
         b'orthographic',
     )
@@ -465,6 +517,7 @@ def Render(
         1.0,
     ))
     lib.ospSetVec4f(camera, b'backgroundColor', *(
+        # 0.0, 1.0, 0.5, 1.0,
         0.0, 0.0, 0.0, 0.0,
     ))
     lib.ospCommit(camera)
@@ -474,17 +527,18 @@ def Render(
         request = yield response
 
         zoom, row, col = request.tile
-        # cam_x, cam_y, cam_z = request.cam_pos
+        cam_x, cam_y, cam_z = request.cam_pos
         px = (col + 0.5) / (2 ** (zoom))
         px = 1 - px  # flip x
-        py = (row + 0.5) / (2 ** (zoom))
+        py = (row + 0.5 + cam_y) / (2 ** (zoom))
         # py = 1 - py  # flip y
         pz = (
             # 5.0  # looking at peaks
             -5.0  # looking at valleys
+            + (cam_z * 7)
         )
         height = 1 / (2 ** zoom)
-        print(f'{px=}, {py=}, {pz=}')
+        # print(f'{px=}, {py=}, {pz=} {height=}')
 
         dx = 0.0
         dy = request.angle * -0.00001
@@ -525,6 +579,7 @@ def Render(
             park,
             ambient,
             distant,
+            sunlight,
         ])
 
         # instances.append(
@@ -545,6 +600,7 @@ def Render(
         lib.ospCommit(instances)
 
         lib.ospSetObject(world, b'instance', instances)
+        lib.ospSetObject(world, b'light', sunlight)
         lib.ospCommit(world)
 
         width = request.width
@@ -589,3 +645,6 @@ def Render(
         response = sunrise.model.RenderingResponse(
             image=image,
         )
+
+        time_rendering = datetime.datetime.now().microsecond - render_begin.microsecond
+        print(f'TIME RENDERING (McS): {time_rendering}')

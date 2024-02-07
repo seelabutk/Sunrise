@@ -96,7 +96,7 @@ def view():
             height=height,
             tile=tile,
             angle=angle,
-            # cam_pos=camera_position,
+            cam_pos=camera_position,
         ))
     
     with io.BytesIO() as f:

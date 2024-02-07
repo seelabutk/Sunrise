@@ -1,7 +1,7 @@
 import * as L from 'leaflet';
 
 const app = {
-    angle: 0,
+    angle: 6,
     position: [0.0, 0.0, 0.0], // x, y, z
 
     get url() {
@@ -66,3 +66,17 @@ $camera_position_z.addEventListener('change', () => {
     app.position[2] = value;
     tileLayer.setUrl(app.url);
 });
+
+// 
+// const sleep = (ms) => {
+//     return new Promise(resolve => setTimeout(resolve, ms));
+// }
+
+// let cam_y = +$camera_position_y.value;
+// for (let i = 0; i < 100; i++) {
+//     cam_y += 0.1;
+//     await sleep(1000);
+//     console.log(cam_y);
+//     app.position[1] = cam_y;
+//     // tileLayer.setUrl(app.url);
+// }
