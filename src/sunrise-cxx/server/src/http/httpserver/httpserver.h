@@ -20,19 +20,6 @@
 
 namespace http {
 
-struct Request {
-
-};
-struct Response {
-
-};
-
-template <typename...T>
-using route_callback = std::function<void(Request* req, Response* res, T...)>;
-
-// template <typename ...T>
-// using route_callback = std::function<Response(T...)>;
-
 class HTTPServer {
 public:
     HTTPServer();
@@ -49,19 +36,10 @@ public:
     HTTPServer set_num_workers(const u32 num_threads); // set the number of threads 
     HTTPServer set_stream_protocol(protocol::stream_protocol_e prot); // set whether we want TCP or UDP
 
-    // HTTPServer register_handler(
-    //     std::string route, 
-    //     const std::function<void()>& callback
-    // ); 
-
-    HTTPServer register_controller(
-        // std::string route,
-        std::unique_ptr<HTTPController> controller
+    template <typename T>
+    HTTPServer register_route_controller(
+        std::unique_ptr<HTTPController<T>> controller
     );
-    // template <typename... T>
-    // HTTPServer register_handler(std::string route, const route_callback<T...>& callback);
-    // template <typename F>
-    // HTTPServer register_handler(std::string route, F callback); // add a new handler to handle requests NOTE: template allows differing function types
 
 private:
     void log(log_level level, const char* message, ...);
@@ -81,4 +59,4 @@ private:
 
 }
 
-// #include "httpserver.inl"
+#include "httpserver.inl"

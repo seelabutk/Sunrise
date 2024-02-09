@@ -3,24 +3,56 @@
 #include "http_defines.h"
 
 #include <memory>
+#include <vector>
+#include <string>
+#include <cstring>
+#include <cstdlib>
 #include <cstdio>
+#include <type_traits>
+
+/// Macros for adding routes to the controller
+#define HTTP_METHOD_LIST_BEGIN      \
+        static void register_routes() {
+
+#define HTTP_METHOD_ADD(method, pattern)    \
+        register_method(&method, pattern)
+
+#define HTTP_METHOD_LIST_END        \
+        return;                     \
+        }
 
 namespace http {
 
+/// @brief HTTP Controller base clase
+/// @tparam T the type of the derived class
+template <typename T>
 class HTTPController {
 public:
-    virtual void test_override() {
-        printf("BASE CLASS\n");
-    }
+    // below fails for some reason
+    // static_assert(std::derived_from<T, HTTPController<T>> == true);
 
-    template<typename T>
-    static std::unique_ptr<T> create_new(const char* route);
+    static std::unique_ptr<T> create_new() {
+        std::unique_ptr<T> controller = std::make_unique<T>();
+    
+        return controller;
+    }
 protected:
     char m_route[150]; // char array to store the route -- this should be enough
-                           // If the specified route is too long then there will be an error
+                        // If the specified route is too long then there will be an error
+
+    template <typename FUNC>
+    static void register_method(
+        FUNC&& function,
+        const std::string &pattern
+    ) {
+    }
 private:
+    virtual void handle_http_request() {};
+
 };
+
+
 
 }
 
-#include "controller.inl"
+// #include "controller.inl"

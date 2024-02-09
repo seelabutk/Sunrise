@@ -98,13 +98,6 @@ std::optional<HTTPServer> HTTPServer::run() {
     }
 }
 
-HTTPServer HTTPServer::register_controller(
-    std::unique_ptr<HTTPController> controller
-) {
-    controller->test_override();
-    return *this;
-}
-
 /// @brief Print all information about the internal values of the server
 void HTTPServer::print_self() {
     log(LOG_LEVEL_INFO, "m_ipaddr:          %s", m_ipaddr);
