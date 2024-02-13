@@ -113,38 +113,46 @@ void HTTPServer::serve(i32 sockfd) {
         // TODO: Handle the connection
         // TODO: pull this into thread pool
         std::vector<char> request = receive_request(new_fd);
-        log(LOG_LEVEL_DEBUG, "Request %s\n", request.data());
+        log(LOG_LEVEL_DEBUG, "Request |%s|\n", request.data());
+
+        (void)process_request(m_socket_listen, new_fd, request);
     }
 }
 
 std::vector<char> HTTPServer::receive_request(i32 fd) {
     constexpr u32 bufsize = 2048;
-    std::vector<char> buffer;
+    // std::vector<char> buffer;
+    char buffer[bufsize];
     u32 bytes_read = 0,
         total = 0;
 
-    buffer.reserve(bufsize);
+    // buffer.reserve(bufsize);
 
     // Read from the file descriptor until all data has been read
-    while(bytes_read = recv(fd, buffer.data()+total, bufsize, 0), bytes_read == bufsize) {
+    // while(bytes_read = recv(fd, buffer.data()+total, bufsize, 0), bytes_read == bufsize) {
+    while(bytes_read = recv(fd, buffer+total, bufsize, 0), bytes_read == bufsize) {
         total += bytes_read;
         
     }
 
-    return buffer;
+    std::vector<char> reqbuf(bufsize);
+    std::strcpy(reqbuf.data(), buffer);
+    // return buffer;
+    return reqbuf;
 }
 
 
-void HTTPServer::process_request(i32 socket_fd, i32 connection_fd, const std::vector<char>& request) {
-    HTTPRequest req = HTTPRequest::create_new(request);
+void HTTPServer::process_request(i32 socket_fd, i32 connection_fd, std::vector<char>& request) {
+    // HTTPRequest req = HTTPRequest::create_new(request);
     HTTPResponse res = HTTPResponse::create_new();
 
-    if (request.empty()) {
+    if (request.size() == 0) {
+        log(LOG_LEVEL_WARN, "Empty Request");
         // TODO: handle empty requests
         return;
     }
 
-
+    res.set_status(status::OK);
 }
 
 } // http

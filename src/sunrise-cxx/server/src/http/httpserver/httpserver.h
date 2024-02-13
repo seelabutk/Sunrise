@@ -48,7 +48,7 @@ private:
     bool listen_on();
     void serve(i32 sockfd);
     std::vector<char> receive_request(i32 fd);
-    void process_request(i32 socket_fd, i32 connection_fd, const std::vector<char>& request);
+    void process_request(i32 socket_fd, i32 connection_fd, std::vector<char>& request);
    
     const char* m_ipaddr;                // The IP address for the server
     u32 m_port;                          // The port for the server

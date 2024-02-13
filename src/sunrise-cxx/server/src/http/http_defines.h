@@ -1,6 +1,9 @@
 #pragma once
 #include "defines.h"
 
+#include <vector>
+#include <cstring>
+
 namespace http {
 
 namespace method {
@@ -95,6 +98,8 @@ namespace status {
         NetworkAuthenticationRequired = 511,
     };
 }
+
+std::vector<char> status_to_str(status::response_status_code_e code);
 
 namespace protocol {
     enum stream_protocol_e {
