@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <bits/stdc++.h>
 #include <memory>
+#include <vector>
 
 namespace http {
 
@@ -45,6 +46,9 @@ private:
     void log(log_level level, const char* message, ...);
     int bind_to_addr();
     bool listen_on();
+    void serve(i32 sockfd);
+    std::vector<char> receive_request(i32 fd);
+    void process_request(i32 socket_fd, i32 connection_fd, const std::vector<char>& request);
    
     const char* m_ipaddr;                // The IP address for the server
     u32 m_port;                          // The port for the server
@@ -54,7 +58,7 @@ private:
     bool m_enable_logging;               // Whether the server is going to log
     const char* m_log_path;              // The path to the file where things will log
     protocol::stream_protocol_e m_stream_protocol; // whether we want to use TCP or UDP
-    struct addrinfo* m_serverinfo;               // the server info struct for the server
+    struct addrinfo* m_serverinfo;                 // the server info struct for the server
 };
 
 }

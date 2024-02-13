@@ -6,5 +6,4 @@
 **/.git
 **/data
 **/__pycache__
-/go.sh
 /env.sh

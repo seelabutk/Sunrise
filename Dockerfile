@@ -18,6 +18,12 @@ RUN apt-get update && \
         python3-virtualenv \
     && rm -rf /var/lib/apt/lists/*
 
+# UNCOMMENT FOR PROD
+# ENTRYPOINT ["/bin/bash"]
+# 
+# WORKDIR /home/raustin9/src/Sunrise-Demo
+# COPY go.sh go.sh
+# CMD ["go.sh", "--server"]
 
 ARG OSPRAY_VERSION=2.12.0
 
@@ -48,6 +54,7 @@ ENV PATH="/opt/ospray-${OSPRAY_VERSION:?}/bin${PATH:+:${PATH}}" \
     CPATH="/opt/ospray-${OSPRAY_VERSION:?}/include${CPATH:+:${CPATH}}" \
     LIBRARY_PATH="/opt/ospray-${OSPRAY_VERSION:?}/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}" \
     LD_LIBRARY_PATH="/opt/ospray-${OSPRAY_VERSION:?}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
 
 COPY . /opt/src/sunrise
 RUN --mount=type=cache,id=pip,target=/tmp <<'EOF'

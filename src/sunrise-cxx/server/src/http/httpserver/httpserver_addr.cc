@@ -1,5 +1,7 @@
 #include "defines.h"
 #include "httpserver.h"
+#include "http/request.h"
+#include "http/response.h"
 
 // LINUX INCLUDES
 #include <sys/types.h>
@@ -75,6 +77,74 @@ bool HTTPServer::listen_on() {
 
     log(LOG_LEVEL_DEBUG, "Listening on  port %u",  m_port);
     return true;
+}
+
+void* get_ip_type(struct sockaddr* sa) {
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    }
+
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+void HTTPServer::serve(i32 sockfd) {
+    int new_fd;
+    char s[INET6_ADDRSTRLEN];
+    struct sockaddr_storage their_addr;
+    socklen_t sin_size;
+
+    sin_size = sizeof(their_addr);
+    while(true) {
+        new_fd = accept(sockfd, (struct sockaddr*)&their_addr, &sin_size);
+        if (new_fd == -1) {
+            std::fprintf(stderr, "ERROR: accept()\n");
+            continue;
+        }
+
+        // Get the presentation form of the client IP
+        inet_ntop(
+            their_addr.ss_family,
+            get_ip_type((struct sockaddr*)&their_addr),
+            s,
+            sizeof(s)     
+        );
+        log(LOG_LEVEL_TRACE, "%s got connection from %s", m_ipaddr, s);
+
+        // TODO: Handle the connection
+        // TODO: pull this into thread pool
+        std::vector<char> request = receive_request(new_fd);
+        log(LOG_LEVEL_DEBUG, "Request %s\n", request.data());
+    }
+}
+
+std::vector<char> HTTPServer::receive_request(i32 fd) {
+    constexpr u32 bufsize = 2048;
+    std::vector<char> buffer;
+    u32 bytes_read = 0,
+        total = 0;
+
+    buffer.reserve(bufsize);
+
+    // Read from the file descriptor until all data has been read
+    while(bytes_read = recv(fd, buffer.data()+total, bufsize, 0), bytes_read == bufsize) {
+        total += bytes_read;
+        
+    }
+
+    return buffer;
+}
+
+
+void HTTPServer::process_request(i32 socket_fd, i32 connection_fd, const std::vector<char>& request) {
+    HTTPRequest req = HTTPRequest::create_new(request);
+    HTTPResponse res = HTTPResponse::create_new();
+
+    if (request.empty()) {
+        // TODO: handle empty requests
+        return;
+    }
+
+
 }
 
 } // http

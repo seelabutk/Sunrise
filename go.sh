@@ -105,6 +105,7 @@ docker_start=(
 )
 docker_exec=(
 )
+# TODO: Add deploy script for docker
 
 go-docker() {
     "${FUNCNAME[0]:?}-$@"
@@ -121,6 +122,7 @@ go-docker---prod() {
     docker_build+=(
         --target=prod
     )
+    docker_tag+=-prod
     "${FUNCNAME[0]%%--*}-$@"
 }
 

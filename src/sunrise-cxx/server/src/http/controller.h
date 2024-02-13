@@ -37,22 +37,16 @@ public:
         return controller;
     }
 protected:
-    char m_route[150]; // char array to store the route -- this should be enough
-                        // If the specified route is too long then there will be an error
-
     template <typename FUNC>
     static void register_method(
         FUNC&& function,
         const std::string &pattern
     ) {
+
     }
 private:
     virtual void handle_http_request() {};
 
 };
 
-
-
 }
-
-// #include "controller.inl"

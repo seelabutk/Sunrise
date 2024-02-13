@@ -93,9 +93,13 @@ std::optional<HTTPServer> HTTPServer::run() {
         return {};
     }
 
-    while (true) {
-        // TODO: Server logic to run goes here
-    }
+    serve(m_socket_listen);
+
+    // while (true) {
+    //     // TODO: Server logic to run goes here
+    // }
+
+    return {};
 }
 
 /// @brief Print all information about the internal values of the server
