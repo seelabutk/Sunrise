@@ -388,6 +388,7 @@ def Render(
             # -0.5, -0.5, -1.0,  # angled towards z-
             # 0.0, 0.0, -1.0,  # towards z+
         ))
+        
         defer(lib.ospRelease, light)
         lib.ospCommit(light)
 
@@ -502,9 +503,10 @@ def Render(
 
     defer(lib.ospRelease, renderer)
 
-    lib.ospSetInt(renderer, b'pixelSamples', 32)
-    lib.ospSetFloat(renderer, b'aoIntensity', 0)
-    lib.ospSetInt(renderer, b'aoSamples', 32)
+    # lib.ospSetInt(renderer, b'pixelSamples', 32)
+    lib.ospSetInt(renderer, b'pixelSamples', 3)
+    # lib.ospSetFloat(renderer, b'aoIntensity', 0)
+    # lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
 
     camera = lib.ospNewCamera(

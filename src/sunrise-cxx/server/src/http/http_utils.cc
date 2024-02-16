@@ -4,13 +4,14 @@ namespace http
 {
 
     #define MAKE_STATUS_STR(code)\
+        constexpr u64 BUFSIZE = 100;\
+        std::vector<char> code_str(BUFSIZE);\
         const char* codebuf = #code;\
         std::strcpy(code_str.data(), codebuf);\
         return code_str;
 
     std::vector<char> status_to_str(status::response_status_code_e code) {
-        constexpr u64 BUFSIZE = 100;
-        std::vector<char> code_str(BUFSIZE);
+        std::vector<char> rv;
         switch(code) {
             case status::Continue: {
                 MAKE_STATUS_STR(Continue);
@@ -204,7 +205,8 @@ namespace http
             } break;
         }
 
-        return code_str;
+        // NOTE: If we get here, something has gone wrong
+        return rv;
     }
 
 } // namespace http

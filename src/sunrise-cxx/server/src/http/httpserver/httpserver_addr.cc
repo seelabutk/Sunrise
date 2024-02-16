@@ -115,6 +115,8 @@ void HTTPServer::serve(i32 sockfd) {
         std::vector<char> request = receive_request(new_fd);
         log(LOG_LEVEL_DEBUG, "Request |%s|\n", request.data());
 
+        // TODO: Parse the request and get the path from it and 
+        // use a user-created controller to handle the request
         (void)process_request(m_socket_listen, new_fd, request);
     }
 }
