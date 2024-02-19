@@ -504,7 +504,7 @@ def Render(
     defer(lib.ospRelease, renderer)
 
     # lib.ospSetInt(renderer, b'pixelSamples', 32)
-    lib.ospSetInt(renderer, b'pixelSamples', 3)
+    lib.ospSetInt(renderer, b'pixelSamples', 5)
     # lib.ospSetFloat(renderer, b'aoIntensity', 0)
     # lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
@@ -519,8 +519,8 @@ def Render(
         1.0,
     ))
     lib.ospSetVec4f(camera, b'backgroundColor', *(
-        # 0.0, 1.0, 0.5, 1.0,
-        0.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.5, 1.0,
+        # 0.0, 0.0, 0.0, 0.0,
     ))
     lib.ospCommit(camera)
 
