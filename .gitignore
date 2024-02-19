@@ -3,6 +3,7 @@
 /build
 /data
 *.png
+!sunrise.png
 /tmp
 /tmp*
 *.egg-info
