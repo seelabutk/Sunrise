@@ -246,6 +246,27 @@ def Render(
         defer(lib.ospRelease, index)
 
         return index
+    
+    # def Earth(
+    #     *,
+    #     terrain: lib.OSPGeometry,
+    #     colormaps: list[lib.OSPMaterial],
+    #     observation: lib.OSPData,
+    # ):
+    #     colormaps = Data(colormaps, type=lib.OSP_MATERIAL)
+    #     defer(lib.ospRelease, colormaps)
+
+    #     geometric_models = []
+
+    #     geometric_models.append(
+    #         (model := lib.ospNewGeometricModel(None))
+    #     )
+    #     defer(lib.ospRelease, model, )
+    #     lib.ospSetObject(model, b'geometry', terrain)
+    #     lib.ospSetObject(model, b'material', colormaps)
+    #     lib.ospSetObject(model, b'index', observation)
+    #     lib.ospCommit(model)
+
 
     def Park(
         *,
@@ -458,6 +479,17 @@ def Render(
             ],
             observation=Observation(path=path / 'observation'),
         )),
+        
+    )
+
+    instances.append(
+        (earth := Park(
+            terrain=Terrain(path=path / 'earth'),
+            colormaps=[
+                Colormap(path=path / 'earth'),
+            ],
+            observation=None
+        ))
     )
 
     instances.append(
@@ -579,6 +611,7 @@ def Render(
         instances = []
         instances.extend([
             park,
+            earth,
             ambient,
             distant,
             sunlight,
