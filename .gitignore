@@ -4,6 +4,7 @@
 /data
 *.png
 !sunrise.png
+!World.png
 /tmp
 /tmp*
 *.egg-info

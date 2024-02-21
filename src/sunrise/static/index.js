@@ -13,8 +13,8 @@ const $map = document.querySelector('.js--map');
 const map = L.map($map, {
 });
 map.fitBounds([
-    [-35.747116, -83.949626],  // Maryville, TN
-    [-35.483526, -82.987458], // Waynesville, NC
+    [35.747116, -83.949626],  // Maryville, TN
+    [35.483526, -82.987458], // Waynesville, NC
     // [-35.747116, -83.949626],  // Maryville, TN
     // [-35.483526, -82.987458], // Waynesville, NC
     // [-34.0549, -118.2426],  // Los Angeles, CA
@@ -30,6 +30,7 @@ const tileLayer = L.tileLayer(url, {
         // true  // y+ is north
         false  // y+ is south
     ),
+    noWrap: true,
 });
 tileLayer.addTo(map);
 

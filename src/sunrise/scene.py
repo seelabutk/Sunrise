@@ -311,58 +311,58 @@ def Render(
 
         return instance
 
-    def Sun(
-        *,
-        now: datetime.datetime,
-    ) -> lib.OSPGroup:
-        loc = sunrise.model.location_from_datetime(now, alt=10_000.0)
-        # pos = sunrise.model.position_from_location(loc)
-        LATmin = 35.425112713810655
-        LATmax = 35.79999392988526
-        LNGmin = -84.00146484375
-        LNGmax = -83.03475379943848
-        ALTmin = 1000.0 * 0.2527998
-        ALTmax = 1000.0 * 2.02335
+    # def Sun(
+    #     *,
+    #     now: datetime.datetime,
+    # ) -> lib.OSPGroup:
+    #     loc = sunrise.model.location_from_datetime(now, alt=10_000.0)
+    #     # pos = sunrise.model.position_from_location(loc)
+    #     LATmin = 35.425112713810655
+    #     LATmax = 35.79999392988526
+    #     LNGmin = -84.00146484375
+    #     LNGmax = -83.03475379943848
+    #     ALTmin = 1000.0 * 0.2527998
+    #     ALTmax = 1000.0 * 2.02335
 
-        pos = sunrise.model.Position(
-            x=(loc.lat - LATmin) / (LATmax - LATmin),
-            y=(loc.lng - LNGmin) / (LNGmax - LNGmin),
-            z=(loc.alt - ALTmin) / (ALTmax - ALTmin),
-        )
+    #     pos = sunrise.model.Position(
+    #         x=(loc.lat - LATmin) / (LATmax - LATmin),
+    #         y=(loc.lng - LNGmin) / (LNGmax - LNGmin),
+    #         z=(loc.alt - ALTmin) / (ALTmax - ALTmin),
+    #     )
 
-        lights = []
+    #     lights = []
 
-        lights.append(
-            (light := lib.ospNewLight(b'distant')),
-        )
-        defer(lib.ospRelease, light)
-        lib.ospSetVec3f(light, b'position', pos.x, pos.y, pos.z)
-        lib.ospSetVec3f(light, b'direction', -pos.x, -pos.y, -pos.z)
-        lib.ospSetFloat(light, b'intensity', 1.8)
-        lib.ospCommit(light)
+    #     lights.append(
+    #         (light := lib.ospNewLight(b'distant')),
+    #     )
+    #     defer(lib.ospRelease, light)
+    #     lib.ospSetVec3f(light, b'position', pos.x, pos.y, pos.z)
+    #     lib.ospSetVec3f(light, b'direction', -pos.x, -pos.y, -pos.z)
+    #     lib.ospSetFloat(light, b'intensity', 1.8)
+    #     lib.ospCommit(light)
 
-        lights = Data(lights, type=lib.OSP_LIGHT)
-        defer(lib.ospRelease, lights)
-        lib.ospCommit(lights)
+    #     lights = Data(lights, type=lib.OSP_LIGHT)
+    #     defer(lib.ospRelease, lights)
+    #     lib.ospCommit(lights)
 
-        groups = []
-        groups.append(
-            (group := lib.ospNewGroup()),
-        )
-        defer(lib.ospRelease, group)
-        lib.ospSetObject(group, b'light', lights)
-        lib.ospCommit(group)
+    #     groups = []
+    #     groups.append(
+    #         (group := lib.ospNewGroup()),
+    #     )
+    #     defer(lib.ospRelease, group)
+    #     lib.ospSetObject(group, b'light', lights)
+    #     lib.ospCommit(group)
 
-        groups = Data(groups, type=lib.OSP_GROUP)
-        defer(lib.ospRelease, groups)
-        lib.ospCommit(groups)
+    #     groups = Data(groups, type=lib.OSP_GROUP)
+    #     defer(lib.ospRelease, groups)
+    #     lib.ospCommit(groups)
 
-        instance = lib.ospNewInstance(None)
-        defer(lib.ospRelease, instance)
-        lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
+    #     instance = lib.ospNewInstance(None)
+    #     defer(lib.ospRelease, instance)
+    #     lib.ospSetObject(instance, b'group', group)
+    #     lib.ospCommit(instance)
 
-        return instance
+    #     return instance
 
     def Ambient(
     ) -> lib.OSPInstance:
@@ -489,6 +489,7 @@ def Render(
                 Colormap(path=path / 'earth'),
             ],
             observation=None
+            # observation=Observation(path=path / 'observation'),
         ))
     )
 
@@ -610,8 +611,8 @@ def Render(
 
         instances = []
         instances.extend([
-            park,
             earth,
+            park,
             ambient,
             distant,
             sunlight,

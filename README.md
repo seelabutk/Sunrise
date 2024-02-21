@@ -1,6 +1,7 @@
 # Sunrise
 Sunrise is a RAAS (Rendering As A Service) that displays a 3D Map of the Great Smoky Mountains National Park with information of species concentration of different species.
 - ![image example](./sunrise.png)
+- ![image example](./World.png)
 
 ## Getting Started
 Run these commands: 
