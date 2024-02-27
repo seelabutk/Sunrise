@@ -16,7 +16,7 @@
         "map control"
     ;
     grid-template-columns:
-        1fr 10vw
+        1fr 3fr
     ;
     grid-template-rows:
         1fr
@@ -24,11 +24,30 @@
 }
 
 .App__map {
+    background-color: blue;
     grid-area: "map";
 }
 
 .App__control {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background-color: lightblue;
     grid-area: "control";
+}
+
+.camera_look {
+    margin: 1em;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+}
+
+.camera_position {
+    margin: 1em;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
 }
 
 </style>
@@ -37,11 +56,38 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 >
 <div class="App">
-    <div class="App__main js--map"></div>
     <div class="App__control" id="control">
-        <label for="angle">
-        <input name="angle" type="range" min=0 max=100 step=1 value=0 class="js--angle" />
+        <div class="cam-slider">
+        </div>
+        
+        <div class="camera_look">
+            <p>Camera Focus</p>
+            <label for="angle">Angle</label>
+            <input id="angle" name="angle" type="range" min=0 max=100 step=1 value=6 class="js--angle" />
+            
+            <label for="camLookX">Look X: </label>
+            <input id="camLookX" name="camLookX" type="range" min=0 max=100 step=1 value=0  />
+            
+            <label for="camLookY">Look Y: </label>
+            <input id="camLookY" name="camLookY" type="range" min=0 max=100 step=1 value=0  />
+            
+            <label for="camLookZ">Look Z: </label>
+            <input id="camLookZ" name="camLookZ" type="range" min=0 max=100 step=1 value=0  />
+        </div>
+        
+        <div class="camera_position">
+            <p>Camera Position</p>
+            <label for="camPosX">X: </label>
+            <input id="camPosX" name="camPosX" type="range" min=-1 max=1 step=0.1 value=0  />
+            
+            <label for="camPosY">Y: </label>
+            <input id="camPosY" name="camPosY" type="range" min=-1 max=1 step=0.1 value=0  />
+            
+            <label for="camPosZ">Z: </label>
+            <input id="camPosZ" name="camPosZ" type="range" min=-1 max=1 step=0.1 value=0  />
+        </div>
     </div>
+    <div class="App__main js--map"></div>
 </div>
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 <script type="importmap">
