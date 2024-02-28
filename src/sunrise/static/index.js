@@ -3,9 +3,10 @@ import * as L from 'leaflet';
 const app = {
     angle: 6,
     position: [0.0, 0.0, 0.0], // x, y, z
+    view: [0.0, 0.0, 0.0], // x, y, z
 
     get url() {
-        return `api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=${this.angle}&pos=${this.position[0]},${this.position[1]},${this.position[2]}`;
+        return `api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=${this.angle}&pos=${this.position[0]},${this.position[1]},${this.position[2]}&view=${this.view[0]},${this.view[1]},${this.view[2]}`;
     },
 };
 
@@ -83,3 +84,29 @@ $camera_position_z.addEventListener('change', () => {
 //     app.position[1] = cam_y;
 //     // tileLayer.setUrl(app.url);
 // }
+
+// Get camera position offset
+const $view_x = document.getElementById('viewX');
+// $view_x.value = app.xpos;
+$view_x.addEventListener('change', () => {
+    const value = +$view_x.value;
+    app.xpos = value;
+    app.view[0] = value;
+    tileLayer.setUrl(app.url);
+});
+
+const $view_y = document.getElementById('viewY');
+// $view_y.value = app.xpos;
+$view_y.addEventListener('change', () => {
+    const value = +$view_y.value;
+    app.view[1] = value;
+    tileLayer.setUrl(app.url);
+});
+
+const $view_z = document.getElementById('viewZ');
+// $view_z.value = app.xpos;
+$view_z.addEventListener('change', () => {
+    const value = +$view_z.value;
+    app.view[2] = value;
+    tileLayer.setUrl(app.url);
+});

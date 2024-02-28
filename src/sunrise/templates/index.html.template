@@ -76,7 +76,7 @@
         </div>
         
         <div class="camera_position">
-            <p>Camera Position</p>
+            <p>Position</p>
             <label for="camPosX">X: </label>
             <input id="camPosX" name="camPosX" type="range" min=-1 max=1 step=0.1 value=0  />
             
@@ -85,6 +85,17 @@
             
             <label for="camPosZ">Z: </label>
             <input id="camPosZ" name="camPosZ" type="range" min=-1 max=1 step=0.1 value=0  />
+        </div>
+        <div class="camera_position">
+            <p>View</p>
+            <label for="viewX">X: </label>
+            <input id="viewX" name="viewX" type="range" min=-10 max=10 step=0.1 value=0  />
+            
+            <label for="viewY">Y: </label>
+            <input id="viewY" name="viewY" type="range" min=-10 max=10 step=0.1 value=0  />
+            
+            <label for="viewZ">Z: </label>
+            <input id="viewZ" name="viewZ" type="range" min=-10 max=10 step=0.1 value=0  />
         </div>
     </div>
     <div class="App__main js--map"></div>

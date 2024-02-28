@@ -141,6 +141,11 @@ class RenderingRequest:
         typing.Annotated[float, 'y'],
         typing.Annotated[float, 'z'],
     ]
+    view: tuple[ # camera position offset
+        typing.Annotated[float, 'x'],
+        typing.Annotated[float, 'y'],
+        typing.Annotated[float, 'z'],
+    ]
 
 @dataclasses.dataclass
 class RenderingResponse:
