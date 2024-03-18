@@ -30,6 +30,13 @@ export class Arcball {
         // this.controls.update();
     }
 
+    /* Set the position of the camera
+       eventually this will be a smooth transition */
+    setPosition(x, y, z) {
+        this.camera.position.set(x, y, z);
+        this.controls.update();
+    }
+
     animate() {
         this.renderer.render(this.scene, this.camera);
         this.controls.update();

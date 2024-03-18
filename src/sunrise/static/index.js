@@ -1,17 +1,37 @@
 import { Arcball } from "arcball"
+
+/* Holds information for a tile within the Sunrise application */
 class Tile {
     constructor() {
     }
 
-    create(x, y, zoom) {
-        this.x = x;
-        this.y = y;
+    create(row, col, zoom) {
+        this.row = row;
+        this.col = col;
         this.zoom = zoom;
     
         return this;
     }
 }
 
+/* Stores a position in 3d space */
+class Position {
+    constructor(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+}
+
+/* Mission for the application */
+class Mission {
+    constructor(name, x, y, z) {
+        this.name = name
+        this.position = new Position(x, y, z);
+    }
+}
+
+/* Sunrise Application */
 class Sunrise {
     constructor() {
 
@@ -19,13 +39,34 @@ class Sunrise {
 
         this.tiles = [];
 
+
+        this.is_dragging = false;
+
+        this.missions = []
+        this.hyperimage = document.getElementById('hyperimage');
+        this.renderTiles();
+    }
+
+    // @brief Create a new mission and push it to the application's list
+    addMission(name, x, y, z) {
+        this.missions.push(new Mission(name, x, y, z));
+        return this;
+    }
+
+    /// @brief Render HTML for selecting the missions
+    renderMissions() {
+        // TODO: render a button for each mission added to the application 
+    }
+
+    // @brief Render HTML for each image tile we want 
+    renderTiles() {
         let idx = 0;
         let root = document.getElementById("sunrise-tile-base");
         this.camera = new Arcball(root);
         this.root = root;
         for (let i = 0; i < this.num_tiles[0]; i++) {
             for (let j = 0; j < this.num_tiles[1]; j++) {
-                root.innerHTML += 
+                this.root.innerHTML += 
                 `<img 
                     class="sunrise-tile-img" 
                     id="sunrise-tile-${idx}" 
@@ -35,15 +76,7 @@ class Sunrise {
                 idx += 1;
             }   
         }
-
-        this.is_dragging = false;
-
-        this.hyperimage = document.getElementById('hyperimage');
-        // this.create_tiles();
-    }
-
-    create_tiles() {
-        let root = document.getElementById("sunrise-tile-base");
+        /*let root = document.getElementById("sunrise-tile-base");
         let idx = 0;
         for (let tile in this.tiles) {
             root.innerHTML += 
@@ -54,9 +87,10 @@ class Sunrise {
                 style="float:left; width:380px; height:380px;"
             >`;
             idx += 1;
-        }
+        }*/
     }
 
+    /// @brief The run behavior of the application
     run() {
         this.camera.animate();
         document.body.addEventListener('mousemove', (event) => {
@@ -75,6 +109,7 @@ class Sunrise {
 }
 
 let app = new Sunrise();
+app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();
 
 
