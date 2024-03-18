@@ -29,7 +29,7 @@ class Sunrise {
                 `<img 
                     class="sunrise-tile-img" 
                     id="sunrise-tile-${idx}" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${i},${j}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6" 
+                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${i},${j}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=3" 
                     style="float:left; width:380px; height:380px;"
                 >`;
                 idx += 1;

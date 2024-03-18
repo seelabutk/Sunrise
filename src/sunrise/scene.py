@@ -541,7 +541,7 @@ def Render(
     defer(lib.ospRelease, renderer)
 
     # lib.ospSetInt(renderer, b'pixelSamples', 32)
-    lib.ospSetInt(renderer, b'pixelSamples', 3)
+    # lib.ospSetInt(renderer, b'pixelSamples', 3)
     # lib.ospSetFloat(renderer, b'aoIntensity', 0)
     # lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
@@ -569,7 +569,9 @@ def Render(
     while True:
         request = yield response
         camx, camy, camz = request.camera
+        samples = request.samples
         print(f'{camx},{camy},{camz}')
+        lib.ospSetInt(renderer, b'pixelSamples', samples)
 
         zoom, row, col = request.tile
         px = (col + 0.5) / (2 ** (zoom))

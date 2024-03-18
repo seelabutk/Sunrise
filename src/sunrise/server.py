@@ -89,6 +89,7 @@ def view():
     width = int(args.get('width', default=1024))
     height = int(args.get('height', default=width//2))
     angle = int(args.get('angle', default=0))
+    pixel_samples = int(args.get('samples', default=3))
 
 
     with app.render_lock:
@@ -98,6 +99,7 @@ def view():
             tile=tile,
             camera=camera,
             angle=angle,
+            samples=pixel_samples,
         ))
     
     with io.BytesIO() as f:

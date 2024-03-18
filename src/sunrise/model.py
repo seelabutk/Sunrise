@@ -141,6 +141,7 @@ class RenderingRequest:
         typing.Annotated[int, 'z'],
     ]
     angle: int # angle 
+    samples: int
 
 
 @dataclasses.dataclass
