@@ -7,7 +7,7 @@ export class Arcball {
         this.renderer.setSize( window.innerWidth, window.innerHeight );
         let elem = document.body.appendChild( this.renderer.domElement );
         elem.style.zIndex = 100000;
-        elem.style.opacity = 0;
+        elem.style.opacity = 0.001;
         elem.width = field.width;
         elem.height = field.height;
         elem.style.position = "absolute";

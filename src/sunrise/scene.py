@@ -568,6 +568,8 @@ def Render(
     num_y_bins = 2
     while True:
         request = yield response
+        camx, camy, camz = request.camera
+        print(f'{camx},{camy},{camz}')
 
         zoom, row, col = request.tile
         px = (col + 0.5) / (2 ** (zoom))

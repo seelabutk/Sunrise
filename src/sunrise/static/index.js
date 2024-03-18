@@ -21,20 +21,21 @@ class Sunrise {
 
         let idx = 0;
         let root = document.getElementById("sunrise-tile-base");
+        this.camera = new Arcball(root);
+        this.root = root;
         for (let i = 0; i < this.num_tiles[0]; i++) {
             for (let j = 0; j < this.num_tiles[1]; j++) {
                 root.innerHTML += 
                 `<img 
                     class="sunrise-tile-img" 
                     id="sunrise-tile-${idx}" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${i},${j}&angle=6" 
+                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${i},${j}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6" 
                     style="float:left; width:380px; height:380px;"
                 >`;
                 idx += 1;
             }   
         }
 
-        this.camera = new Arcball(root);
         this.is_dragging = false;
 
         this.hyperimage = document.getElementById('hyperimage');
@@ -56,43 +57,10 @@ class Sunrise {
         }
     }
 
-    updateURL() {
-        const url = `http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,0,1&angle=6`
-    }
-
-    /**
-     * Returns the position and up vector of the camera as arrays of floats
-     */
-    getCameraInfo() {
-        var m = $M(this.camera.Transform);
-        m = m.inverse();
-
-        var new_camera_position = m.multiply(this.camera.position);
-        var new_camera_up = m.multiply(this.camera.up);
-
-        var x = new_camera_position.elements[0];
-        var y = new_camera_position.elements[1];
-        var z = new_camera_position.elements[2];
-
-        var upx = new_camera_up.elements[0];
-        var upy = new_camera_up.elements[1];
-        var upz = new_camera_up.elements[2];
-
-        return { position: new_camera_position.elements, up: new_camera_up.elements };
-    }
-
-    rotate(x, y) {
-        this.camera.update(x, y);
-
-        console.log(`${this.camera.position.x}, ${this.camera.position.y}`);
-        // this.updateURL();
-    }
-
     run() {
         this.camera.animate();
-//
-        this.hyperimage.addEventListener('mousemove', (event) => {
-            console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}`);
+        document.body.addEventListener('mousemove', (event) => {
+            console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
             if (this.is_dragging) {
                 // We are already holding down and dragging
                 
@@ -102,14 +70,6 @@ class Sunrise {
                 this.rotate(x, y);
             }
         });
-//        
-//        this.hyperimage.addEventListener('mouseup', (event) => {
-//            let y = event.clientY;
-//            let x = event.clientX;
-//            this.rotate(x, y);
-//            this.is_dragging = false;
-//        });
-        
         
     }
 }
