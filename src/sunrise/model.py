@@ -136,16 +136,7 @@ class RenderingRequest:
         typing.Annotated[int, 'col'],
     ]
     angle: int # angle 
-    cam_pos: tuple[ # camera position offset
-        typing.Annotated[float, 'x'],
-        typing.Annotated[float, 'y'],
-        typing.Annotated[float, 'z'],
-    ]
-    view: tuple[ # camera position offset
-        typing.Annotated[float, 'x'],
-        typing.Annotated[float, 'y'],
-        typing.Annotated[float, 'z'],
-    ]
+
 
 @dataclasses.dataclass
 class RenderingResponse:

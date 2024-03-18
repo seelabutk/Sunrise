@@ -369,8 +369,8 @@ def Render(
         light = lib.ospNewLight(b'ambient')
         lib.ospSetFloat(light, b'intensity', *(
             # 0.75,
-            0.25,
-            # 1.0,
+            # 0.25,
+            1.0,
             # 1.25,
         ))
         lib.ospSetInt(light, b'intensityQuantity', *(
@@ -405,7 +405,7 @@ def Render(
             # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
         ))
         lib.ospSetVec3f(light, b'direction', *(
-            0.0, 0.0, 1.0,  # towards z-
+            0.0, 0.0, 0.0,  # towards z-
             # -0.5, -0.5, -1.0,  # angled towards z-
             # 0.0, 0.0, -1.0,  # towards z+
         ))
@@ -443,8 +443,8 @@ def Render(
         lib.ospSetFloat(light, b'intensity', 1.0)
         lib.ospSetVec3f(light, b'direction', *(
             # 0.0, 0.0, 1.0,  # towards z-
-            -0.2, -0.8, 1.0,  # angled towards z-
-            # 0.0, 0.0, -1.0,  # towards z+
+            # -0.2, -0.8, 1.0,  # angled towards z-
+            0.0, 1.0, 0.0,  # towards z+
         ))
 
         # Ground Reflectance
@@ -534,16 +534,21 @@ def Render(
         # b'scivis'
     )
 
+    lib.ospSetVec4f(renderer, b'backgroundColor', *(
+        0.2, 0.2, 0.2, 1.0,
+    ))
+
     defer(lib.ospRelease, renderer)
 
     # lib.ospSetInt(renderer, b'pixelSamples', 32)
-    lib.ospSetInt(renderer, b'pixelSamples', 5)
+    lib.ospSetInt(renderer, b'pixelSamples', 3)
     # lib.ospSetFloat(renderer, b'aoIntensity', 0)
     # lib.ospSetInt(renderer, b'aoSamples', 32)
     lib.ospCommit(renderer)
 
     camera = lib.ospNewCamera(
-        b'orthographic',
+        # b'orthographic',
+        b'perspective',
     )
     defer(lib.ospRelease, camera)
     # lib.ospSetInt(camera, b'architectural', 1)
@@ -558,54 +563,61 @@ def Render(
     lib.ospCommit(camera)
 
     response = None
+
+    num_x_bins = 2
+    num_y_bins = 2
     while True:
         request = yield response
 
         zoom, row, col = request.tile
-        cam_x, cam_y, cam_z = request.cam_pos
         px = (col + 0.5) / (2 ** (zoom))
         px = 1 - px  # flip x
-        py = (row + 0.5 + cam_y) / (2 ** (zoom))
+        py = (row + 0.5) / (2 ** (zoom))
         # py = 1 - py  # flip y
         pz = (
-            # 5.0  # looking at peaks
-            -5.0  # looking at valleys
-            + (cam_z * 7)
+            5.0  # looking at peaks
+            # -5.0  # looking at valleys
         )
         height = 1 / (2 ** zoom)
         # print(f'{px=}, {py=}, {pz=} {height=}')
 
         dx = 0.0
         dy = request.angle * -0.00001
+        dy = 0.0
         dz = (
             # -1.0  # looking at peaks
             1.0  # looking at valleys
         )
 
         lib.ospSetVec2f(camera, b'imageStart', *(
-            0.0, 0.0,  # flip none
+            0.0 + (row / num_x_bins), 0.0 + (col / num_y_bins),  # flip none
             # 1.0, 0.0,  # flip x
             # 0.0, 1.0,  # flip y
             # 1.0, 1.0,  # flip x and y
         ))
         lib.ospSetVec2f(camera, b'imageEnd', *(
-            1.0, 1.0,  # flip none
+            0.0 + ((1+row) / num_x_bins), 0.0 + ((1+col) / num_y_bins)
+            # 1.0, 1.0,  # flip none
             # 0.0, 1.0  # flip x
             # 1.0, 0.0,  # flip y
             # 0.0, 0.0,  # flip x and y
         ))
-        lib.ospSetFloat(camera, b'height', *(
-            height,
-        ))
+#         lib.ospSetFloat(camera, b'height', *(
+#             height,
+#         ))
+        coef = 201.0
         lib.ospSetVec3f(camera, b'position', *(
-            px, py, pz,
+            px + coef, py + coef, pz + coef,
+            # -1700.0, -1400.0, -700.0
         ))
         lib.ospSetVec3f(camera, b'up', *(
             0.0, 1.0, 0.0,  # y+ up
             # 0.0, -1.0, 0.0,  # y- up
+            # 0.0, 0.0, 1.0,
         ))
         lib.ospSetVec3f(camera, b'direction', *(
-            dx, dy, dz,
+            # dx, dy, dz,
+            -1.0, -1.0, -1.0,
         ))
         lib.ospCommit(camera)
 

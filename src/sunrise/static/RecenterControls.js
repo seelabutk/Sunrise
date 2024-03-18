@@ -1,4 +1,3 @@
-
 //=== Let the user re-center the scene at the camera
 
 export function RecenterControls(renderer) {

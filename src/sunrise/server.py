@@ -88,8 +88,6 @@ def view():
     width = int(args.get('width', default=1024))
     height = int(args.get('height', default=width//2))
     angle = int(args.get('angle', default=0))
-    camera_position = tuple(map(float, args['pos'].split(',')))
-    view = tuple(map(float, args['view'].split(',')))
 
     with app.render_lock:
         response = app.render.send(sunrise.model.RenderingRequest(
@@ -97,8 +95,6 @@ def view():
             height=height,
             tile=tile,
             angle=angle,
-            cam_pos=camera_position,
-            view=view
         ))
     
     with io.BytesIO() as f:

@@ -98,55 +98,7 @@
             <input id="viewZ" name="viewZ" type="range" min=-10 max=10 step=0.1 value=0  />
         </div>
     </div>
-    <!-- <div class="App__main js--map"></div> -->
-    <!-- This is the map of tiles -->
-    <div class="tile-map">
-        <div 
-            class="hyperimage"
-            id="hyperimage"
-            width="912px"
-            height="912px"
-            style="width:912px; height:912px;"
-        >
-            <div 
-                class="sunrise-tile-base"
-                style="width:912px; height:912px; pointer-events: none;"
-            >
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-0" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,0,0&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-1" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,1,0&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-2" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,0,1&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-3" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,1,1&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-            </div>
-        </div>
-    </div>
+    <div class="App__main js--map"></div>
 </div>
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 <script type="importmap">
@@ -155,7 +107,7 @@
         "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
         "d3": "https://d3js.org/d3.v5.min.js",
-        "arcball": "/static/arcball.js"
+        "leaflet": "https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.esm.js"
     }
 }
 </script>
