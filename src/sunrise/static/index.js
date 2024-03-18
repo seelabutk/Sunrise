@@ -1,11 +1,63 @@
-import { ArcBall } from "arcball"
+import { Arcball } from "arcball"
+class Tile {
+    constructor() {
+    }
+
+    create(x, y, zoom) {
+        this.x = x;
+        this.y = y;
+        this.zoom = zoom;
+    
+        return this;
+    }
+}
 
 class Sunrise {
     constructor() {
-        this.camera = new ArcBall();
+
+        this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
+
+        this.tiles = [];
+
+        let idx = 0;
+        let root = document.getElementById("sunrise-tile-base");
+        for (let i = 0; i < this.num_tiles[0]; i++) {
+            for (let j = 0; j < this.num_tiles[1]; j++) {
+                root.innerHTML += 
+                `<img 
+                    class="sunrise-tile-img" 
+                    id="sunrise-tile-${idx}" 
+                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${i},${j}&angle=6" 
+                    style="float:left; width:380px; height:380px;"
+                >`;
+                idx += 1;
+            }   
+        }
+
+        this.camera = new Arcball(root);
         this.is_dragging = false;
 
         this.hyperimage = document.getElementById('hyperimage');
+        // this.create_tiles();
+    }
+
+    create_tiles() {
+        let root = document.getElementById("sunrise-tile-base");
+        let idx = 0;
+        for (let tile in this.tiles) {
+            root.innerHTML += 
+            `<img 
+                class="sunrise-tile-img" 
+                id="sunrise-tile-${idx}" 
+                src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${tile.x},${tile.y}&angle=6" 
+                style="float:left; width:380px; height:380px;"
+            >`;
+            idx += 1;
+        }
+    }
+
+    updateURL() {
+        const url = `http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,0,1&angle=6`
     }
 
     /**
@@ -30,14 +82,35 @@ class Sunrise {
     }
 
     rotate(x, y) {
-        this.camera.move(x, y);
+        this.camera.update(x, y);
+
+        console.log(`${this.camera.position.x}, ${this.camera.position.y}`);
+        // this.updateURL();
     }
 
     run() {
-        this.hyperimage.addEventListener('mousedown', (event) => {
-            console.log(event.clientX);
-            console.log(event.clientY);
+        this.camera.animate();
+//
+        this.hyperimage.addEventListener('mousemove', (event) => {
+            console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}`);
+            if (this.is_dragging) {
+                // We are already holding down and dragging
+                
+                let y = event.clientY;
+                let x = event.clientX;
+                // console.log(`${x}, ${y}`);
+                this.rotate(x, y);
+            }
         });
+//        
+//        this.hyperimage.addEventListener('mouseup', (event) => {
+//            let y = event.clientY;
+//            let x = event.clientX;
+//            this.rotate(x, y);
+//            this.is_dragging = false;
+//        });
+        
+        
     }
 }
 

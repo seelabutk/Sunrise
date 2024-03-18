@@ -110,38 +110,9 @@
         >
             <div 
                 class="sunrise-tile-base"
+                id="sunrise-tile-base"
                 style="width:912px; height:912px; pointer-events: none;"
             >
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-0" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,0,0&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-1" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,1,0&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-2" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,0,1&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
-
-                </img>
-                <img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-3" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,1,1&angle=6" 
-                    style="float:left; width:380px; height:380px;"
-                >
 
                 </img>
             </div>
@@ -154,8 +125,8 @@
     "imports": {
         "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
-        "d3": "https://d3js.org/d3.v5.min.js",
-        "arcball": "/static/arcball.js"
+        "arcball": "/static/arcball.js",
+        "d3": "https://d3js.org/d3.v5.min.js"
     }
 }
 </script>
