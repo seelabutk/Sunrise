@@ -136,9 +136,9 @@ class RenderingRequest:
         typing.Annotated[int, 'col'],
     ]
     camera: tuple[
-        typing.Annotated[int, 'x'],
-        typing.Annotated[int, 'y'],
-        typing.Annotated[int, 'z'],
+        typing.Annotated[float, 'x'],
+        typing.Annotated[float, 'y'],
+        typing.Annotated[float, 'z'],
     ]
     angle: int # angle 
     samples: int

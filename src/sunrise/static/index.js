@@ -2,15 +2,10 @@ import { Arcball } from "arcball"
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
-    constructor() {
-    }
-
-    create(row, col, zoom) {
+    constructor(row, col, zoom) {
         this.row = row;
         this.col = col;
         this.zoom = zoom;
-    
-        return this;
     }
 }
 
@@ -24,6 +19,7 @@ class Position {
 }
 
 /* Mission for the application */
+// NOTE: x, y, z are camera coords
 class Mission {
     constructor(name, x, y, z) {
         this.name = name
@@ -34,17 +30,24 @@ class Mission {
 /* Sunrise Application */
 class Sunrise {
     constructor() {
-
+        this.root = document.getElementById("sunrise-tile-base");
+        this.camera = new Arcball(this.root, 700_0000, 700_0000, 700_0000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
-
+        
+        // Create the tiles
         this.tiles = [];
-
+        this.tileIDs = []
+        for (let i = 0; i < this.num_tiles[0]; i++) {
+            for (let j = 0; j < this.num_tiles[1]; j++) {
+                this.tiles.push(new Tile(i, j, 40));
+            }
+        }
+        this.renderTiles();
 
         this.is_dragging = false;
 
         this.missions = []
         this.hyperimage = document.getElementById('hyperimage');
-        this.renderTiles();
     }
 
     // @brief Create a new mission and push it to the application's list
@@ -60,41 +63,41 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
-        let idx = 0;
-        let root = document.getElementById("sunrise-tile-base");
-        this.camera = new Arcball(root);
-        this.root = root;
-        for (let i = 0; i < this.num_tiles[0]; i++) {
-            for (let j = 0; j < this.num_tiles[1]; j++) {
-                this.root.innerHTML += 
-                `<img 
-                    class="sunrise-tile-img" 
-                    id="sunrise-tile-${idx}" 
-                    src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${i},${j}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=3" 
-                    style="float:left; width:380px; height:380px;"
-                >`;
-                idx += 1;
-            }   
-        }
-        /*let root = document.getElementById("sunrise-tile-base");
-        let idx = 0;
-        for (let tile in this.tiles) {
-            root.innerHTML += 
+        this.root.innerHTML = ""
+        this.tiles.forEach((tile, index) => {
+            this.root.innerHTML += 
             `<img 
                 class="sunrise-tile-img" 
-                id="sunrise-tile-${idx}" 
-                src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${tile.x},${tile.y}&angle=6" 
+                id="sunrise-tile-${index}" 
+                src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=30" 
                 style="float:left; width:380px; height:380px;"
             >`;
-            idx += 1;
-        }*/
+        });
     }
 
     /// @brief The run behavior of the application
     run() {
+        let idx = 0;
         this.camera.animate();
         document.body.addEventListener('mousemove', (event) => {
+            // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
+            // if (++idx % 20 === 0) {
+            //     this.renderTiles();
+            // }
+            // if (this.is_dragging) {
+            //     // We are already holding down and dragging
+                
+            //     let y = event.clientY;
+            //     let x = event.clientX;
+            //     // console.log(`${x}, ${y}`);
+            //     this.rotate(x, y);
+            // }
+        });
+        document.body.addEventListener('mouseup', (event) => {
             console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
+            // if (++idx % 20 === 0) {
+                this.renderTiles();
+            // }
             if (this.is_dragging) {
                 // We are already holding down and dragging
                 

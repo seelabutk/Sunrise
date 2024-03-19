@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 
 export class Arcball {
-    constructor(field) {
+    constructor(field, x, y, z) {
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setSize( window.innerWidth, window.innerHeight );
         let elem = document.body.appendChild( this.renderer.domElement );
@@ -22,7 +22,7 @@ export class Arcball {
 
         this.controls.addEventListener( 'change', this.render.bind(this));
 
-        this.camera.position.set( 10, 20, 100 );
+        this.camera.position.set(x, y, z);
     }
 
     render() {
