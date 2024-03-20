@@ -27,8 +27,6 @@ go-server() {
     ##
 }
 
-#server_port=33267
-#server_bind=127.202.208.70
 server_bind=0.0.0.0
 server_port=5000
 go---server() {
