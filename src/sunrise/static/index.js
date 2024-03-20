@@ -66,6 +66,7 @@ class Sunrise {
         this.root.innerHTML = ""
         this.tiles.forEach((tile, index) => {
             this.root.innerHTML += 
+                // change to relative path when using env file
             `<img 
                 class="sunrise-tile-img" 
                 id="sunrise-tile-${index}" 

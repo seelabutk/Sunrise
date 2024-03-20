@@ -369,13 +369,14 @@ def Render(
         light = lib.ospNewLight(b'ambient')
         lib.ospSetFloat(light, b'intensity', *(
             # 0.75,
-            # 0.25,
-            1.0,
+            0.15,
+            # 1.0,
+            # 0.5,
             # 1.25,
         ))
         lib.ospSetInt(light, b'intensityQuantity', *(
-            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
         ))
         defer(lib.ospRelease, light)
         lib.ospCommit(light)
@@ -395,15 +396,15 @@ def Render(
     def Point(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'sphere')
-        # lib.ospSetFloat(light, b'intensity', *(
-        #     0.5,
-        #     # 0.35,
-        #     # 1.0,
-        # ))
-        # lib.ospSetInt(light, b'intensityQuantity', *(
-        #     0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-        #     # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
-        # ))
+        lib.ospSetFloat(light, b'intensity', *(
+            0.5,
+            # 0.35,
+            # 1.0,
+        ))
+        lib.ospSetInt(light, b'intensityQuantity', *(
+            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+        ))
         lib.ospSetVec3f(light, b'direction', *(
             0.0, 0.0, 0.0,  # towards z-
             # -0.5, -0.5, -1.0,  # angled towards z-
@@ -439,16 +440,16 @@ def Render(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'distant')
         lib.ospSetFloat(light, b'intensity', *(
-            0.5,
+            # 0.75,
             # 0.35,
-            # 1.0,
+            1.0,
         ))
         lib.ospSetInt(light, b'intensityQuantity', *(
-            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
         ))
         lib.ospSetVec3f(light, b'direction', *(
-            0.0, 0.0, 0.0,  # towards z-
+            0.0, 1.0, 1.0,  # towards z-
             # -0.5, -0.5, -1.0,  # angled towards z-
             # 0.0, 0.0, -1.0,  # towards z+
         ))
@@ -472,13 +473,13 @@ def Render(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'sunSky')
         lib.ospSetInt(light, b'intensityQuantity', *(
-            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
+            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
+            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
         ))
 
         lib.ospSetVec3f(light, b'color', *(
-                0.8, 0.8, 0.8,
-                # 0.0, 0.7, 1.0, # light blue
+                # 0.8, 0.8, 0.8,
+                0.0, 0.7, 1.0, # light blue
                 # 0.8, 0.48, 0.0, # orange
             )
         )
@@ -577,13 +578,14 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        b'ao' # does not use lights
-        # b'pathtracer'
+        # b'ao' # does not use lights
+        b'pathtracer'
         # b'scivis'
     )
 
     lib.ospSetVec4f(renderer, b'backgroundColor', *(
-        0.8, 0.2, 0.2, 1.0,
+        # 0.8, 0.2, 0.2, 1.0,
+        0.0, 0.0, 0.0, 1.0,
     ))
 
     defer(lib.ospRelease, renderer)
@@ -605,10 +607,10 @@ def Render(
     # lib.ospSetFloat(camera, b'aspect', *(
     #     1.0,
     # ))
-    # lib.ospSetVec4f(camera, b'backgroundColor', *(
-    #     0.0, 1.0, 0.5, 1.0,
-    #     # 0.0, 0.0, 0.0, 0.0,
-    # ))
+    lib.ospSetVec4f(camera, b'backgroundColor', *(
+        0.0, 1.0, 0.5, 1.0,
+        # 0.0, 0.0, 0.0, 0.0,
+    ))
     lib.ospCommit(camera)
 
     response = None
@@ -682,7 +684,7 @@ def Render(
             park,
             point,
             # ambient,
-            # distant,
+            distant,
             # sunlight,
         ])
 
