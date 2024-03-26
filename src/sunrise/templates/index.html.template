@@ -8,48 +8,6 @@
     box-sizing: border-box;
 }
 
-.App {
-    width: 100vw;
-    height: 100vh;
-    display: grid;
-    grid-template-areas:
-        "map control"
-    ;
-    grid-template-columns:
-        1fr 3fr
-    ;
-    grid-template-rows:
-        1fr
-    ;
-}
-
-.App__map {
-    background-color: blue;
-    grid-area: "map";
-}
-
-.App__control {
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    background-color: lightblue;
-    grid-area: "control";
-}
-
-.camera_look {
-    margin: 1em;
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-}
-
-.camera_position {
-    margin: 1em;
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-}
-
 </style>
 <link
     rel=stylesheet
@@ -58,22 +16,15 @@
 <div class="App">
     <!-- <div class="App__main js--map"></div> -->
     <!-- This is the map of tiles -->
-    <div class="tile-map">
-        <div 
-            class="hyperimage"
-            id="hyperimage"
-            width="912px"
-            height="912px"
-            style="width:912px; height:912px;"
+    <h1 id="movement" ></h1>
+    <div 
+        id="hyperimage"
+        style="width: 1028px; height: 1028px; z-index: 100; padding: 20px; border: 1px solid red"
         >
-            <div 
-                class="sunrise-tile-base"
-                id="sunrise-tile-base"
-                style="width:912px; height:912px; pointer-events: none;"
-            >
-
-                </img>
-            </div>
+        <div 
+            id="sunrise-tile-base"
+            style="background-color: blue; pointer-events: none"
+        >
         </div>
     </div>
 </div>

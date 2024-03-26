@@ -31,10 +31,12 @@ class Mission {
 class Sunrise {
     constructor() {
         this.root = document.getElementById("sunrise-tile-base");
-        this.camera = new Arcball(this.root, 700_0000, 700_0000, 700_0000);
+        this.camera = new Arcball(this.root, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
-        this.is_dragging = false;
         this.samples = 30;
+
+        // Camera movement bookeeping
+        this.timeout = null;
         
         // Create the tiles
         this.tiles = [];
@@ -44,12 +46,74 @@ class Sunrise {
                 this.tiles.push(new Tile(i, j, 40));
             }
         }
-        this.renderTiles();
-
-        this.is_dragging = false;
 
         this.missions = []
         this.hyperimage = document.getElementById('hyperimage');
+
+        if (this.hyperimage) {
+            // this.hyperimage.addEventListener("mouseup", (event) => {console.log('mouseup'); }, false);
+            this.hyperimage.addEventListener("mousedown", this.onMouseDown.bind(this), false);//.(this);
+        } else {
+            console.log(this.hyperimage);
+        }
+
+        // Remove click events for images
+        let imgs = document.getElementsByTagName('img');
+        this.renderTiles();
+        for (let i = 0; i < imgs.length; i++) {
+            imgs[i].onclick = null;
+        }
+
+        this.rendererUpdate('init');
+    }
+
+    addListeners() {
+
+    }
+
+    /// @brief This is for when the mouse is mouse is pressed to drag the camera
+    onMouseDown() {
+        this.hyperimage.addEventListener("mousemove", this.onMouseMove.bind(this), false);//.(this);
+        this.hyperimage.addEventListener("mouseup", this.onMouseUp.bind(this), false);//.(this);
+
+        this.rendererUpdate('down');
+        this.#delayUpdate();
+    }
+
+    /// @brief This is for when the mouse is released when dragging the camera
+    onMouseUp() {
+        this.hyperimage.removeEventListener('mousemove', this.onMouseMove.bind(this));//.(this);
+        this.hyperimage.removeEventListener('mouseup', this.onMouseUp.bind(this));//.(this);
+
+        this.rendererUpdate('up');
+        this.#delayUpdate();
+    }
+
+    /// @brief This is for when the mouse is moving while dragging the camera
+    onMouseMove() {
+        this.rendererUpdate('move');
+        this.#delayUpdate();
+    }
+
+    /// @brief Update the renderer
+    rendererUpdate(msg) {
+        document.getElementById("movement").innerHTML = msg;
+        // console.log(msg);
+    }
+
+    #delayUpdate() {
+        if (this.timeout !== null) {
+            clearTimeout(this.timeout);
+        }
+
+        this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
+        // this.rendererUpdate('delay');
+    }
+
+    #onTimeout() {
+        clearTimeout(this.timeout);
+        this.timeout = null;
+        this.rendererUpdate('timeout');
     }
 
     // @brief Create a new mission and push it to the application's list
@@ -65,7 +129,7 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
-        this.root.innerHTML = ""
+        // this.root.innerHTML = ""
         this.tiles.forEach((tile, index) => {
             this.root.innerHTML += 
                 // change to relative path when using env file
@@ -73,7 +137,7 @@ class Sunrise {
                 class="sunrise-tile-img" 
                 id="sunrise-tile-${index}" 
                 src="api/v1/view/?width=256&height=256&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}" 
-                style="float:left; width:380px; height:380px;"
+                style="float:left; width:380px; height:380px; pointer-events: none;"
             >`;
         });
     }
@@ -82,20 +146,23 @@ class Sunrise {
     run() {
         let idx = 0;
         this.camera.animate();
-        document.body.addEventListener('mousemove', (event) => {
-        });
-        document.body.addEventListener('mouseup', (event) => {
-            console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
-            this.renderTiles();
-            if (this.is_dragging) {
-                
-            }
-        });
+        if (this.root) {
+            this.hyperimage.addEventListener('mousemove', (event) => {console.log('mousemove');});
+        } else {
+            console.log("NO ROOT");
+        }
+        // document.body.addEventListener('mousemove', (event) => {
+        // });
+        // document.body.addEventListener('mouseup', (event) => {
+            // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
+            // this.renderTiles();
+        // });
         
     }
 }
 
 let app = new Sunrise();
+// app.addListeners();
 app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();
 

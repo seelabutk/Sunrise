@@ -89,7 +89,6 @@ go---uwsgi() {
 
 go-uwsgi() {
     pexec "${self:?}" \
-        --session \
         --docker \
         --virtualenv \
         --uwsgi \

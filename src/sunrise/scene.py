@@ -622,7 +622,9 @@ def Render(
         camx, camy, camz = request.camera
         samples = request.samples
         print(f'{camx},{camy},{camz}')
-        # lib.ospSetInt(renderer, b'pixelSamples', samples)
+
+        # NOTE: look into open image denoise for low-res rendering
+        lib.ospSetInt(renderer, b'pixelSamples', samples)
 
         zoom, row, col = request.tile
         # px = (col + 0.5) / (2 ** (zoom))
