@@ -91,7 +91,6 @@ def view():
     angle = int(args.get('angle', default=0))
     pixel_samples = int(args.get('samples', default=3))
 
-
     with app.render_lock:
         response = app.render.send(sunrise.model.RenderingRequest(
             width=width,
