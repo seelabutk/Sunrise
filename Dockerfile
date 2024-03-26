@@ -19,11 +19,10 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # UNCOMMENT FOR PROD
-ENTRYPOINT ["/bin/bash"]
- 
-WORKDIR /home/raustin9/src/Sunrise-Demo
-COPY go.sh go.sh
-CMD ["go.sh", "--server"]
+# ENTRYPOINT ["/bin/bash"]
+# 
+# COPY go.sh go.sh
+# CMD ["go.sh", "--server"]
 
 ARG OSPRAY_VERSION=2.12.0
 

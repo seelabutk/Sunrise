@@ -6,4 +6,8 @@
 **/.git
 **/data
 **/__pycache__
-/env.sh
+**/tmp
+**/tmpT
+**/temp
+*.png
+**/archive

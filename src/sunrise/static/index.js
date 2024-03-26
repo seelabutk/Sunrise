@@ -33,6 +33,8 @@ class Sunrise {
         this.root = document.getElementById("sunrise-tile-base");
         this.camera = new Arcball(this.root, 700_0000, 700_0000, 700_0000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
+        this.is_dragging = false;
+        this.samples = 30;
         
         // Create the tiles
         this.tiles = [];
@@ -70,7 +72,7 @@ class Sunrise {
             `<img 
                 class="sunrise-tile-img" 
                 id="sunrise-tile-${index}" 
-                src="http://160.36.58.111:5000/api/v1/view/?width=256&height=256&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=30" 
+                src="api/v1/view/?width=256&height=256&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}" 
                 style="float:left; width:380px; height:380px;"
             >`;
         });
@@ -81,31 +83,12 @@ class Sunrise {
         let idx = 0;
         this.camera.animate();
         document.body.addEventListener('mousemove', (event) => {
-            // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
-            // if (++idx % 20 === 0) {
-            //     this.renderTiles();
-            // }
-            // if (this.is_dragging) {
-            //     // We are already holding down and dragging
-                
-            //     let y = event.clientY;
-            //     let x = event.clientX;
-            //     // console.log(`${x}, ${y}`);
-            //     this.rotate(x, y);
-            // }
         });
         document.body.addEventListener('mouseup', (event) => {
             console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
-            // if (++idx % 20 === 0) {
-                this.renderTiles();
-            // }
+            this.renderTiles();
             if (this.is_dragging) {
-                // We are already holding down and dragging
                 
-                let y = event.clientY;
-                let x = event.clientX;
-                // console.log(`${x}, ${y}`);
-                this.rotate(x, y);
             }
         });
         
