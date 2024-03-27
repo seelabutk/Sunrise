@@ -30,13 +30,16 @@ class Mission {
 /* Sunrise Application */
 class Sunrise {
     constructor() {
+        this.hyperimage = document.getElementById('hyperimage');
         this.root = document.getElementById("sunrise-tile-base");
+        // this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.camera = new Arcball(this.root, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
         this.samples = 30;
-        this.dimension = 256; // the x, y dimension of each tile
+        this.is_dragging = false;
 
         // Camera movement bookeeping
+        this.dimension = 256; // the x, y dimension of each tile
         this.timeout = null;
         
         // Create the tiles
@@ -49,14 +52,13 @@ class Sunrise {
         }
 
         this.missions = []
-        this.hyperimage = document.getElementById('hyperimage');
 
-        if (this.hyperimage) {
-            // this.hyperimage.addEventListener("mouseup", (event) => {console.log('mouseup'); }, false);
-            this.hyperimage.addEventListener("mousedown", this.onMouseDown.bind(this), false);//.(this);
-        } else {
-            console.log(this.hyperimage);
-        }
+//        if (this.hyperimage) {
+//            // this.hyperimage.addEventListener("mouseup", (event) => {console.log('mouseup'); }, false);
+//            this.hyperimage.addEventListener("mousedown", this.onMouseDown.bind(this), true);//.(this);
+//        } else {
+//            console.log(this.hyperimage);
+//        }
 
         // Remove click events for images
         let imgs = document.getElementsByTagName('img');
@@ -80,8 +82,8 @@ class Sunrise {
 
     /// @brief This is for when the mouse is released when dragging the camera
     onMouseUp() {
-        this.hyperimage.removeEventListener('mousemove', this.onMouseMove.bind(this));//.(this);
-        this.hyperimage.removeEventListener('mouseup', this.onMouseUp.bind(this));//.(this);
+        this.hyperimage.removeEventListener('mousemove', this.onMouseMove.bind(this), false);//.(this);
+        this.hyperimage.removeEventListener('mouseup', this.onMouseUp.bind(this), false);//.(this);
 
         this.dimension = 256;
         this.rendererUpdate('up');
@@ -99,6 +101,7 @@ class Sunrise {
         document.getElementById("movement").innerHTML = this.dimension;
         // console.log(msg);
         this.renderTiles();
+        console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
     }
 
     #delayUpdate() {
@@ -130,7 +133,7 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
-        // this.root.innerHTML = ""
+        this.root.innerHTML = ""
         this.tiles.forEach((tile, index) => {
             this.root.innerHTML += 
                 // change to relative path when using env file
@@ -143,21 +146,33 @@ class Sunrise {
         });
     }
 
+    updateTiles() {
+        let tiles = document.getElementsByTagName('img');
+        for (let i = 0; i < tiles.length; i++) {
+            tiles[i].src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
+        }
+    }
+
     /// @brief The run behavior of the application
     run() {
-        let idx = 0;
         this.camera.animate();
-        if (this.root) {
-            this.hyperimage.addEventListener('mousemove', (event) => {console.log('mousemove');});
-        } else {
-            console.log("NO ROOT");
-        }
-        // document.body.addEventListener('mousemove', (event) => {
-        // });
-        // document.body.addEventListener('mouseup', (event) => {
-            // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
-            // this.renderTiles();
-        // });
+        
+         document.body.addEventListener('mousedown', (event) => {
+             this.dimension = 128;
+             this.is_dragging = true;
+         });
+         document.body.addEventListener('mousemove', (event) => {
+             let intervalId = setInterval(() => {
+                 if (this.is_dragging) {
+                     this.updateTiles();
+                 }
+             }, 1000);
+         });
+         document.body.addEventListener('mouseup', (event) => {
+             this.dimension = 256;
+             this.updateTiles();
+             this.is_dragging = false;
+         });
         
     }
 }
