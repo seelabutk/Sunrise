@@ -33,7 +33,7 @@ class Sunrise {
         this.hyperimage = document.getElementById('hyperimage');
         this.root = document.getElementById("sunrise-tile-base");
         // this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
-        this.camera = new Arcball(this.root, 7000000, 7000000, 7000000);
+        this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
         this.samples = 30;
         this.is_dragging = false;
@@ -41,6 +41,7 @@ class Sunrise {
         // Camera movement bookeeping
         this.dimension = 256; // the x, y dimension of each tile
         this.timeout = null;
+        this.throttlepause = false;
         
         // Create the tiles
         this.tiles = [];
@@ -101,7 +102,7 @@ class Sunrise {
         document.getElementById("movement").innerHTML = this.dimension;
         // console.log(msg);
         this.renderTiles();
-        console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
+        // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
     }
 
     #delayUpdate() {
@@ -111,6 +112,21 @@ class Sunrise {
 
         // this.dimension = 128;
         this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
+    }
+
+
+    /// @brief Throttle a callback function to 
+    /// an interval we specify
+    #throttle(callback, time_ms) {
+        if (this.throttlepause) {
+            return;
+        }
+
+        this.throttlepause = true;
+        setTimeout(() => {
+            callback();
+            this.throttlepause = false;
+        }, time_ms);
     }
 
     #onTimeout() {
@@ -149,7 +165,12 @@ class Sunrise {
     updateTiles() {
         let tiles = document.getElementsByTagName('img');
         for (let i = 0; i < tiles.length; i++) {
-            tiles[i].src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
+            let new_tile = tiles[i].cloneNode(false);
+            new_tile.addEventListener('load', () => {
+                tiles[i].replaceWith(new_tile);
+            });
+            new_tile.src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
+            // tiles[i].src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
         }
     }
 
@@ -162,16 +183,17 @@ class Sunrise {
              this.is_dragging = true;
          });
          document.body.addEventListener('mousemove', (event) => {
-             let intervalId = setInterval(() => {
-                 if (this.is_dragging) {
-                     this.updateTiles();
-                 }
-             }, 1000);
+            this.#throttle(() => {
+                if (this.is_dragging) {
+                    console.log("move");
+                    this.updateTiles();
+                }
+            }, 100);
          });
          document.body.addEventListener('mouseup', (event) => {
-             this.dimension = 256;
-             this.updateTiles();
-             this.is_dragging = false;
+            this.dimension = 256;
+            this.updateTiles();
+            this.is_dragging = false;
          });
         
     }

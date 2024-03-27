@@ -4,12 +4,12 @@ import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 export class Arcball {
     constructor(field, x, y, z) {
         this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setSize( window.innerWidth, window.outerWidth );
-        // this.renderer.setSize( field.offsetWidth, field.offsetHeight );
+        // this.renderer.setSize( window.innerWidth, window.outerWidth );
+        this.renderer.setSize( field.offsetWidth, field.offsetHeight );
         // console.log(`W: ${field.offsetWidth}, H: ${field.offsetHeight}`);
         // field.appendChild( this.renderer.domElement );
-        // let elem = field.appendChild( this.renderer.domElement );
-        let elem = document.body.appendChild( this.renderer.domElement );
+        let elem = field.appendChild( this.renderer.domElement );
+        // let elem = document.body.appendChild( this.renderer.domElement );
         elem.style.zIndex = 100000;
         elem.style.opacity = 0.5;
         elem.width = field.offsetWidth;
@@ -32,7 +32,6 @@ export class Arcball {
 
     render() {
         this.renderer.render( this.scene, this.camera );
-        // this.controls.update();
     }
 
     /* Set the position of the camera
