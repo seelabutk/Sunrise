@@ -11,23 +11,33 @@ export class Arcball {
         let elem = field.appendChild( this.renderer.domElement );
         // let elem = document.body.appendChild( this.renderer.domElement );
         elem.style.zIndex = 100000;
-        elem.style.opacity = 0.5;
+        elem.style.opacity = 0.2;
         elem.width = field.offsetWidth;
         elem.height = field.offsetHeight;
         elem.style.position = "absolute";
         elem.style.top = 0;
         elem.style.left = 0;
-        elem.style.background = "green";
+        // elem.style.background = "green";
 
         this.scene = new THREE.Scene();
 
-        this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+        this.camera = new THREE.PerspectiveCamera( 45, field.offsetWidth / field.offsetHeight, 1, 10000 );
+        // this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
 
         this.controls = new ArcballControls( this.camera, this.renderer.domElement, this.scene );
 
         this.controls.addEventListener( 'change', this.render.bind(this));
 
+        this.controls.target.x = this.camera.position.x;
+        this.controls.target.y = this.camera.position.y;
+        this.controls.target.z = this.camera.position.z;
+
+        // this.camera.up = new THREE.Vector3(0.0, 1.0, 0.0);
+        // this.camera.up.set(0.0, 1.0, 0.0);
+
         this.camera.position.set(x, y, z);
+
+        this.controls.update();
     }
 
     render() {

@@ -368,8 +368,8 @@ def Render(
     ) -> lib.OSPInstance:
         light = lib.ospNewLight(b'ambient')
         lib.ospSetFloat(light, b'intensity', *(
-            # 0.75,
-            0.15,
+            0.75,
+            # 0.15,
             # 1.0,
             # 0.5,
             # 1.25,
@@ -647,7 +647,7 @@ def Render(
         )
 
         lib.ospSetVec2f(camera, b'imageStart', *(
-            0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins),  # flip none
+            0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
             # 1.0, 0.0,  # flip x
             # 0.0, 1.0,  # flip y
             # 1.0, 1.0,  # flip x and y
@@ -664,6 +664,7 @@ def Render(
 #         ))
         coef = 201.0
         lib.ospSetVec3f(camera, b'position', *(
+            # camx, camy, camz,
             camx, camy, camz,
             # px + coef, py + coef, pz + coef,
             # -1700.0, -1400.0, -700.0
@@ -676,6 +677,7 @@ def Render(
         lib.ospSetVec3f(camera, b'direction', *(
             # dx, dy, dz,
             # -1.0, -1.0, -1.0,
+            # -camx, -camy, -camz,
             -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
@@ -685,7 +687,7 @@ def Render(
             earth,
             park,
             point,
-            # ambient,
+            ambient,
             distant,
             # sunlight,
         ])

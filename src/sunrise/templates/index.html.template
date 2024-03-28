@@ -19,11 +19,11 @@
     <h1 id="movement" ></h1>
     <div 
         id="hyperimage"
-        style="width: 1028px; height: 1028px; z-index: 100; padding: 20px; border: 1px solid red; position: relative;"
+        style="width: 1028px; height: 1028px; z-index: 100;position: relative;"
         >
         <div 
             id="sunrise-tile-base"
-            style="background-color: blue; width: 912px; height: 912px; position: relative;"
+            style="transform: scaleY(-1); pointer-events: none; width: 912px; height: 912px; position: relative;"
         >
         </div>
     </div>
