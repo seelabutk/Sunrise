@@ -30,6 +30,8 @@ class Mission {
 /* Sunrise Application */
 class Sunrise {
     constructor() {
+        this.highres = 512;
+        this.lowres = 64;
         this.hyperimage = document.getElementById('hyperimage');
         this.root = document.getElementById("sunrise-tile-base");
         // this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
@@ -39,7 +41,7 @@ class Sunrise {
         this.is_dragging = false;
 
         // Camera movement bookeeping
-        this.dimension = 256; // the x, y dimension of each tile
+        this.dimension = this.highres; // the x, y dimension of each tile
         this.timeout = null;
         this.throttlepause = false;
         
@@ -76,7 +78,8 @@ class Sunrise {
         this.hyperimage.addEventListener("mousemove", this.onMouseMove.bind(this), false);//.(this);
         this.hyperimage.addEventListener("mouseup", this.onMouseUp.bind(this), false);//.(this);
 
-        this.dimension = 128;
+        this.dimension = this.lowres;
+        // this.dimension = 128;
         this.rendererUpdate("");
         this.#delayUpdate();
     }
@@ -86,7 +89,7 @@ class Sunrise {
         this.hyperimage.removeEventListener('mousemove', this.onMouseMove.bind(this), false);//.(this);
         this.hyperimage.removeEventListener('mouseup', this.onMouseUp.bind(this), false);//.(this);
 
-        this.dimension = 256;
+        this.dimension = this.highres;
         this.rendererUpdate('up');
         this.#delayUpdate();
     }
@@ -99,7 +102,7 @@ class Sunrise {
 
     /// @brief Update the renderer
     rendererUpdate(msg) {
-        document.getElementById("movement").innerHTML = this.dimension;
+        // document.getElementById("movement").innerHTML = this.dimension;
         // console.log(msg);
         this.renderTiles();
         // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
@@ -179,7 +182,8 @@ class Sunrise {
         this.camera.animate();
         
          document.body.addEventListener('mousedown', (event) => {
-             this.dimension = 128;
+             this.dimension = this.lowres;
+             // this.dimension = 128;
              this.is_dragging = true;
          });
          document.body.addEventListener('mousemove', (event) => {
@@ -191,7 +195,7 @@ class Sunrise {
             }, 100);
          });
          document.body.addEventListener('mouseup', (event) => {
-            this.dimension = 256;
+            this.dimension = this.highres;
             this.updateTiles();
             this.is_dragging = false;
          });

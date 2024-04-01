@@ -13,10 +13,9 @@
     rel=stylesheet
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 >
-<div class="App">
+<div class="App" style="display: grid; align-content: center; align-items: center; justify-content: center; justify-items: center;">
     <!-- <div class="App__main js--map"></div> -->
     <!-- This is the map of tiles -->
-    <h1 id="movement" ></h1>
     <div 
         id="hyperimage"
         style="width: 1028px; height: 1028px; z-index: 100;position: relative;"

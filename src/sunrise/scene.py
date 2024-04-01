@@ -578,8 +578,8 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        # b'ao' # does not use lights
-        b'pathtracer'
+        b'ao' # does not use lights
+        # b'pathtracer'
         # b'scivis'
     )
 
@@ -608,8 +608,8 @@ def Render(
     #     1.0,
     # ))
     lib.ospSetVec4f(camera, b'backgroundColor', *(
-        0.0, 1.0, 0.5, 1.0,
-        # 0.0, 0.0, 0.0, 0.0,
+        # 0.0, 1.0, 0.5, 0.0,
+        0.0, 0.0, 0.0, 0.0,
     ))
     lib.ospCommit(camera)
 
@@ -725,6 +725,9 @@ def Render(
             ),
             lib.OSP_FB_COLOR,
         )
+        
+        # Clear framebuffer 
+        # lib.ospResetAccumulation?
 
         _variance: float = lib.ospRenderFrameBlocking(
             framebuffer,
