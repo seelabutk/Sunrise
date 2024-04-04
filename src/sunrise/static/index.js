@@ -1,4 +1,5 @@
 import { Arcball } from "arcball"
+import { Path, Position } from "path"
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -9,21 +10,18 @@ class Tile {
     }
 }
 
-/* Stores a position in 3d space */
-class Position {
-    constructor(x, y, z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-}
-
 /* Mission for the application */
 // NOTE: x, y, z are camera coords
 class Mission {
     constructor(name, x, y, z) {
-        this.name = name
-        this.position = new Position(x, y, z);
+        this.name = name;
+
+        let points = []
+        points.push(new Position(x, y, z));
+        points.push(new Position(6358103.527489264, 6348875.3480008375, 6262571.804699995));
+        
+
+        this.path = new Path(points);
     }
 }
 
@@ -34,7 +32,7 @@ class Sunrise {
         this.lowres = 64;
         this.hyperimage = document.getElementById('hyperimage');
         this.root = document.getElementById("sunrise-tile-base");
-        // this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
+
         this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
         this.samples = 30;
@@ -53,6 +51,14 @@ class Sunrise {
                 this.tiles.push(new Tile(i, j, 40));
             }
         }
+
+        let plist = [
+            new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
+            new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
+        ];
+        // console.log(`plist: ${plist}`);
+        this.path = new Path(plist);
+
 
         this.missions = []
 
@@ -117,7 +123,6 @@ class Sunrise {
         this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
     }
 
-
     /// @brief Throttle a callback function to 
     /// an interval we specify
     #throttle(callback, time_ms) {
@@ -178,15 +183,15 @@ class Sunrise {
     }
 
     /// @brief The run behavior of the application
-    run() {
+    async run() {
         this.camera.animate();
         
-         document.body.addEventListener('mousedown', (event) => {
+         document.body.addEventListener('mousedown', () => {
              this.dimension = this.lowres;
              // this.dimension = 128;
              this.is_dragging = true;
          });
-         document.body.addEventListener('mousemove', (event) => {
+         document.body.addEventListener('mousemove', () => {
             this.#throttle(() => {
                 if (this.is_dragging) {
                     console.log("move");
@@ -194,15 +199,27 @@ class Sunrise {
                 }
             }, 100);
          });
-         document.body.addEventListener('mouseup', (event) => {
+         document.body.addEventListener('mouseup', () => {
             this.dimension = this.highres;
             this.updateTiles();
             this.is_dragging = false;
+            // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.z}`);
          });
-        
+
+        const sleepNow = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+        for (let campos = this.path.forward(); campos = this.path.forward(); campos !== null) {
+            console.log(`P: ${campos.x}, ${campos.y}, ${campos.z}`);
+            this.dimension = this.lowres;
+            this.camera.setPosition(campos.x, campos.y, campos.z);
+            this.updateTiles();
+            await sleepNow(100);
+        }
+        this.dimension = this.highres;
+        this.updateTiles();
+        console.log("path done");
     }
 }
 
 let app = new Sunrise();
-app.addMission("Great Smoky Mountains", 200, 200, 200);
+// app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();

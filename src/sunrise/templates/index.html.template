@@ -8,6 +8,14 @@
     box-sizing: border-box;
 }
 
+.missions {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20vw;
+    height: 100vh;
+}
+
 </style>
 <link
     rel=stylesheet
@@ -15,6 +23,9 @@
 >
 <div class="App" style="display: grid; align-content: center; align-items: center; justify-content: center; justify-items: center;">
     <!-- <div class="App__main js--map"></div> -->
+    <div class="missions" >
+        <button id="observation">Observation</button>
+    </div>
     <!-- This is the map of tiles -->
     <div 
         id="hyperimage"
@@ -34,6 +45,7 @@
         "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
         "arcball": "./static/arcball.js",
+        "path": "./static/path.js",
         "d3": "https://d3js.org/d3.v5.min.js"
     }
 }
