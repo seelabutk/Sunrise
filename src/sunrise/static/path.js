@@ -41,6 +41,15 @@ export class Path {
             // return this.current_position;
         }
 
+        if (this.current_point_index != this.points.length-2) {
+            this.current_step = 1;
+            this.current_point_index++;
+            this.current_point = this.points[this.current_point_index];
+            this.current_position = this.current_point;
+            this.next_point = this.points[this.current_point_index+1];
+            return this.current_point;
+        }
+
         return null;
         return false;
     }

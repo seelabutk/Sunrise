@@ -18,7 +18,8 @@ class Mission {
 
         let points = []
         points.push(new Position(x, y, z));
-        points.push(new Position(6358103.527489264, 6348875.3480008375, 6262571.804699995));
+        // points.push(new Position(6358103.527489264, 6348875.3480008375, 6262571.804699995));
+        points.push(new Position(893043.8990594397, 4038936.4694766635, -5389919.75178295));
         
 
         this.path = new Path(points);
@@ -57,6 +58,12 @@ class Sunrise {
         let plist = [
             new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
             new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
+            // new Position(8533784.125255791,4670748.287248197,-3982777.3040403225),
+            // new Position(2748201.986938454,4775316.005489822,-6395767.768232057),
+            new Position(4102717.909090294,5310907.385761213,-5483181.110617719),
+            // new Position(4512168.354330026,5026709.818489858,-5631397.574589005),
+            new Position(933326.3859863493,3912455.5863275626,-5369631.879718453),
+            // new Position(1069713.6055557276,4420199.571147755,-6597451.253806912),
         ];
         this.path = new Path(plist);
 
