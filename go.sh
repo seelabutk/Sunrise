@@ -70,6 +70,22 @@ go---server() {
     ##
 }
 
+go-scalene() {
+    pexec "${self:?}" \
+        --docker \
+        --virtualenv \
+        --scalene \
+    ##
+}
+go---scalene() {
+    PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
+    SUNRISE_SCENE_PATH=${root:?}/data \
+    pexec scalene run src/sunrise/main.py\
+        # FLASK_APP=sunrise.server:app \
+    ##
+}
+
+
 go---session() {
     echo "Session Project: ${project:?}"
     pexec tmux new -session -A -s "${project:?}" "${self:?}" "$@"
@@ -168,6 +184,7 @@ go-docker---prod() {
 go-user() {
     echo ${project:?}
     echo ${self:?}
+    echo "${root:?}[server]"
 }
 
 go-docker-build() {
@@ -246,6 +263,7 @@ go-virtualenv-install() {
         --editable \
         "${root:?}[server]" \
     ##
+    echo "${root:?}[server]"
 }
 
 go-virtualenv-exec() {

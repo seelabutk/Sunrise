@@ -16,6 +16,7 @@ import math
 import pathlib
 import struct
 import typing
+import time
 
 import numpy as np
 import ospray
@@ -49,6 +50,7 @@ def Read(
     *,
     dtype: np.DType,
 ) -> np.NDArray:
+    print(f'trying to open {path}: ', end='')
     with open(path, 'rb') as f:
         def Read(fmt: str, /) -> tuple:
             size = struct.calcsize(fmt)
@@ -63,6 +65,7 @@ def Read(
         data = np.memmap(f, dtype=dtype, shape=shape, mode='r', offset=f.tell())
 
     data = data.reshape(shape)
+    print('success')
     return data
 
 
@@ -74,6 +77,7 @@ def Data(
     type: lib.OSPDataType,
     share: bool=False,
 ) -> lib.OSPData:
+    # print("DATA 1")
     if isinstance(array, list):
         for i, x in enumerate(array):
             if not isinstance(x, lib.OSPObject):
@@ -81,12 +85,14 @@ def Data(
             
         else:
             array = (ctypes.cast(x, ctypes.c_void_p).value for x in array)
+            assert(array != None)
             array = np.fromiter(array, dtype=np.uintp)
             return Data(array, type=type)
     
         array = np.asarray(array)
         return Data(array, type=type)
     
+    # print("DATA 2")
     if len(array.shape) == 0:
         array = array[None, None, None]
 
@@ -101,22 +107,39 @@ def Data(
 
     else:
         raise NotImplementedError()
+    # print("DATA 3")
 
+    lib.ospNewSharedData.argtypes = [
+        ctypes.c_void_p,
+        lib.OSPDataType,
+        ctypes.c_uint64,
+        ctypes.c_int64,
+        ctypes.c_uint64,
+        ctypes.c_int64,
+        ctypes.c_uint64,
+        ctypes.c_int64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    ]
     src = lib.ospNewSharedData(
         array.ctypes.data, type,
         array.shape[0], array.strides[0],
         array.shape[1], array.strides[1],
         array.shape[2], array.strides[2],
+        None, None
     )
     lib.ospCommit(src)
+    # print(f"DATA 4: type: {type}")
     if share:
         return src
 
     dst = lib.ospNewData(type, *array.shape)
     lib.ospCopyData(src, dst, 0, 0, 0)
     lib.ospCommit(dst)
+    # print("DATA 5")
 
     lib.ospRelease(src)
+    # print("DATA 6")
     return dst
 
 
@@ -138,7 +161,7 @@ def Render(
     sunrise.model.RenderingRequest,
     None,
 ]:
-    render_begin = datetime.datetime.now()
+    print("GOT TO RENDER")
     if stack is None:
         with contextlib.ExitStack() as stack:
             yield from Render(
@@ -147,6 +170,7 @@ def Render(
             )
         return
 
+    print("2")
     close = contextlib.closing
     enter = stack.enter_context
     defer = stack.callback
@@ -169,6 +193,7 @@ def Render(
         *,
         path: pathlib.Path,
     ) -> lib.OSPGeometry:
+        # print("TERRAIN")
         position = path / 'OSPGeometry.mesh.vertex.position.vec3f.bin'
         position = Read(position, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
         defer(hold, position)
@@ -207,6 +232,7 @@ def Render(
         *,
         path: pathlib.Path,
     ) -> lib.OSPMaterial:
+        # print("COLORMAP")
         data = path / 'OSPTexture.texture2d.data.vec3f.bin'
         data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
         defer(hold, data)
@@ -216,10 +242,15 @@ def Render(
         texture = lib.ospNewTexture(b'texture2d')
         defer(lib.ospRelease, texture)
         lib.ospSetObject(texture, b'data', data)
-        lib.ospSetInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
+        lib.ospSetUInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
+        # lib.ospSetInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
         lib.ospCommit(texture)
 
-        material = lib.ospNewMaterial(None, b'obj')
+        import ctypes
+        lib.ospNewMaterial.argtypes = [ctypes.c_char_p]
+        # del lib.ospNewMaterial.argtypes[1:]
+        material = lib.ospNewMaterial(b'obj')
+        # material = lib.ospNewMaterial(None, b'obj')
         defer(lib.ospRelease, material)
         lib.ospSetObject(material, b'map_kd', texture)
         # lib.ospSetVec3f(material, b'ks', 1.0, 1.0, 1.0)
@@ -239,6 +270,7 @@ def Render(
         *,
         path: pathlib.Path,
     ) -> lib.OSPData:
+        # print("OBSERVATION")
         index = path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
         defer(hold, index)
@@ -274,8 +306,10 @@ def Render(
         colormaps: list[lib.OSPMaterial],
         observation: lib.OSPData,
     ) -> lib.OSPGroup:
+        # print("PARK")
         colormaps = Data(colormaps, type=lib.OSP_MATERIAL)
         defer(lib.ospRelease, colormaps)
+        # print("PARK 2")
 
         geometric_models = []
 
@@ -309,63 +343,12 @@ def Render(
         lib.ospSetObject(instance, b'group', group)
         lib.ospCommit(instance)
 
+        # print("END AMBIENT")
         return instance
-
-    # def Sun(
-    #     *,
-    #     now: datetime.datetime,
-    # ) -> lib.OSPGroup:
-    #     loc = sunrise.model.location_from_datetime(now, alt=10_000.0)
-    #     # pos = sunrise.model.position_from_location(loc)
-    #     LATmin = 35.425112713810655
-    #     LATmax = 35.79999392988526
-    #     LNGmin = -84.00146484375
-    #     LNGmax = -83.03475379943848
-    #     ALTmin = 1000.0 * 0.2527998
-    #     ALTmax = 1000.0 * 2.02335
-
-    #     pos = sunrise.model.Position(
-    #         x=(loc.lat - LATmin) / (LATmax - LATmin),
-    #         y=(loc.lng - LNGmin) / (LNGmax - LNGmin),
-    #         z=(loc.alt - ALTmin) / (ALTmax - ALTmin),
-    #     )
-
-    #     lights = []
-
-    #     lights.append(
-    #         (light := lib.ospNewLight(b'distant')),
-    #     )
-    #     defer(lib.ospRelease, light)
-    #     lib.ospSetVec3f(light, b'position', pos.x, pos.y, pos.z)
-    #     lib.ospSetVec3f(light, b'direction', -pos.x, -pos.y, -pos.z)
-    #     lib.ospSetFloat(light, b'intensity', 1.8)
-    #     lib.ospCommit(light)
-
-    #     lights = Data(lights, type=lib.OSP_LIGHT)
-    #     defer(lib.ospRelease, lights)
-    #     lib.ospCommit(lights)
-
-    #     groups = []
-    #     groups.append(
-    #         (group := lib.ospNewGroup()),
-    #     )
-    #     defer(lib.ospRelease, group)
-    #     lib.ospSetObject(group, b'light', lights)
-    #     lib.ospCommit(group)
-
-    #     groups = Data(groups, type=lib.OSP_GROUP)
-    #     defer(lib.ospRelease, groups)
-    #     lib.ospCommit(groups)
-
-    #     instance = lib.ospNewInstance(None)
-    #     defer(lib.ospRelease, instance)
-    #     lib.ospSetObject(instance, b'group', group)
-    #     lib.ospCommit(instance)
-
-    #     return instance
 
     def Ambient(
     ) -> lib.OSPInstance:
+        # print("AMBIENT")
         light = lib.ospNewLight(b'ambient')
         lib.ospSetFloat(light, b'intensity', *(
             0.75,
@@ -525,6 +508,7 @@ def Render(
         )),
        
     )
+    # print("INSTANCES 1")
 
     instances.append(
         (earth := Park(
@@ -536,26 +520,31 @@ def Render(
             # observation=Observation(path=path / 'observation'),
         ))
     )
+    # print("INSTANCES 2")
 
     instances.append(
         (ambient := Ambient(
         )),
     )
+    # print("INSTANCES 3")
 
     instances.append(
         (distant := Distant(
         )),
     )
+    # print("INSTANCES 4")
 
     instances.append(
         (point := Point(
         )),
     )
+    # print("INSTANCES 5")
     
     instances.append(
         (sunlight:= Sunlight(
         )),
     )
+    # print("INSTANCES 6")
 
     # sun_index = len(instances)
     # instances.append(
@@ -578,9 +567,9 @@ def Render(
     lib.ospCommit(world)
 
     renderer = lib.ospNewRenderer(
-        b'ao' # does not use lights
+        # b'ao' # does not use lights
         # b'pathtracer'
-        # b'scivis'
+        b'scivis'
     )
 
     lib.ospSetVec4f(renderer, b'backgroundColor', *(
@@ -590,7 +579,7 @@ def Render(
 
     defer(lib.ospRelease, renderer)
 
-    lib.ospSetInt(renderer, b'pixelSamples', 32)
+    lib.ospSetInt(renderer, b'pixelSamples', 15)
     # lib.ospSetInt(renderer, b'pixelSamples', 3)
     # lib.ospSetFloat(renderer, b'aoIntensity', 0)
     # lib.ospSetInt(renderer, b'aoSamples', 32)
@@ -609,22 +598,27 @@ def Render(
     # ))
     lib.ospSetVec4f(camera, b'backgroundColor', *(
         # 0.0, 1.0, 0.5, 0.0,
-        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 1.0,
     ))
     lib.ospCommit(camera)
 
     response = None
 
+
     num_x_bins = 2
     num_y_bins = 2
     while True:
+        f = open('render-times.txt', "a")
+
+        # render_begin = datetime.datetime.now()
+        render_begin = time.process_time_ns()
         request = yield response
         camx, camy, camz = request.camera
         samples = request.samples
-        print(f'{camx},{camy},{camz}')
+        # print(f'{camx},{camy},{camz}')
 
         # NOTE: look into open image denoise for low-res rendering
-        lib.ospSetInt(renderer, b'pixelSamples', samples)
+        # lib.ospSetInt(renderer, b'pixelSamples', samples)
 
         zoom, row, col = request.tile
         # px = (col + 0.5) / (2 ** (zoom))
@@ -759,5 +753,8 @@ def Render(
             image=image,
         )
 
-        time_rendering = datetime.datetime.now().microsecond - render_begin.microsecond
-        print(f'TIME RENDERING (McS): {time_rendering}')
+        # time_rendering = datetime.datetime.now().microsecond - render_begin.microsecond
+        time_rendering = time.process_time_ns() - render_begin
+        f.write(f'{request.width}:{time_rendering}\n')
+        # print(f'TIME RENDERING (McS): {time_rendering}')
+

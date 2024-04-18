@@ -38,6 +38,8 @@ class Sunrise {
         this.samples = 30;
         this.is_dragging = false;
 
+        this.loading = false;
+
         // Camera movement bookeeping
         this.dimension = this.highres; // the x, y dimension of each tile
         this.timeout = null;
@@ -56,18 +58,9 @@ class Sunrise {
             new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
             new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
         ];
-        // console.log(`plist: ${plist}`);
         this.path = new Path(plist);
 
-
         this.missions = []
-
-//        if (this.hyperimage) {
-//            // this.hyperimage.addEventListener("mouseup", (event) => {console.log('mouseup'); }, false);
-//            this.hyperimage.addEventListener("mousedown", this.onMouseDown.bind(this), true);//.(this);
-//        } else {
-//            console.log(this.hyperimage);
-//        }
 
         // Remove click events for images
         let imgs = document.getElementsByTagName('img');
@@ -77,6 +70,11 @@ class Sunrise {
         }
 
         this.rendererUpdate(this.dimension);
+    }
+
+    async makeRequest(tile) {
+        const res = await fetch(`api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`);
+        return res.blob();
     }
 
     /// @brief This is for when the mouse is mouse is pressed to drag the camera
@@ -170,15 +168,24 @@ class Sunrise {
         });
     }
 
-    updateTiles() {
-        let tiles = document.getElementsByTagName('img');
+    async updateTiles() {
+        // let tiles = document.getElementsByTagName('img');
+        let tilebase = this.root.cloneNode(true);
+        let tiles = tilebase.getElementsByTagName('img');
+        console.log(tiles);
+        let ready = 0;
+
         for (let i = 0; i < tiles.length; i++) {
             let new_tile = tiles[i].cloneNode(false);
             new_tile.addEventListener('load', () => {
+                ready += 1;
                 tiles[i].replaceWith(new_tile);
+                if (ready === 3) {
+                    this.root.replaceWith(tilebase);
+                    this.root = tilebase;
+                }
             });
             new_tile.src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
-            // tiles[i].src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
         }
     }
 

@@ -107,3 +107,4 @@ def view():
         return f.getvalue(), 200, {
             'Content-Type': 'image/png',
         }
+

@@ -31,6 +31,9 @@ export class Arcball {
         this.controls.addEventListener( 'change', this.render.bind(this));
         this.controls.enableDamping = true;
 
+        // this.controls.scaleFactor = 0.001;
+        this.controls.scaleFactor = 1.01;
+
 //        this.controls.target.x = this.camera.position.x;
 //        this.controls.target.y = this.camera.position.y;
 //        this.controls.target.z = this.camera.position.z;

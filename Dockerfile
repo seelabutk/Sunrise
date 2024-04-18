@@ -24,7 +24,8 @@ RUN apt-get update && \
 # COPY go.sh go.sh
 # CMD ["go.sh", "--server"]
 
-ARG OSPRAY_VERSION=2.12.0
+ARG OSPRAY_VERSION=3.1.0
+# ARG OSPRAY_VERSION=2.12.0
 
 FROM base AS dev
 WORKDIR /opt/ospray-${OSPRAY_VERSION:?}
