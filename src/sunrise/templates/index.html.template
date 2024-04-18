@@ -8,12 +8,45 @@
     box-sizing: border-box;
 }
 
+body {
+    background-color: black;
+}
+
 .missions {
     position: absolute;
-    top: 0;
+    top: 8vh;
     left: 0;
     width: 20vw;
-    height: 100vh;
+    border-right: 1px solid darkgray;
+    display: flex;
+    height: 92vh;
+    justify-content: center;
+    background-color: black;
+}
+
+#navbar {
+    position: absolute;
+    top:0;
+    left: 0;
+    width: 100vw;
+    height: 8vh;
+    background: black;
+    border-bottom: 1px solid darkgray;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+}
+
+.missionButton {
+    border: 1px solid gray;
+    background: gray;
+    border-radius: 5px;
+    margin: 10px;
+    font-size: 20px;
+    height: 40px;
+    padding: 4px;
 }
 
 </style>
@@ -23,13 +56,16 @@
 >
 <div class="App" style="display: grid; align-content: center; align-items: center; justify-content: center; justify-items: center;">
     <!-- <div class="App__main js--map"></div> -->
+    <nav id="navbar">
+        Sunrise Demo
+    </nav>
     <div class="missions" >
-        <button id="observation">Observation</button>
+        <button id="observation" class="missionButton">Observation</button>
     </div>
     <!-- This is the map of tiles -->
     <div 
         id="hyperimage"
-        style="width: 1028px; height: 1028px; z-index: 100;position: relative;"
+        style="width: 1028px; height: 912px; z-index: 100;position: relative;"
         >
         <div 
             id="sunrise-tile-base"
