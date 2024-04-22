@@ -26,6 +26,18 @@ go---upload() {
     pexec  zip -r /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${version}.zip ./data
 }
 
+go---download() {
+    data=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1)
+    pexec cp $data .
+}
+
+go---extract() {
+    data=$(find . -type f -name "sunrise-data-*" | sort -rn | head -1)
+    
+    unzip -vx data
+    echo $data
+}
+
 # TODO: add network create command 
 # NOTE: --driver overlay
 
