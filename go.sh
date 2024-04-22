@@ -20,22 +20,59 @@ go---virtualenv() {
     ##
 }
 
+go-data() {
+    pexec "${self:?}" "$@" \
+    ##
+}
+
+# Upload a zip file of archived data of specified version
 go---upload() {
-    version=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1 | tr -d -c 0-9)
-    ((version++))
-    pexec  zip -r /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${version}.zip ./data
+    version=$@
+    pexec cp "./sunrise-data-v${version}.zip" /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu
+    # pexec  zip -r /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${version}.zip ./data
 }
 
+# Compress data into specified version package zip file
+go---archive() {
+    # FIND THE MOST RECENT VERSION AND CREATE THE NEXT ONE
+   
+    # version=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1 | tr -d -c 0-9)
+    # ((version++))
+
+    # WE DONT WANT TO DO THAT SO JUST USE COMMAND ARGUMENT
+    version=$@
+    pexec  zip -r ./sunrise-data-v${version}.zip ./data
+}
+
+# Download zip file of specified version to local directory
 go---download() {
-    data=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1)
-    pexec cp $data .
+    # version=$@ # version of data that we want to download
+    # echo "Version: $@"
+    old_ifs=${IFS}
+    IFS=' '
+    read -ra args <<< "$@"
+    echo ${args[0]}
+    echo ${args[1]}
+    IFS=$old_ifs
+    # data=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1)
+    pexec cp "/opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${args[0]}.zip" path
+    echo "Warning: create directory and symlink to large storage location before extracting!"
 }
 
+# Extract data from zip file to specified directory
 go---extract() {
-    data=$(find . -type f -name "sunrise-data-*" | sort -rn | head -1)
+    old_ifs=${IFS}
+    IFS=' '
+    read -ra args <<< "$@"
+    IFS=$old_ifs
     
-    unzip -vx data
-    echo $data
+    version="${args[0]}"
+    echo "${version}"
+    path="${args[1]}"
+    echo "${path}"
+
+    # data=$(find . -type f -name "sunrise-data-*" | sort -rn | head -1)
+    unzip -vx "./sunrise-data-v${version}.zip" -d "${path}"
 }
 
 # TODO: add network create command 
