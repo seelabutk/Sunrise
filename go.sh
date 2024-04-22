@@ -20,6 +20,12 @@ go---virtualenv() {
     ##
 }
 
+go---upload() {
+    version=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1 | tr -d -c 0-9)
+    ((version++))
+    pexec  zip -r /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${version}.zip ./data
+}
+
 # TODO: add network create command 
 # NOTE: --driver overlay
 
