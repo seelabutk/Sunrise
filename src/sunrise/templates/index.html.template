@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="UTF-8">
-<title></title>
+<title>Sunrise Dev</title>
 <style>
 * {
     margin: 0;
@@ -8,46 +8,45 @@
     box-sizing: border-box;
 }
 
-.App {
+body {
+    background-color: black;
+}
+
+.missions {
+    position: absolute;
+    top: 8vh;
+    left: 0;
+    width: 20vw;
+    border-right: 1px solid darkgray;
+    display: flex;
+    height: 92vh;
+    justify-content: center;
+    background-color: black;
+}
+
+#navbar {
+    position: absolute;
+    top:0;
+    left: 0;
     width: 100vw;
-    height: 100vh;
-    display: grid;
-    grid-template-areas:
-        "map control"
-    ;
-    grid-template-columns:
-        1fr 3fr
-    ;
-    grid-template-rows:
-        1fr
-    ;
-}
-
-.App__map {
-    background-color: blue;
-    grid-area: "map";
-}
-
-.App__control {
+    height: 8vh;
+    background: black;
+    border-bottom: 1px solid darkgray;
+    color: white;
     display: flex;
-    flex-direction: column;
-    padding: 10px;
-    background-color: lightblue;
-    grid-area: "control";
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
 }
 
-.camera_look {
-    margin: 1em;
-    width: 80%;
-    display: flex;
-    flex-direction: column;
-}
-
-.camera_position {
-    margin: 1em;
-    width: 80%;
-    display: flex;
-    flex-direction: column;
+.missionButton {
+    border: 1px solid gray;
+    background: gray;
+    border-radius: 5px;
+    margin: 10px;
+    font-size: 20px;
+    height: 40px;
+    padding: 4px;
 }
 
 </style>
@@ -55,39 +54,25 @@
     rel=stylesheet
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 >
-<div class="App">
-    <div class="App__control" id="control">
-        <div class="cam-slider">
-        </div>
-        
-        <div class="camera_look">
-            <p>Camera Focus</p>
-            <label for="angle">Angle</label>
-            <input id="angle" name="angle" type="range" min=0 max=100 step=1 value=6 class="js--angle" />
-            
-            <label for="camLookX">Look X: </label>
-            <input id="camLookX" name="camLookX" type="range" min=0 max=100 step=1 value=0  />
-            
-            <label for="camLookY">Look Y: </label>
-            <input id="camLookY" name="camLookY" type="range" min=0 max=100 step=1 value=0  />
-            
-            <label for="camLookZ">Look Z: </label>
-            <input id="camLookZ" name="camLookZ" type="range" min=0 max=100 step=1 value=0  />
-        </div>
-        
-        <div class="camera_position">
-            <p>Camera Position</p>
-            <label for="camPosX">X: </label>
-            <input id="camPosX" name="camPosX" type="range" min=-1 max=1 step=0.1 value=0  />
-            
-            <label for="camPosY">Y: </label>
-            <input id="camPosY" name="camPosY" type="range" min=-1 max=1 step=0.1 value=0  />
-            
-            <label for="camPosZ">Z: </label>
-            <input id="camPosZ" name="camPosZ" type="range" min=-1 max=1 step=0.1 value=0  />
+<div class="App" style="display: grid; align-content: center; align-items: center; justify-content: center; justify-items: center;">
+    <!-- <div class="App__main js--map"></div> -->
+    <nav id="navbar">
+        Sunrise Demo
+    </nav>
+    <div class="missions" >
+        <button id="observation" class="missionButton">Observation</button>
+    </div>
+    <!-- This is the map of tiles -->
+    <div 
+        id="hyperimage"
+        style="width: 1028px; height: 912px; z-index: 100;position: relative;"
+        >
+        <div 
+            id="sunrise-tile-base"
+            style="transform: scaleY(-1); pointer-events: none; width: 912px; height: 912px; position: relative;"
+        >
         </div>
     </div>
-    <div class="App__main js--map"></div>
 </div>
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 <script type="importmap">
@@ -95,8 +80,9 @@
     "imports": {
         "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
-        "d3": "https://d3js.org/d3.v5.min.js",
-        "leaflet": "https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.esm.js"
+        "arcball": "./static/arcball.js",
+        "path": "./static/path.js",
+        "d3": "https://d3js.org/d3.v5.min.js"
     }
 }
 </script>

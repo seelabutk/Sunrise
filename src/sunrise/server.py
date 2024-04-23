@@ -85,18 +85,20 @@ def index():
 def view():
     args = flask.request.args
     tile = tuple(map(float, args['tile'].split(',')))
+    camera = tuple(map(float, args['camera'].split(',')))
     width = int(args.get('width', default=1024))
     height = int(args.get('height', default=width//2))
     angle = int(args.get('angle', default=0))
-    camera_position = tuple(map(float, args['pos'].split(',')))
+    pixel_samples = int(args.get('samples', default=3))
 
     with app.render_lock:
         response = app.render.send(sunrise.model.RenderingRequest(
             width=width,
             height=height,
             tile=tile,
+            camera=camera,
             angle=angle,
-            cam_pos=camera_position,
+            samples=pixel_samples,
         ))
     
     with io.BytesIO() as f:
@@ -105,3 +107,4 @@ def view():
         return f.getvalue(), 200, {
             'Content-Type': 'image/png',
         }
+
