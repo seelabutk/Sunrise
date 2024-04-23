@@ -10,26 +10,39 @@
 
 body {
     background-color: black;
+    width: 100%;
+    height: 100%;
 }
 
+.App {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-areas:
+        "a a"
+        "b c"
+    ;
+    grid-template-rows:
+        8vh
+        1fr
+    ;
+    grid-template-columns:
+        20vw 1fr
+    ;
+}
+
+.a { grid-area: a; width: 100%; height: 100%; }
+.b { grid-area: b; width: 100%; height: 100%; }
+.c { grid-area: c; width: 100%; height: 100%; }
+
 .missions {
-    position: absolute;
-    top: 8vh;
-    left: 0;
-    width: 20vw;
     border-right: 1px solid darkgray;
     display: flex;
-    height: 92vh;
     justify-content: center;
     background-color: black;
 }
 
 #navbar {
-    position: absolute;
-    top:0;
-    left: 0;
-    width: 100vw;
-    height: 8vh;
     background: black;
     border-bottom: 1px solid darkgray;
     color: white;
@@ -49,6 +62,7 @@ body {
     padding: 4px;
 }
 
+
 </style>
 <link
     rel=stylesheet
@@ -56,14 +70,15 @@ body {
 >
 <div class="App" style="display: grid; align-content: center; align-items: center; justify-content: center; justify-items: center;">
     <!-- <div class="App__main js--map"></div> -->
-    <nav id="navbar">
+    <nav class="a" id="navbar">
         Sunrise Demo
     </nav>
-    <div class="missions" >
+    <div class="b missions" >
         <button id="observation" class="missionButton">Observation</button>
     </div>
     <!-- This is the map of tiles -->
-    <div 
+    <div
+        class="c"
         id="hyperimage"
         style="width: 1028px; height: 912px; z-index: 100;position: relative;"
         >

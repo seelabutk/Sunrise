@@ -30,6 +30,6 @@ GLOBE_PROD_IP=127.202.208.70
 #    # server_port=57872  # $(,address sunrise +%P)
 #fi
 if [ "${USER:-}" = "thobson2" ]; then
-    server_bind=127.242.160.24  # $(,address sunrise +%B)
+    server_bind=0.0.0.0  # $(,address sunrise +%B)
     server_port=57872  # $(,address sunrise +%P)
 fi

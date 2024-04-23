@@ -12,3 +12,4 @@ __pycache__
 *.bsp
 preprocess/target/*
 !preprocess/target/.keep
+/temp

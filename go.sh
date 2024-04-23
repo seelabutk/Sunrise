@@ -27,8 +27,8 @@ go-data() {
 
 # Upload a zip file of archived data of specified version
 go---upload() {
-    version=$@
-    pexec cp "./sunrise-data-v${version}.zip" /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu
+    version=${1:?need version (e.g. 1)}
+    pexec cp "${root:?}/sunrise-data-v${version}.zip" /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu
     # pexec  zip -r /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${version}.zip ./data
 }
 
@@ -40,39 +40,30 @@ go---archive() {
     # ((version++))
 
     # WE DONT WANT TO DO THAT SO JUST USE COMMAND ARGUMENT
-    version=$@
-    pexec  zip -r ./sunrise-data-v${version}.zip ./data
+    version=${1:?need version (e.g. 1)}
+    pexec  zip -r "${root:?}/sunrise-data-v${version}.zip" ./data
 }
 
 # Download zip file of specified version to local directory
 go---download() {
-    # version=$@ # version of data that we want to download
-    # echo "Version: $@"
-    old_ifs=${IFS}
-    IFS=' '
-    read -ra args <<< "$@"
-    echo ${args[0]}
-    echo ${args[1]}
-    IFS=$old_ifs
-    # data=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1)
-    pexec cp "/opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${args[0]}.zip" path
+    version=${1:?need version (e.g. 1)}
+
+    mkdir -p "${root:?}/data"
+
+    wget \
+        -O "${root:?}/data/sunrise-data-v${version:?}.zip" \
+        https://accona.eecs.utk.edu/sunrise-data-v${version:?}.zip \
+    ##
+
     echo "Warning: create directory and symlink to large storage location before extracting!"
 }
 
 # Extract data from zip file to specified directory
 go---extract() {
-    old_ifs=${IFS}
-    IFS=' '
-    read -ra args <<< "$@"
-    IFS=$old_ifs
-    
-    version="${args[0]}"
-    echo "${version}"
-    path="${args[1]}"
-    echo "${path}"
+    version=${1:?need version (e.g. 1)}
+    path=${root:?}/data/sunrise-data-v${version}.zip
 
-    # data=$(find . -type f -name "sunrise-data-*" | sort -rn | head -1)
-    unzip -vx "./sunrise-data-v${version}.zip" -d "${path}"
+    unzip -d "${root:?}" "${path:?}"
 }
 
 # TODO: add network create command 
