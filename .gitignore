@@ -13,3 +13,4 @@ __pycache__
 preprocess/target/*
 !preprocess/target/.keep
 /temp
+/render-times.txt
