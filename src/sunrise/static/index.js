@@ -159,63 +159,120 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
-        this.root.innerHTML = ""
-        this.tiles.forEach((tile, index) => {
-            this.root.innerHTML += 
-                // change to relative path when using env file
-            `<img 
-                class="sunrise-tile-img" 
-                id="sunrise-tile-${index}" 
-                src="api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}"
-                style="float:left; width:380px; height:380px; pointer-events: none;"
-            >`;
-        });
+        // this.root = document.createElement('div');
+        while (this.root.firstChild) {
+            this.root.removeChild(this.root.firstChild);
+        }
+
+        for (let i=0, n=this.tiles.length; i<n; ++i) {
+            let tile = new Image(this.dimension, this.dimension);
+            tile.classList.add('sunrise-tile-img');
+            tile.id = `sunrise-tile-${i}`;
+            tile.style.float = 'left';
+            tile.style.width = '380px';
+            tile.style.height = '380px';
+            tile.style.pointerEvents = 'none';
+
+            this.root.appendChild(tile);
+        }
+
+        this.updateTiles();
+
+        // this.root.innerHTML = ""
+        // this.tiles.forEach((tile, index) => {
+        //     this.root.innerHTML += 
+        //         // change to relative path when using env file
+        //     `<img 
+        //         class="sunrise-tile-img" 
+        //         id="sunrise-tile-${index}" 
+        //         src="api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}"
+        //         style="float:left; width:380px; height:380px; pointer-events: none;"
+        //     >`;
+        // });
     }
 
     async updateTiles() {
-        // let tiles = document.getElementsByTagName('img');
-        let tilebase = this.root.cloneNode(true);
-        let tiles = tilebase.getElementsByTagName('img');
-        console.log(tiles);
-        let ready = 0;
+        // // let tiles = document.getElementsByTagName('img');
+        // let tilebase = this.root.cloneNode(true);
+        let tiles = this.root.getElementsByTagName('img');
+        // console.log(tiles);
+        // let ready = 0;
 
-        for (let i = 0; i < tiles.length; i++) {
-            let new_tile = tiles[i].cloneNode(false);
-            new_tile.addEventListener('load', () => {
-                ready += 1;
-                tiles[i].replaceWith(new_tile);
-                if (ready === 3) {
-                    this.root.replaceWith(tilebase);
-                    this.root = tilebase;
+        Tile = Tile.bind(this);
+
+        let promises = [];
+        for (let i = 0, n = tiles.length; i < n; i++) {
+            promises.push(Tile(i));
+        }
+
+        let new_tiles = await Promise.all([
+            ...promises,
+        ]);
+
+        for (let i = 0, n = tiles.length; i < n; i++) {
+            let tile = tiles[i];
+            let new_tile = new_tiles[i];
+            
+            if (new_tile) {
+                new_tile.classList.add('sunrise-tile-img');
+                new_tile.style.float = 'left';
+                new_tile.style.width = '380px';
+                new_tile.style.height = '380px';
+                new_tile.style.pointerEvents = 'none';
+
+                // console.log({ tile, new_tile });
+                tile.replaceWith(new_tile);
+                // tiles[i] = new_tile;
+            }
+        }
+
+        function Tile(i) {
+            let url = new URL('api/v1/view/', window.location.origin);
+            url.searchParams.append('width', this.dimension);
+            url.searchParams.append('height', this.dimension);
+            url.searchParams.append('tile', `40,${this.tiles[i].row},${this.tiles[i].col}`);
+            url.searchParams.append('camera', `${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}`);
+            url.searchParams.append('angle', '6');
+            url.searchParams.append('samples', this.samples);
+
+            return new Promise((resolve, reject) => {
+                let image = new Image();
+                image.onload = () => {
+                    resolve(image);
                 }
+                image.onerror = () => {
+                    reject();
+                }
+                image.src = url;
             });
-            new_tile.src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
         }
     }
 
     /// @brief The run behavior of the application
     async run() {
-        this.camera.animate();
+        // this.camera.animate();
         
-         document.body.addEventListener('mousedown', () => {
-             this.dimension = this.lowres;
-             // this.dimension = 128;
-             this.is_dragging = true;
-         });
-         document.body.addEventListener('mousemove', () => {
+        document.body.addEventListener('mousedown', () => {
+            this.dimension = this.lowres;
+            // this.dimension = 128;
+            this.is_dragging = true;
+        });
+        document.body.addEventListener('mousemove', () => {
             this.#throttle(() => {
                 if (this.is_dragging) {
                     console.log("move");
                     this.updateTiles();
                 }
             }, 100);
-         });
-         document.body.addEventListener('mouseup', () => {
+        });
+        document.body.addEventListener('mouseup', () => {
             this.dimension = this.highres;
             this.updateTiles();
             this.is_dragging = false;
             // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.z}`);
-         });
+        });
+    
+        return;
 
         const sleepNow = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
         for (let campos = this.path.forward(); campos = this.path.forward(); campos !== null) {
