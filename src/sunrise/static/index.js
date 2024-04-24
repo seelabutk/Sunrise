@@ -35,7 +35,7 @@ class Sunrise {
         // this.root = document.getElementById("sunrise-tile-base");
         this.root = document.createElement('div');
         this.hyperimage.appendChild(this.root);
-        
+
         // this.root.style.width = '100%';
         // this.root.style.height = '100%';
         this.root.style.display = 'grid';
@@ -219,30 +219,24 @@ class Sunrise {
 
         let promises = [];
         for (let i = 0, n = tiles.length; i < n; i++) {
-            promises.push(Tile(i));
+            promises.push(((i) => {
+                return Tile(i).then((new_tile) => {
+                    let tile = tiles[i];
+                    // new_tile.classList.add('sunrise-tile-img');
+                    new_tile.classList.add('hyperimage__tile');
+                    // new_tile.style.float = 'left';
+                    new_tile.style.width = '100%';
+                    new_tile.style.height = '100%';
+                    new_tile.style.pointerEvents = 'none';
+
+                    tile.replaceWith(new_tile);
+                });
+            })(i));
         }
 
-        let new_tiles = await Promise.all([
+        await Promise.all([
             ...promises,
         ]);
-
-        for (let i = 0, n = tiles.length; i < n; i++) {
-            let tile = tiles[i];
-            let new_tile = new_tiles[i];
-            
-            if (new_tile) {
-                // new_tile.classList.add('sunrise-tile-img');
-                new_tile.classList.add('hyperimage__tile');
-                // new_tile.style.float = 'left';
-                new_tile.style.width = '100%';
-                new_tile.style.height = '100%';
-                new_tile.style.pointerEvents = 'none';
-
-                // console.log({ tile, new_tile });
-                tile.replaceWith(new_tile);
-                // tiles[i] = new_tile;
-            }
-        }
 
         this.root.replaceWith(tilebase);
         this.root = tilebase;
@@ -257,7 +251,7 @@ class Sunrise {
             url.searchParams.append('samples', this.samples);
 
             return new Promise((resolve, reject) => {
-                let image = new Image();
+                let image = new Image(this.dimension, this.dimension);
                 image.onload = () => {
                     resolve(image);
                 }
