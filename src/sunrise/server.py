@@ -63,7 +63,7 @@ def _initialize():
             stack=stack,
         )
         next(app.render)
-        app.logger.info('{os.getpid()}: Scene loaded')
+        app.logger.info(f'{os.getpid()}: Scene loaded')
 
 
 def _shutdown(stack: contextlib.ExitStack, /):

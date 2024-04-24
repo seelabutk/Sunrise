@@ -34,9 +34,15 @@ class Sunrise {
         this.hyperimage = document.getElementById('hyperimage');
         this.root = document.getElementById("sunrise-tile-base");
 
-        this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
+        // let x = -146.500 * 1000 * 1.1;
+        // let y = 3705.100 * 1000 * 1.1;
+        // let z = 5180.800 * 1000 * 1.1;
+        let x =   520.8 * 1000 *  1.2;
+        let y =  3748.0 * 1000 *  1.2;
+        let z = -5126.3 * 1000 *  1.2;
+        this.camera = new Arcball(this.hyperimage, x, y, z);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
-        this.samples = 30;
+        this.samples = 1;
         this.is_dragging = false;
 
         this.loading = false;

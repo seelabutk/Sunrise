@@ -4,7 +4,6 @@ die() { printf $'Error: %s\n' "$*" >&2; exit 1; }
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
 self=$(realpath "${BASH_SOURCE[0]:?}")
 project=${root##*/}
-echo "Project: ${project}"
 pexec() { >&2 printf exec; >&2 printf ' %q' "$@"; >&2 printf '\n'; exec "$@"; }
 #---
 
@@ -109,8 +108,7 @@ go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     FLASK_APP=sunrise.server:app \
     SUNRISE_SCENE_PATH=${root:?}/data \
-    flask run \
-        --debug \
+    pexec flask run \
         --host "${server_bind:?}" \
         --port "${server_port:?}" \
     ##
