@@ -28,25 +28,28 @@ class Mission {
 
 /* Sunrise Application */
 class Sunrise {
-    constructor() {
-        this.highres = 512;
-        this.lowres = 64;
-        this.hyperimage = document.getElementById('hyperimage');
-        // this.root = document.getElementById("sunrise-tile-base");
-        this.root = document.createElement('div');
-        this.hyperimage.appendChild(this.root);
+    constructor($el, {
+        canvasSize = 512,
+        tileSize = (canvasSize / 2) |0,
+        highRes = tileSize,
+        lowRes = (highRes / 4) |0,
+    }={}) {
+        this.canvasSize = canvasSize;
+        this.tileSize = tileSize;
+        this.highRes = highRes;
+        this.lowRes = lowRes;
 
-        // this.root.style.width = '100%';
-        // this.root.style.height = '100%';
-        this.root.style.display = 'grid';
-        this.root.style.gridTemplateRows = 'repeat(2, 1fr)';
-        this.root.style.gridTemplateColumns = 'repeat(2, 1fr)';
-        // align top, left
-        this.root.style.justifyContent = 'start';
-        this.root.style.alignItems = 'start';
-        // this.root.style.pointerEvents = 'none';
-        // select none
-        this.root.style.userSelect = 'none';
+        this.hyperimage = $el;
+
+        this.primary = document.createElement('canvas');
+        this.primary.width = this.canvasSize;
+        this.primary.height = this.canvasSize;
+        this.hyperimage.appendChild(this.primary);
+
+        this.secondary = document.createElement('canvas');
+        this.secondary.width = this.canvasSize;
+        this.secondary.height = this.canvasSize;
+        this.hyperimage.appendChild(this.secondary);
 
         this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
@@ -56,16 +59,15 @@ class Sunrise {
         this.loading = false;
 
         // Camera movement bookeeping
-        this.dimension = this.highres; // the x, y dimension of each tile
+        this.dimension = this.highRes; // the x, y dimension of each tile
         this.timeout = null;
         this.throttlepause = false;
         
         // Create the tiles
-        this.tiles = [];
-        this.tileIDs = []
+        this.definitions = [];
         for (let i = 0; i < this.num_tiles[0]; i++) {
             for (let j = 0; j < this.num_tiles[1]; j++) {
-                this.tiles.push(new Tile(i, j, 40));
+                this.definitions.push(new Tile(i, j, 40));
             }
         }
 
@@ -80,13 +82,6 @@ class Sunrise {
 
         this.missions = []
 
-        // Remove click events for images
-        let imgs = document.getElementsByTagName('img');
-        this.renderTiles();
-        for (let i = 0; i < imgs.length; i++) {
-            imgs[i].onclick = null;
-        }
-
         this.rendererUpdate(this.dimension);
     }
 
@@ -100,7 +95,7 @@ class Sunrise {
         this.hyperimage.addEventListener("mousemove", this.onMouseMove.bind(this), false);//.(this);
         this.hyperimage.addEventListener("mouseup", this.onMouseUp.bind(this), false);//.(this);
 
-        this.dimension = this.lowres;
+        this.dimension = this.lowRes;
         // this.dimension = 128;
         this.rendererUpdate("");
         this.#delayUpdate();
@@ -111,7 +106,7 @@ class Sunrise {
         this.hyperimage.removeEventListener('mousemove', this.onMouseMove.bind(this), false);//.(this);
         this.hyperimage.removeEventListener('mouseup', this.onMouseUp.bind(this), false);//.(this);
 
-        this.dimension = this.highres;
+        this.dimension = this.highRes;
         this.rendererUpdate('up');
         this.#delayUpdate();
     }
@@ -173,63 +168,25 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
-        // this.root = document.createElement('div');
-        while (this.root.firstChild) {
-            this.root.removeChild(this.root.firstChild);
-        }
-
-        for (let i=0, n=this.tiles.length; i<n; ++i) {
-            let tile = new Image(this.dimension, this.dimension);
-            // tile.classList.add('sunrise-tile-img');
-            tile.classList.add('hyperimage__tile');
-            tile.id = `sunrise-tile-${i}`;
-            tile.style.float = 'left';
-            tile.style.width = '100%';
-            tile.style.height = '100%';
-            // tile.style.width = '380px';
-            // tile.style.height = '380px';
-            tile.style.pointerEvents = 'none';
-
-            this.root.appendChild(tile);
-        }
-
         this.updateTiles();
-
-        // this.root.innerHTML = ""
-        // this.tiles.forEach((tile, index) => {
-        //     this.root.innerHTML += 
-        //         // change to relative path when using env file
-        //     `<img 
-        //         class="sunrise-tile-img" 
-        //         id="sunrise-tile-${index}" 
-        //         src="api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}"
-        //         style="float:left; width:380px; height:380px; pointer-events: none;"
-        //     >`;
-        // });
     }
 
     async updateTiles() {
-        // // let tiles = document.getElementsByTagName('img');
-        let tilebase = this.root.cloneNode(true);
-        let tiles = tilebase.getElementsByTagName('img');
-        // console.log(tiles);
-        // let ready = 0;
-
         Tile = Tile.bind(this);
 
-        let promises = [];
-        for (let i = 0, n = tiles.length; i < n; i++) {
-            promises.push(((i) => {
-                return Tile(i).then((new_tile) => {
-                    let tile = tiles[i];
-                    // new_tile.classList.add('sunrise-tile-img');
-                    new_tile.classList.add('hyperimage__tile');
-                    // new_tile.style.float = 'left';
-                    new_tile.style.width = '100%';
-                    new_tile.style.height = '100%';
-                    new_tile.style.pointerEvents = 'none';
+        let ctx = this.secondary.getContext('2d');
 
-                    tile.replaceWith(new_tile);
+        let promises = [];
+        for (let i = 0, n = this.definitions.length; i < n; i++) {
+            promises.push(((i) => {
+                let defn = this.definitions[i];
+                let { row, col } = defn;
+
+                let y = row * this.tileSize;
+                let x = col * this.tileSize;
+
+                return Tile(i).then((image) => {
+                    ctx.drawImage(image, x, y, this.tileSize, this.tileSize);
                 });
             })(i));
         }
@@ -238,14 +195,14 @@ class Sunrise {
             ...promises,
         ]);
 
-        this.root.replaceWith(tilebase);
-        this.root = tilebase;
+        ctx = this.primary.getContext('2d');
+        ctx.drawImage(this.secondary, 0, 0, this.canvasSize, this.canvasSize);
 
         function Tile(i) {
             let url = new URL('api/v1/view/', window.location.origin);
             url.searchParams.append('width', this.dimension);
             url.searchParams.append('height', this.dimension);
-            url.searchParams.append('tile', `40,${this.tiles[i].row},${this.tiles[i].col}`);
+            url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
             url.searchParams.append('camera', `${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}`);
             url.searchParams.append('angle', '6');
             url.searchParams.append('samples', this.samples);
@@ -268,7 +225,7 @@ class Sunrise {
         // this.camera.animate();
         
         document.body.addEventListener('mousedown', () => {
-            this.dimension = this.lowres;
+            this.dimension = this.lowRes;
             // this.dimension = 128;
             this.is_dragging = true;
         });
@@ -281,7 +238,7 @@ class Sunrise {
             }, 100);
         });
         document.body.addEventListener('mouseup', () => {
-            this.dimension = this.highres;
+            this.dimension = this.highRes;
             this.updateTiles();
             this.is_dragging = false;
             // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.z}`);
@@ -292,17 +249,18 @@ class Sunrise {
         const sleepNow = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
         for (let campos = this.path.forward(); campos = this.path.forward(); campos !== null) {
             console.log(`P: ${campos.x}, ${campos.y}, ${campos.z}`);
-            this.dimension = this.lowres;
+            this.dimension = this.lowRes;
             this.camera.setPosition(campos.x, campos.y, campos.z);
             this.updateTiles();
             await sleepNow(100);
         }
-        this.dimension = this.highres;
+        this.dimension = this.highRes;
         this.updateTiles();
         console.log("path done");
     }
 }
 
-let app = new Sunrise();
+let app = new Sunrise(document.getElementById('hyperimage'), {
+});
 // app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();
