@@ -76,8 +76,12 @@ body {
     <div class="b missions" >
         <button id="observation" class="missionButton">Observation</button>
     </div>
+    <div class="c"
+        id="hyperimage"
+        style="width: 512px; height: 512px"
+    ></div>
     <!-- This is the map of tiles -->
-    <div
+    <!-- <div
         class="c"
         id="hyperimage"
         style="width: 1028px; height: 912px; z-index: 100;position: relative;"
@@ -87,7 +91,7 @@ body {
             style="transform: scaleY(-1); pointer-events: none; width: 912px; height: 912px; position: relative;"
         >
         </div>
-    </div>
+    </div> -->
 </div>
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 <script type="importmap">

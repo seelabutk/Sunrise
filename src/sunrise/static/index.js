@@ -32,7 +32,21 @@ class Sunrise {
         this.highres = 512;
         this.lowres = 64;
         this.hyperimage = document.getElementById('hyperimage');
-        this.root = document.getElementById("sunrise-tile-base");
+        // this.root = document.getElementById("sunrise-tile-base");
+        this.root = document.createElement('div');
+        this.hyperimage.appendChild(this.root);
+        
+        // this.root.style.width = '100%';
+        // this.root.style.height = '100%';
+        this.root.style.display = 'grid';
+        this.root.style.gridTemplateRows = 'repeat(2, 1fr)';
+        this.root.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        // align top, left
+        this.root.style.justifyContent = 'start';
+        this.root.style.alignItems = 'start';
+        // this.root.style.pointerEvents = 'none';
+        // select none
+        this.root.style.userSelect = 'none';
 
         this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
@@ -166,11 +180,14 @@ class Sunrise {
 
         for (let i=0, n=this.tiles.length; i<n; ++i) {
             let tile = new Image(this.dimension, this.dimension);
-            tile.classList.add('sunrise-tile-img');
+            // tile.classList.add('sunrise-tile-img');
+            tile.classList.add('hyperimage__tile');
             tile.id = `sunrise-tile-${i}`;
             tile.style.float = 'left';
-            tile.style.width = '380px';
-            tile.style.height = '380px';
+            tile.style.width = '100%';
+            tile.style.height = '100%';
+            // tile.style.width = '380px';
+            // tile.style.height = '380px';
             tile.style.pointerEvents = 'none';
 
             this.root.appendChild(tile);
@@ -193,8 +210,8 @@ class Sunrise {
 
     async updateTiles() {
         // // let tiles = document.getElementsByTagName('img');
-        // let tilebase = this.root.cloneNode(true);
-        let tiles = this.root.getElementsByTagName('img');
+        let tilebase = this.root.cloneNode(true);
+        let tiles = tilebase.getElementsByTagName('img');
         // console.log(tiles);
         // let ready = 0;
 
@@ -214,10 +231,11 @@ class Sunrise {
             let new_tile = new_tiles[i];
             
             if (new_tile) {
-                new_tile.classList.add('sunrise-tile-img');
-                new_tile.style.float = 'left';
-                new_tile.style.width = '380px';
-                new_tile.style.height = '380px';
+                // new_tile.classList.add('sunrise-tile-img');
+                new_tile.classList.add('hyperimage__tile');
+                // new_tile.style.float = 'left';
+                new_tile.style.width = '100%';
+                new_tile.style.height = '100%';
                 new_tile.style.pointerEvents = 'none';
 
                 // console.log({ tile, new_tile });
@@ -225,6 +243,9 @@ class Sunrise {
                 // tiles[i] = new_tile;
             }
         }
+
+        this.root.replaceWith(tilebase);
+        this.root = tilebase;
 
         function Tile(i) {
             let url = new URL('api/v1/view/', window.location.origin);
