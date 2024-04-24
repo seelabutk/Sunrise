@@ -51,9 +51,17 @@ class Sunrise {
         this.secondary.height = this.canvasSize;
         this.hyperimage.appendChild(this.secondary);
 
-        this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
+        // // earth, knoxville
+        // let x = -146.500 * 1000 * 1.1;
+        // let y = 3705.100 * 1000 * 1.1;
+        // let z = 5180.800 * 1000 * 1.1;
+        // park, center
+        let x =   587.0 * 1000 *  1.02;
+        let y = -3709.5 * 1000 * -1.02;
+        let z = -5146.7 * 1000 * -1.02;
+        this.camera = new Arcball(this.hyperimage, x, y, z);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
-        this.samples = 30;
+        this.samples = 1;
         this.is_dragging = false;
 
         this.loading = false;

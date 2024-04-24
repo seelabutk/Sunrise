@@ -161,7 +161,6 @@ def Render(
     sunrise.model.RenderingRequest,
     None,
 ]:
-    print("GOT TO RENDER")
     if stack is None:
         with contextlib.ExitStack() as stack:
             yield from Render(
@@ -170,7 +169,7 @@ def Render(
             )
         return
 
-    print("2")
+    # print("2")
     close = contextlib.closing
     enter = stack.enter_context
     defer = stack.callback
@@ -196,6 +195,22 @@ def Render(
         # print("TERRAIN")
         position = path / 'OSPGeometry.mesh.vertex.position.vec3f.bin'
         position = Read(position, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
+        
+        xlo = position['x'].min()
+        xhi = position['x'].max()
+        xmi = (xlo + xhi) / 2
+        ylo = position['y'].min()
+        yhi = position['y'].max()
+        ymi = (ylo + yhi) / 2
+        zlo = position['z'].min()
+        zhi = position['z'].max()
+        zmi = (zlo + zhi) / 2
+
+        print(path)
+        print(f'[ {xlo:.1f} ]-[ {xmi:.1f} ]-[ {xhi:.1f} ] ({position["x"][0]:.1f})')
+        print(f'[ {ylo:.1f} ]-[ {ymi:.1f} ]-[ {yhi:.1f} ] ({position["y"][0]:.1f})')
+        print(f'[ {zlo:.1f} ]-[ {zmi:.1f} ]-[ {zhi:.1f} ] ({position["z"][0]:.1f})')
+
         defer(hold, position)
         position = Data(position, type=lib.OSP_VEC3F, share=True)
         defer(lib.ospRelease, position)
@@ -253,6 +268,7 @@ def Render(
         # material = lib.ospNewMaterial(None, b'obj')
         defer(lib.ospRelease, material)
         lib.ospSetObject(material, b'map_kd', texture)
+        # lib.ospSetVec3f(material, b'kd', 1.0, 0.0, 1.0)
         # lib.ospSetVec3f(material, b'ks', 1.0, 1.0, 1.0)
         lib.ospSetFloat(material, b'ns', *(
             # 0.0,
@@ -273,6 +289,12 @@ def Render(
         # print("OBSERVATION")
         index = path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
+
+        import collections
+        print(path)
+        for i, c in collections.Counter(index.ravel()).most_common():
+            print(f'COUNT(index=={i}) = {c}')
+
         defer(hold, index)
         index = Data(index, type=lib.OSP_UCHAR, share=True)
         defer(lib.ospRelease, index)
@@ -495,6 +517,7 @@ def Render(
 
     instances = []
 
+    park = None
     instances.append(
         (park := Park(
             terrain=Terrain(path=path / 'park'),
@@ -506,10 +529,10 @@ def Render(
             ],
             observation=Observation(path=path / 'observation'),
         )),
-       
     )
     # print("INSTANCES 1")
 
+    earth = None
     instances.append(
         (earth := Park(
             terrain=Terrain(path=path / 'earth'),
@@ -573,13 +596,13 @@ def Render(
     )
 
     lib.ospSetVec4f(renderer, b'backgroundColor', *(
-        # 0.8, 0.2, 0.2, 1.0,
-        0.0, 0.0, 0.0, 1.0,
+        0.8, 0.2, 0.2, 1.0,
+        # 0.0, 0.0, 0.0, 1.0,
     ))
 
     defer(lib.ospRelease, renderer)
 
-    lib.ospSetInt(renderer, b'pixelSamples', 15)
+    lib.ospSetInt(renderer, b'pixelSamples', 1)
     # lib.ospSetInt(renderer, b'pixelSamples', 3)
     # lib.ospSetFloat(renderer, b'aoIntensity', 0)
     # lib.ospSetInt(renderer, b'aoSamples', 32)
@@ -592,14 +615,10 @@ def Render(
     defer(lib.ospRelease, camera)
     # lib.ospSetFloat(camera, b'apertureRadius', 0.0)
     # lib.ospSetInt(camera, b'architectural', 1)
-    # lib.ospSetFloat(camera, b'height', 0.1)
+    # lib.ospSetFloat(camera, b'height', 100000.0)
     # lib.ospSetFloat(camera, b'aspect', *(
     #     1.0,
     # ))
-    lib.ospSetVec4f(camera, b'backgroundColor', *(
-        # 0.0, 1.0, 0.5, 0.0,
-        0.0, 0.0, 1.0, 1.0,
-    ))
     lib.ospCommit(camera)
 
     response = None
@@ -678,13 +697,16 @@ def Render(
 
         instances = []
         instances.extend([
-            earth,
-            park,
             point,
             ambient,
             distant,
             # sunlight,
         ])
+
+        if park is not None:
+            instances.append(park)
+        if earth is not None:
+            instances.append(earth)
 
         # instances.append(
         #     (sun := Sun(
