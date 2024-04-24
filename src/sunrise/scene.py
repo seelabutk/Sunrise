@@ -518,18 +518,18 @@ def Render(
     instances = []
 
     park = None
-    # instances.append(
-    #     (park := Park(
-    #         terrain=Terrain(path=path / 'park'),
-    #         colormaps=[
-    #             Colormap(path=path / 'pink0'),
-    #             Colormap(path=path / 'pink1'),
-    #             Colormap(path=path / 'pink2'),
-    #             Colormap(path=path / 'pink3'),
-    #         ],
-    #         observation=Observation(path=path / 'observation'),
-    #     )),
-    # )
+    instances.append(
+        (park := Park(
+            terrain=Terrain(path=path / 'park'),
+            colormaps=[
+                Colormap(path=path / 'pink0'),
+                Colormap(path=path / 'pink1'),
+                Colormap(path=path / 'pink2'),
+                Colormap(path=path / 'pink3'),
+            ],
+            observation=Observation(path=path / 'observation'),
+        )),
+    )
     # print("INSTANCES 1")
 
     earth = None
