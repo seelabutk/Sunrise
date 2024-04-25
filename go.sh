@@ -27,34 +27,51 @@ go-data() {
 # Upload a zip file of archived data of specified version
 go---upload() {
     version=${1:?need version (e.g. 1)}
-    pexec cp "${root:?}/sunrise-data-v${version}.zip" /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu
-    # pexec  zip -r /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu/sunrise-data-v${version}.zip ./data
+    pexec cp \
+        "${root:?}/data/sunrise-data-v${version}.zip" \
+        /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu \
+    ##
 }
 
 # Compress data into specified version package zip file
 go---archive() {
-    # FIND THE MOST RECENT VERSION AND CREATE THE NEXT ONE
-   
-    # version=$(find /opt/nginx/usr/share/nginx/html/accona.eecs.utk.edu -type f -name "sunrise-data-*" | sort -rn | head -1 | tr -d -c 0-9)
-    # ((version++))
-
-    # WE DONT WANT TO DO THAT SO JUST USE COMMAND ARGUMENT
     version=${1:?need version (e.g. 1)}
-    pexec  zip -r "${root:?}/sunrise-data-v${version}.zip" ./data
+    cd "${root:?}" && \
+    pexec zip \
+        --recurse-paths \
+        --compression-method store \
+        "${root:?}/data/sunrise-data-v${version}.zip" \
+        "data/earth/OSPGeometry.mesh.index.vec4ui.bin" \
+        "data/earth/OSPGeometry.mesh.vertex.normal.vec3f.bin" \
+        "data/earth/OSPGeometry.mesh.vertex.position.vec3f.bin" \
+        "data/earth/OSPGeometry.mesh.vertex.texcoord.vec2f.bin" \
+        "data/earth/OSPTexture.texture2d.data.vec3f.bin" \
+        "data/observation/OSPGeometricModel.index.vec1uc.bin" \
+        "data/park/OSPGeometry.mesh.index.vec4ui.bin" \
+        "data/park/OSPGeometry.mesh.vertex.normal.vec3f.bin" \
+        "data/park/OSPGeometry.mesh.vertex.position.vec3f.bin" \
+        "data/park/OSPGeometry.mesh.vertex.texcoord.vec2f.bin" \
+        "data/pink0/OSPTexture.texture2d.data.vec3f.bin" \
+        "data/pink1/OSPTexture.texture2d.data.vec3f.bin" \
+        "data/pink2/OSPTexture.texture2d.data.vec3f.bin" \
+        "data/pink3/OSPTexture.texture2d.data.vec3f.bin" \
+    ##
 }
 
 # Download zip file of specified version to local directory
 go---download() {
     version=${1:?need version (e.g. 1)}
 
-    mkdir -p "${root:?}/data"
+    if ! [ -d "${root:?}/data" ]; then
+        >&2 printf $'Error: Directory not found: %s\n' "${root:?}/data"
+        >&2 printf $'Error: Create directory and symlink to large storage location before extracting!\n'
+        return 1
+    fi
 
     wget \
         -O "${root:?}/data/sunrise-data-v${version:?}.zip" \
         https://accona.eecs.utk.edu/sunrise-data-v${version:?}.zip \
     ##
-
-    echo "Warning: create directory and symlink to large storage location before extracting!"
 }
 
 # Extract data from zip file to specified directory
@@ -62,7 +79,10 @@ go---extract() {
     version=${1:?need version (e.g. 1)}
     path=${root:?}/data/sunrise-data-v${version}.zip
 
-    unzip -d "${root:?}" "${path:?}"
+    pexec unzip \
+        -d "${root:?}" \
+        "${path:?}" \
+    ##
 }
 
 # TODO: add network create command 
