@@ -1,4 +1,5 @@
-import { Arcball } from "arcball"
+// import { Arcball } from "arcball"
+import { ArcBall } from "tapestry-arcball"
 import { Path, Position } from "path"
 
 /* Holds information for a tile within the Sunrise application */
@@ -33,8 +34,14 @@ class Sunrise {
         this.lowres = 64;
         this.hyperimage = document.getElementById('hyperimage');
         this.root = document.getElementById("sunrise-tile-base");
+        this.camera = null;
+        this.zoom = 3000;
 
-        this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
+        let original_position = $V([7000000, 7000000, 7000000, 1]);
+        // let original_position = $V([0, 0, this.zoom, 1]);
+        this.#setup_camera(original_position);
+        
+        // this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
         this.samples = 30;
         this.is_dragging = false;
@@ -55,14 +62,14 @@ class Sunrise {
             }
         }
 
-        let plist = [
-            new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
-            new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
-            // new Position(4102717.909090294,5310907.385761213,-5483181.110617719),
-            new Position(933326.3859863493,3912455.5863275626,-5369631.879718453),
-            new Position(146.5 * 1010, 3705.1 * 1010, -5180.8 * 1010),
-        ];
-        this.path = new Path(plist);
+//        let plist = [
+//            new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
+//            new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
+//            // new Position(4102717.909090294,5310907.385761213,-5483181.110617719),
+//            // new Position(933326.3859863493,3912455.5863275626,-5369631.879718453),
+//            // new Position(146.5 * 1010, 3705.1 * 1010, -5180.8 * 1010),
+//        ];
+//        this.path = new Path(plist);
 
         this.missions = []
 
@@ -76,8 +83,19 @@ class Sunrise {
         this.rendererUpdate(this.dimension);
     }
 
+    #setup_camera(position, up) {
+        this.camera = new ArcBall();
+        this.camera.up = ([0, 1, 0, 1.0]);
+        this.camera.position = (position);
+
+        this.camera.setBounds(window.innerWidth, window.innerHeight);
+        // this.camera.setBounds(this.settings.width, this.settings.height);
+        this.camera.zoomScale = this.camera.position.elements[2];
+    }
+
     async makeRequest(tile) {
         const res = await fetch(`api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`);
+        // const res = await fetch(`api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`);
         return res.blob();
     }
 
@@ -159,6 +177,20 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
+        var m = $M(this.camera.Transform);
+        m = m.inverse();
+
+        var new_camera_position = m.multiply(this.camera.position);
+        var new_camera_up = m.multiply(this.camera.up);
+
+        var precision = 3;
+        var x = new_camera_position.elements[0].toFixed(precision);
+        var y = new_camera_position.elements[1].toFixed(precision);
+        var z = new_camera_position.elements[2].toFixed(precision);
+
+        console.log(`X: ${x}, Y: ${y}, Z: ${z}`);
+
+
         this.root.innerHTML = ""
         this.tiles.forEach((tile, index) => {
             this.root.innerHTML += 
@@ -166,10 +198,59 @@ class Sunrise {
             `<img 
                 class="sunrise-tile-img" 
                 id="sunrise-tile-${index}" 
-                src="api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}"
+                src="api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${x},${y},${z}&angle=6&samples=${this.samples}"
                 style="float:left; width:380px; height:380px; pointer-events: none;"
             >`;
         });
+        // src="api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}"
+    }
+
+    updateCameraInfo() {
+        var m = $M(this.camera.Transform);
+        m = m.inverse();
+
+        var new_camera_position = m.multiply(this.camera.position);
+        var new_camera_up = m.multiply(this.camera.up);
+
+        var x = new_camera_position.elements[0];
+        var y = new_camera_position.elements[1];
+        var z = new_camera_position.elements[2];
+
+        var upx = new_camera_up.elements[0];
+        var upy = new_camera_up.elements[1];
+        var upz = new_camera_up.elements[2];
+
+        return { position: new_camera_position.elements, up: new_camera_up.elements };
+    }
+
+    smoothUpdate() 
+    {
+        var p = this.getCameraInfo().position;
+        var orig_p = p;
+        var up = this.getCameraInfo().up;
+        var step = 0.05;
+        while (step < 1.0)
+        {
+            p[0] = (end_p[0] - orig_p[0]) * step;
+            p[1] = (end_p[1] - orig_p[1]) * step;
+            p[2] = (end_p[2] - orig_p[2]) * step;
+            var self = this;
+            setTimeout(function(){
+                self.do_action("position(" + p.slice(0, 3).toString() + ")");
+                console.log(p, step);
+            }, 20);
+            step += 0.05;
+        }
+    }
+
+    rotate(mouse_x, mouse_y) {
+        if (this.is_dragging)
+        {
+            this.is_draggin = false;
+            this.camera.move(mouse_x, mouse_y);
+            this.updateTiles;
+            this.is_drag = true;
+        }
     }
 
     async updateTiles() {
@@ -178,7 +259,19 @@ class Sunrise {
         let tiles = tilebase.getElementsByTagName('img');
         console.log(tiles);
         let ready = 0;
+        
+        var m = $M(this.camera.Transform);
+        m = m.inverse();
+        var new_camera_position = m.multiply(this.camera.position);
+        var new_camera_up = m.multiply(this.camera.up);
 
+        var precision = 3;
+        var x = new_camera_position.elements[0].toFixed(precision);
+        var y = new_camera_position.elements[1].toFixed(precision);
+        var z = new_camera_position.elements[2].toFixed(precision);
+
+        console.log(`X: ${x}, Y: ${y}, Z: ${z}`);
+        
         for (let i = 0; i < tiles.length; i++) {
             let new_tile = tiles[i].cloneNode(false);
             new_tile.addEventListener('load', () => {
@@ -189,42 +282,57 @@ class Sunrise {
                     this.root = tilebase;
                 }
             });
-            new_tile.src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
+            new_tile.src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${x},${y},${z}&angle=6&samples=${this.samples}`;
+            // new_tile.src = `api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${this.tiles[i].row},${this.tiles[i].col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`;
         }
     }
 
     /// @brief The run behavior of the application
     async run() {
-        this.camera.animate();
+        // this.camera.animate();
         
-         document.body.addEventListener('mousedown', () => {
-             this.dimension = this.lowres;
-             // this.dimension = 128;
-             this.is_dragging = true;
+        document.body.addEventListener('mousedown', (event) => {
+            this.dimension = this.lowres;
+            // this.dimension = 128;
+            this.is_dragging = true;
+            this.camera.LastRot = this.camera.ThisRot;
+            this.camera.click(event.clientX - this.root.getBoundingClientRect().left, event.clientY - this.root.getBoundingClientRect().top);
          });
-         document.body.addEventListener('mousemove', () => {
+         document.body.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
                 if (this.is_dragging) {
                     console.log("move");
+                    var mouse_x = event.clientX - this.root.getBoundingClientRect().left;
+                    var mouse_y = event.clientY - this.root.getBoundingClientRect().top;
+                    //self.rotate(mouse_x, mouse_y, self.get_low_resolution()); // Render low quality version
+                    this.rotate(mouse_x, mouse_y);
                     this.updateTiles();
+
                 }
             }, 100);
          });
-         document.body.addEventListener('mouseup', () => {
+         document.body.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
-            this.updateTiles();
+
+            var mouse_x = event.clientX - this.root.getBoundingClientRect().left;
+            var mouse_y = event.clientY - this.root.getBoundingClientRect().top;
+
+            this.rotate(mouse_x, mouse_y); // Render high quality version
             this.is_dragging = false;
+            this.updateTiles();
+
+            // this.updateTiles();
             // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.z}`);
          });
 
-        const sleepNow = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
-        for (let campos = this.path.forward(); campos = this.path.forward(); campos !== null) {
-            console.log(`P: ${campos.x}, ${campos.y}, ${campos.z}`);
-            this.dimension = this.lowres;
-            this.camera.setPosition(campos.x, campos.y, campos.z);
-            this.updateTiles();
-            await sleepNow(100);
-        }
+//        const sleepNow = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+//        for (let campos = this.path.forward(); campos = this.path.forward(); campos !== null) {
+//            console.log(`P: ${campos.x}, ${campos.y}, ${campos.z}`);
+//            this.dimension = this.lowres;
+//            this.camera.setPosition(campos.x, campos.y, campos.z);
+//            this.updateTiles();
+//            await sleepNow(100);
+//        }
         this.dimension = this.highres;
         this.updateTiles();
         console.log("path done");
