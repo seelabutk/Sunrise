@@ -49,7 +49,6 @@ class Sunrise {
         this.secondary = document.createElement('canvas');
         this.secondary.width = this.canvasSize;
         this.secondary.height = this.canvasSize;
-        this.hyperimage.appendChild(this.secondary);
 
         // // earth, knoxville
         // let x = -146.500 * 1000 * 1.1;
