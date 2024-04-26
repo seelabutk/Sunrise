@@ -49,16 +49,15 @@ class Sunrise {
         this.secondary = document.createElement('canvas');
         this.secondary.width = this.canvasSize;
         this.secondary.height = this.canvasSize;
-        this.hyperimage.appendChild(this.secondary);
 
         // // earth, knoxville
         // let x = -146.500 * 1000 * 1.1;
         // let y = 3705.100 * 1000 * 1.1;
         // let z = 5180.800 * 1000 * 1.1;
         // park, center
-        let x =   587.0 * 1000 *  1.02;
-        let y = -3709.5 * 1000 * -1.02;
-        let z = -5146.7 * 1000 * -1.02;
+        let x =   587.0 *  1.001;
+        let y = -3709.5 * -1.001;
+        let z = -5146.7 * -1.001;
         this.camera = new Arcball(this.hyperimage, x, y, z);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
         this.samples = 1;
