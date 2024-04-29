@@ -540,7 +540,6 @@ def load_library(name: str) -> ctypes.CDLL:
         lib.OSPMaterial,
 
         ctypes.c_char_p,
-        ctypes.c_char_p,
     )
 
 
@@ -620,6 +619,8 @@ def load_library(name: str) -> ctypes.CDLL:
         ctypes.c_int64,
         ctypes.c_uint64,
         ctypes.c_int64,
+        ctypes.c_void_p,
+        ctypes.c_void_p,
     )
 
     declare('ospNewData',

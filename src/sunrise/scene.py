@@ -109,18 +109,6 @@ def Data(
         raise NotImplementedError()
     # print("DATA 3")
 
-    lib.ospNewSharedData.argtypes = [
-        ctypes.c_void_p,
-        lib.OSPDataType,
-        ctypes.c_uint64,
-        ctypes.c_int64,
-        ctypes.c_uint64,
-        ctypes.c_int64,
-        ctypes.c_uint64,
-        ctypes.c_int64,
-        ctypes.c_void_p,
-        ctypes.c_void_p,
-    ]
     src = lib.ospNewSharedData(
         array.ctypes.data, type,
         array.shape[0], array.strides[0],
@@ -261,9 +249,6 @@ def Render(
         # lib.ospSetInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
         lib.ospCommit(texture)
 
-        import ctypes
-        lib.ospNewMaterial.argtypes = [ctypes.c_char_p]
-        # del lib.ospNewMaterial.argtypes[1:]
         material = lib.ospNewMaterial(b'obj')
         # material = lib.ospNewMaterial(None, b'obj')
         defer(lib.ospRelease, material)
