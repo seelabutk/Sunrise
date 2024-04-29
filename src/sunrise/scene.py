@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from ._auto import auto
 import sunrise.util, sunrise.model
 
 import contextlib
@@ -140,6 +141,288 @@ def with_exit_stack(func: callable, /):
     return wrapper
 
 
+class WithExitStackMixin:
+    def __init__(self):
+        self._stack = auto.contextlib.ExitStack()
+    
+    def __enter__(self):
+        self.make()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+    
+    def close(self):
+        self._stack.close()
+    
+    def hold(self, what):
+        return self.defer(id, what)
+    
+    def defer(self, callback, *args, **kwargs):
+        self._stack.callback(callback, *args, **kwargs)
+    
+    def enter(self, other):
+        return self._stack.enter_context(other)
+
+
+class Terrain(WithExitStackMixin):
+    def __init__(self, path: auto.pathlib.Path):
+        super().__init__()
+
+        self.path = path
+    
+    def make(self):
+        position = self.path / 'OSPGeometry.mesh.vertex.position.vec3f.bin'
+        position = Read(position, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
+
+        xlo = position['x'].min()
+        xhi = position['x'].max()
+        xmi = (xlo + xhi) / 2
+        ylo = position['y'].min()
+        yhi = position['y'].max()
+        ymi = (ylo + yhi) / 2
+        zlo = position['z'].min()
+        zhi = position['z'].max()
+        zmi = (zlo + zhi) / 2
+
+        print(self.path)
+        print(f'[ {xlo:.1f} ]-[ {xmi:.1f} ]-[ {xhi:.1f} ] ({position["x"][0]:.1f})')
+        print(f'[ {ylo:.1f} ]-[ {ymi:.1f} ]-[ {yhi:.1f} ] ({position["y"][0]:.1f})')
+        print(f'[ {zlo:.1f} ]-[ {zmi:.1f} ]-[ {zhi:.1f} ] ({position["z"][0]:.1f})')
+
+        self.hold(position)
+        position = Data(position, type=lib.OSP_VEC3F, share=True)
+        self.defer(lib.ospRelease, position)
+
+        texcoord = self.path / 'OSPGeometry.mesh.vertex.texcoord.vec2f.bin'
+        texcoord = Read(texcoord, dtype=[ ('u', 'f4'), ('v', 'f4') ])
+        self.hold(texcoord)
+        texcoord = Data(texcoord, type=lib.OSP_VEC2F, share=True)
+        self.defer(lib.ospRelease, texcoord)
+
+        normal = self.path / 'OSPGeometry.mesh.vertex.normal.vec3f.bin'
+        normal = Read(normal, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
+        self.hold(normal)
+        normal = Data(normal, type=lib.OSP_VEC3F, share=True)
+        self.defer(lib.ospRelease, normal)
+
+        index = self.path / 'OSPGeometry.mesh.index.vec4ui.bin'
+        index = Read(index, dtype=[ ('a', 'u4'), ('b', 'u4'), ('c', 'u4'), ('d', 'u4') ])
+        self.hold(index)
+        index = Data(index, type=lib.OSP_VEC4UI, share=True)
+        self.defer(lib.ospRelease, index)
+
+        geometry = lib.ospNewGeometry(b'mesh')
+        self.defer(lib.ospRelease, geometry)
+        lib.ospSetObject(geometry, b'vertex.position', position)
+        lib.ospSetObject(geometry, b'vertex.texcoord', texcoord)
+        lib.ospSetObject(geometry, b'vertex.normal', normal)
+        lib.ospSetObject(geometry, b'index', index)
+        lib.ospCommit(geometry)
+
+        self.geometry = geometry
+
+
+class Colormap(WithExitStackMixin):
+    def __init__(self, path: auto.pathlib.Path):
+        super().__init__()
+
+        self.path = path
+    
+    def make(self):
+        data = self.path / 'OSPTexture.texture2d.data.vec3f.bin'
+        data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
+        self.hold(data)
+        data = Data(data, type=lib.OSP_VEC3F, share=True)
+        self.defer(lib.ospRelease, data)
+
+        texture = lib.ospNewTexture(b'texture2d')
+        self.defer(lib.ospRelease, texture)
+        lib.ospSetObject(texture, b'data', data)
+        lib.ospSetUInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
+        lib.ospCommit(texture)
+
+        material = lib.ospNewMaterial(b'obj')
+        self.defer(lib.ospRelease, material)
+        lib.ospSetObject(material, b'map_kd', texture)
+        lib.ospSetFloat(material, b'ns', 1.0)
+        lib.ospCommit(material)
+
+        self.material = material
+        self.defer(lib.ospRelease, material)
+        lib.ospSetObject(material, b'map_kd', texture)
+        lib.ospSetFloat(material, b'ns', 1.0)
+        lib.ospCommit(material)
+
+        self.material = material
+
+
+class Observation(WithExitStackMixin):
+    def __init__(self, path: auto.pathlib.Path):
+        super().__init__()
+
+        self.path = path
+    
+    def make(self):
+        index = self.path / 'OSPGeometricModel.index.vec1uc.bin'
+        index = Read(index, dtype='u1')
+        self.hold(index)
+        index = Data(index, type=lib.OSP_UCHAR, share=True)
+        self.defer(lib.ospRelease, index)
+
+        self.index = index
+
+
+class Park(WithExitStackMixin):
+    def __init__(
+        self,
+        terrain: Terrain,
+        colormaps: list[Colormap],
+        observation: Observation | None,
+    ):
+        super().__init__()
+
+        self.terrain = terrain
+        self.colormaps = colormaps
+        self.observation = observation
+    
+    def make(self):
+        colormaps = Data([
+            colormap.material
+            for colormap in self.colormaps
+        ], type=lib.OSP_MATERIAL)
+        self.defer(lib.ospRelease, colormaps)
+
+        geomodel = lib.ospNewGeometricModel(None)
+        self.defer(lib.ospRelease, geomodel)
+        lib.ospSetObject(geomodel, b'geometry', self.terrain.geometry)
+        lib.ospSetObject(geomodel, b'material', colormaps)
+        if self.observation is not None:
+            lib.ospSetObject(geomodel, b'index', self.observation.index)
+        lib.ospCommit(geomodel)
+
+        geomodels = Data([
+            geomodel,
+        ], type=lib.OSP_GEOMETRIC_MODEL)
+        self.defer(lib.ospRelease, geomodels)
+
+        group = lib.ospNewGroup()
+        self.defer(lib.ospRelease, group)
+        lib.ospSetObject(group, b'geometry', geomodels)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        self.defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        self.instance = instance
+
+
+class Ambient(WithExitStackMixin):
+    def __init__(self):
+        super().__init__()
+    
+    def make(self):
+        light = lib.ospNewLight(b'ambient')
+        self.defer(lib.ospRelease, light)
+        lib.ospSetFloat(light, b'intensity', 0.75)
+        lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        self.defer(lib.ospRelease, group)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        self.defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        self.instance = instance
+
+
+class Point(WithExitStackMixin):
+    def __init__(self):
+        super().__init__()
+
+    def make(self):
+        light = lib.ospNewLight(b'sphere')
+        self.defer(lib.ospRelease, light)
+        lib.ospSetFloat(light, b'intensity', 0.5)
+        lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospSetVec3f(light, b'direction', 0.0, 0.0, 0.0)
+        lib.ospSetVec3f(light, b'position', 100000.0, 100000.0, 100000.0)
+        lib.ospSetFloat(light, b'radius', 100000.0)
+        lib.ospSetVec3f(light, b'color', 0.2, 0.5, 0.6)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        self.defer(lib.ospRelease, group)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        self.defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        self.instance = instance
+
+
+class Distant(WithExitStackMixin):
+    def __init__(self):
+        super().__init__()
+
+    def make(self):
+        light = lib.ospNewLight(b'distant')
+        self.defer(lib.ospRelease, light)
+        lib.ospSetFloat(light, b'intensity', 0.75)
+        lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospSetVec3f(light, b'direction', 0.0, 1.0, 1.0)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        self.defer(lib.ospRelease, group)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        self.defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        self.instance = instance
+
+
+class Sunlight(WithExitStackMixin):
+    def __init__(self):
+        super().__init__()
+
+    def make(self):
+        light = lib.ospNewLight(b'sunSky')
+        self.defer(lib.ospRelease, light)
+        lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospSetVec3f(light, b'color', 0.8, 0.8, 0.8)
+        lib.ospSetFloat(light, b'intensity', 1.0)
+        lib.ospSetVec3f(light, b'direction', 0.0, 0.0, -1.0)
+        lib.ospSetFloat(light, b'albedo', 0.5)
+        lib.ospCommit(light)
+
+        group = lib.ospNewGroup()
+        self.defer(lib.ospRelease, group)
+        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
+        lib.ospCommit(group)
+
+        instance = lib.ospNewInstance(None)
+        self.defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+
+        self.instance = instance
+
+
 def Render(
     *,
     path: pathlib.Path,
@@ -163,394 +446,56 @@ def Render(
     defer = stack.callback
     hold = id
 
-    # def defer(func, *args, **kwargs):
-    #     caller = inspect.getframeinfo(inspect.stack()[1][0])
-    #     filename = caller.filename
-    #     lineno = caller.lineno
-
-    #     print(f'{filename}:{lineno}: Deferring {func.__name__}', flush=True, file=sys.stderr)
-
-    #     def wrapper():
-    #         print(f'{filename}:{lineno}: Executing {func.__name__}', flush=True, file=sys.stderr)
-    #         func(*args, **kwargs)
-    #     
-    #     stack.callback(wrapper)
-
-    def Terrain(
-        *,
-        path: pathlib.Path,
-    ) -> lib.OSPGeometry:
-        # print("TERRAIN")
-        position = path / 'OSPGeometry.mesh.vertex.position.vec3f.bin'
-        position = Read(position, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
-        
-        xlo = position['x'].min()
-        xhi = position['x'].max()
-        xmi = (xlo + xhi) / 2
-        ylo = position['y'].min()
-        yhi = position['y'].max()
-        ymi = (ylo + yhi) / 2
-        zlo = position['z'].min()
-        zhi = position['z'].max()
-        zmi = (zlo + zhi) / 2
-
-        print(path)
-        print(f'[ {xlo:.1f} ]-[ {xmi:.1f} ]-[ {xhi:.1f} ] ({position["x"][0]:.1f})')
-        print(f'[ {ylo:.1f} ]-[ {ymi:.1f} ]-[ {yhi:.1f} ] ({position["y"][0]:.1f})')
-        print(f'[ {zlo:.1f} ]-[ {zmi:.1f} ]-[ {zhi:.1f} ] ({position["z"][0]:.1f})')
-
-        defer(hold, position)
-        position = Data(position, type=lib.OSP_VEC3F, share=True)
-        defer(lib.ospRelease, position)
-
-        texcoord = path / 'OSPGeometry.mesh.vertex.texcoord.vec2f.bin'
-        texcoord = Read(texcoord, dtype=[ ('u', 'f4'), ('v', 'f4') ])
-        defer(hold, texcoord)
-        texcoord = Data(texcoord, type=lib.OSP_VEC2F, share=True)
-        defer(lib.ospRelease, texcoord)
-
-        normal = path / 'OSPGeometry.mesh.vertex.normal.vec3f.bin'
-        normal = Read(normal, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
-        defer(hold, normal)
-        normal = Data(normal, type=lib.OSP_VEC3F, share=True)
-        defer(lib.ospRelease, normal)
-
-        index = path / 'OSPGeometry.mesh.index.vec4ui.bin'
-        index = Read(index, dtype=[ ('a', 'u4'), ('b', 'u4'), ('c', 'u4'), ('d', 'u4') ])
-        defer(hold, index)
-        index = Data(index, type=lib.OSP_VEC4UI, share=True)
-        defer(lib.ospRelease, index)
-
-        geometry = lib.ospNewGeometry(b'mesh')
-        defer(lib.ospRelease, geometry)
-        lib.ospSetObject(geometry, b'vertex.position', position)
-        lib.ospSetObject(geometry, b'vertex.texcoord', texcoord)
-        lib.ospSetObject(geometry, b'vertex.normal', normal)
-        lib.ospSetObject(geometry, b'index', index)
-        lib.ospCommit(geometry)
-
-        return geometry
-
-    def Colormap(
-        *,
-        path: pathlib.Path,
-    ) -> lib.OSPMaterial:
-        # print("COLORMAP")
-        data = path / 'OSPTexture.texture2d.data.vec3f.bin'
-        data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
-        defer(hold, data)
-        data = Data(data, type=lib.OSP_VEC3F, share=True)
-        defer(lib.ospRelease, data)
-
-        texture = lib.ospNewTexture(b'texture2d')
-        defer(lib.ospRelease, texture)
-        lib.ospSetObject(texture, b'data', data)
-        lib.ospSetUInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
-        # lib.ospSetInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
-        lib.ospCommit(texture)
-
-        material = lib.ospNewMaterial(b'obj')
-        # material = lib.ospNewMaterial(None, b'obj')
-        defer(lib.ospRelease, material)
-        lib.ospSetObject(material, b'map_kd', texture)
-        # lib.ospSetVec3f(material, b'kd', 1.0, 0.0, 1.0)
-        # lib.ospSetVec3f(material, b'ks', 1.0, 1.0, 1.0)
-        lib.ospSetFloat(material, b'ns', *(
-            # 0.0,
-            # 0.25,
-            1.0,
-            # 2.0,
-            # 4.0,
-            # 8.0,
-        ))
-        lib.ospCommit(material)
-
-        return material
-    
-    def Observation(
-        *,
-        path: pathlib.Path,
-    ) -> lib.OSPData:
-        # print("OBSERVATION")
-        index = path / 'OSPGeometricModel.index.vec1uc.bin'
-        index = Read(index, dtype='u1')
-
-        import collections
-        print(path)
-        for i, c in collections.Counter(index.ravel()).most_common():
-            print(f'COUNT(index=={i}) = {c}')
-
-        defer(hold, index)
-        index = Data(index, type=lib.OSP_UCHAR, share=True)
-        defer(lib.ospRelease, index)
-
-        return index
-    
-    # def Earth(
-    #     *,
-    #     terrain: lib.OSPGeometry,
-    #     colormaps: list[lib.OSPMaterial],
-    #     observation: lib.OSPData,
-    # ):
-    #     colormaps = Data(colormaps, type=lib.OSP_MATERIAL)
-    #     defer(lib.ospRelease, colormaps)
-
-    #     geometric_models = []
-
-    #     geometric_models.append(
-    #         (model := lib.ospNewGeometricModel(None))
-    #     )
-    #     defer(lib.ospRelease, model, )
-    #     lib.ospSetObject(model, b'geometry', terrain)
-    #     lib.ospSetObject(model, b'material', colormaps)
-    #     lib.ospSetObject(model, b'index', observation)
-    #     lib.ospCommit(model)
-
-
-    def Park(
-        *,
-        terrain: lib.OSPGeometry,
-        colormaps: list[lib.OSPMaterial],
-        observation: lib.OSPData,
-    ) -> lib.OSPGroup:
-        # print("PARK")
-        colormaps = Data(colormaps, type=lib.OSP_MATERIAL)
-        defer(lib.ospRelease, colormaps)
-        # print("PARK 2")
-
-        geometric_models = []
-
-        geometric_models.append(
-            (model := lib.ospNewGeometricModel(None)),
-        )
-        defer(lib.ospRelease, model)
-        lib.ospSetObject(model, b'geometry', terrain)
-        lib.ospSetObject(model, b'material', colormaps)
-        lib.ospSetObject(model, b'index', observation)
-        lib.ospCommit(model)
-
-        geometric_models = Data(geometric_models, type=lib.OSP_GEOMETRIC_MODEL)
-        defer(lib.ospRelease, geometric_models)
-
-        groups = []
-
-        groups.append(
-            (group := lib.ospNewGroup()),
-        )
-        defer(lib.ospRelease, group)
-        lib.ospSetObject(group, b'geometry', geometric_models)
-        lib.ospCommit(group)
-
-        groups = Data(groups, type=lib.OSP_GROUP)
-        defer(lib.ospRelease, groups)
-        lib.ospCommit(groups)
-
-        instance = lib.ospNewInstance(None)
-        defer(lib.ospRelease, instance)
-        lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
-
-        # print("END AMBIENT")
-        return instance
-
-    def Ambient(
-    ) -> lib.OSPInstance:
-        # print("AMBIENT")
-        light = lib.ospNewLight(b'ambient')
-        lib.ospSetFloat(light, b'intensity', *(
-            0.75,
-            # 0.15,
-            # 1.0,
-            # 0.5,
-            # 1.25,
-        ))
-        lib.ospSetInt(light, b'intensityQuantity', *(
-            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
-        ))
-        defer(lib.ospRelease, light)
-        lib.ospCommit(light)
-
-        group = lib.ospNewGroup()
-        defer(lib.ospRelease, group)
-        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
-        lib.ospCommit(group)
-
-        instance = lib.ospNewInstance(None)
-        defer(lib.ospRelease, instance)
-        lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
-
-        return instance
-    
-    def Point(
-    ) -> lib.OSPInstance:
-        light = lib.ospNewLight(b'sphere')
-        lib.ospSetFloat(light, b'intensity', *(
-            0.5,
-            # 0.35,
-            # 1.0,
-        ))
-        lib.ospSetInt(light, b'intensityQuantity', *(
-            0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            # 1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
-        ))
-        lib.ospSetVec3f(light, b'direction', *(
-            0.0, 0.0, 0.0,  # towards z-
-            # -0.5, -0.5, -1.0,  # angled towards z-
-            # 0.0, 0.0, -1.0,  # towards z+
-        ))
-        
-        lib.ospSetVec3f(light, b'position', *(
-            100000.0, 100000.0, 100000.0, 
-        ))
-        
-        lib.ospSetFloat(light, b'radius', 100000.0)
-
-        lib.ospSetVec3f(light, b'color', *(
-            0.2, 0.5, 0.6, 
-        ))
-        
-        defer(lib.ospRelease, light)
-        lib.ospCommit(light)
-
-        group = lib.ospNewGroup()
-        defer(lib.ospRelease, group)
-        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
-        lib.ospCommit(group)
-
-        instance = lib.ospNewInstance(None)
-        defer(lib.ospRelease, instance)
-        lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
-
-        return instance
-    
-    def Distant(
-    ) -> lib.OSPInstance:
-        light = lib.ospNewLight(b'distant')
-        lib.ospSetFloat(light, b'intensity', *(
-            # 0.75,
-            # 0.35,
-            1.0,
-        ))
-        lib.ospSetInt(light, b'intensityQuantity', *(
-            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
-        ))
-        lib.ospSetVec3f(light, b'direction', *(
-            0.0, 1.0, 1.0,  # towards z-
-            # -0.5, -0.5, -1.0,  # angled towards z-
-            # 0.0, 0.0, -1.0,  # towards z+
-        ))
-        
-        defer(lib.ospRelease, light)
-        lib.ospCommit(light)
-
-        group = lib.ospNewGroup()
-        defer(lib.ospRelease, group)
-        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
-        lib.ospCommit(group)
-
-        instance = lib.ospNewInstance(None)
-        defer(lib.ospRelease, instance)
-        lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
-
-        return instance
-    
-    def Sunlight(
-    ) -> lib.OSPInstance:
-        light = lib.ospNewLight(b'sunSky')
-        lib.ospSetInt(light, b'intensityQuantity', *(
-            # 0,  # lib.OSP_INTENSITY_QUANTITY_RADIANCE
-            1,  # lib.OSP_INTENSITY_QUANTITY_IRRADIANCE
-        ))
-
-        lib.ospSetVec3f(light, b'color', *(
-                # 0.8, 0.8, 0.8,
-                0.0, 0.7, 1.0, # light blue
-                # 0.8, 0.48, 0.0, # orange
-            )
-        )
-
-        lib.ospSetFloat(light, b'intensity', 1.0)
-        lib.ospSetVec3f(light, b'direction', *(
-            # 0.0, 0.0, 1.0,  # towards z-
-            -0.2, -0.8, 1.0,  # angled towards z-
-            # 0.0, 0.0, 0.0,  # towards z+
-        ))
-
-        # Ground Reflectance
-        lib.ospSetFloat(light, b'albedo', *(
-            0.5,
-        ))
-        defer(lib.ospRelease, light)
-        lib.ospCommit(light)
-
-        group = lib.ospNewGroup()
-        defer(lib.ospRelease, group)
-        lib.ospSetObjectAsData(group, b'light', lib.OSP_LIGHT, light)
-        lib.ospCommit(group)
-
-        instance = lib.ospNewInstance(None)
-        defer(lib.ospRelease, instance)
-        lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
-
-        return instance
-
     instances = []
 
     park = None
     instances.append(
-        (park := Park(
-            terrain=Terrain(path=path / 'park'),
+        (park := enter(Park(
+            terrain=enter(Terrain(path=path / 'park')),
             colormaps=[
-                Colormap(path=path / 'pink0'),
-                Colormap(path=path / 'pink1'),
-                Colormap(path=path / 'pink2'),
-                Colormap(path=path / 'pink3'),
+                enter(Colormap(path=path / 'pink0')),
+                enter(Colormap(path=path / 'pink1')),
+                enter(Colormap(path=path / 'pink2')),
+                enter(Colormap(path=path / 'pink3')),
             ],
-            observation=Observation(path=path / 'observation'),
-        )),
+            observation=enter(Observation(path=path / 'observation')),
+        )).instance),
     )
     # print("INSTANCES 1")
 
     earth = None
     instances.append(
-        (earth := Park(
-            terrain=Terrain(path=path / 'earth'),
+        (earth := enter(Park(
+            terrain=enter(Terrain(path=path / 'earth')),
             colormaps=[
-                Colormap(path=path / 'earth'),
+                enter(Colormap(path=path / 'earth')),
             ],
             observation=None
-            # observation=Observation(path=path / 'observation'),
-        ))
+        )).instance),
     )
     # print("INSTANCES 2")
 
     instances.append(
-        (ambient := Ambient(
-        )),
+        (ambient := enter(Ambient(
+        )).instance),
     )
     # print("INSTANCES 3")
 
     instances.append(
-        (distant := Distant(
-        )),
+        (distant := enter(Distant(
+        )).instance),
     )
     # print("INSTANCES 4")
 
     instances.append(
-        (point := Point(
-        )),
+        (point := enter(Point(
+        )).instance),
     )
     # print("INSTANCES 5")
     
     instances.append(
-        (sunlight:= Sunlight(
-        )),
+        (sunlight:= enter(Sunlight(
+        )).instance),
     )
     # print("INSTANCES 6")
 
