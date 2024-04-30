@@ -101,6 +101,7 @@ body {
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
         "arcball": "./static/arcball.js",
         "path": "./static/path.js",
+        "utils": "./static/utils.js",
         "d3": "https://d3js.org/d3.v5.min.js"
     }
 }
