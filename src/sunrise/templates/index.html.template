@@ -105,6 +105,7 @@ body {
         "arcball": "./static/arcball.js",
         "tapestry-arcball": "./static/tapestry-arcball.js",
         "path": "./static/path.js",
+        "utils": "./static/utils.js",
         "d3": "https://d3js.org/d3.v5.min.js"
     }
 }
