@@ -56,6 +56,8 @@ class Sunrise {
         this.root = document.getElementById("hyperimage");
         this.camera = null;
         this.zoom = 3000;
+        this.scroll_counter = 0;
+        this.scroll_cma = 0;
 
         let original_position = $V([7000000, 7000000, 7000000, 1]);
         // let original_position = $V([0, 0, this.zoom, 1]);
@@ -333,6 +335,33 @@ class Sunrise {
             this.rotate(mouse_x, mouse_y); // Render high quality version
             this.is_dragging = false;
             this.updateTiles();
+        });
+
+        document.body.addEventListener('wheel', (event) => {
+            this.#throttle(() => {
+                // console.log("ZOOM");
+                // Normalize the scroll speed using a cumulative moving average
+                var delta_sign = event.deltaY < 0 ? -1 : 1;
+                // var delta_sign = event.originalEvent.deltaY < 0 ? -1 : 1;
+                var delta = Math.abs(event.deltaY);
+                this.scroll_cma = (this.scroll_cma * this.scroll_counter + delta) * 
+                    1.0 / (this.scroll_counter + 1);
+                delta = delta_sign * delta / this.scroll_cma;
+                delta *= 60000;
+                this.scroll_counter++; // this will grow indefinitely, must fix later
+
+                this.camera.zoomScale -= delta;
+                this.camera.position.elements[2] = this.camera.zoomScale;
+                this.dimension = this.lowRes;
+                this.updateTiles();
+
+//                clearTimeout($.data(self, 'timer'));
+//                $.data(self, 'timer', setTimeout(function() {
+//                    this.dimension = this.highRes;
+//                    this.updateTiles();
+//                    // self.render(self.get_high_resolution());
+//                }, 500).bind(this));
+            }, 100);
         });
     
         return;
