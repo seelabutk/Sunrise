@@ -5,6 +5,8 @@ export const convert_location_to_spatial = (
     longitude,
     altitude
 ) => {
+    // Thanks https://stackoverflow.com/a/72476578
+    
     const phi = to_radians(latitude);
     const theta = to_radians(longitude);
 
@@ -21,7 +23,11 @@ export const convert_location_to_spatial = (
     // I do :)
     // y, z = z, y
 
-    return (x, y, z);
+    return { 
+        x: x, 
+        y: y, 
+        z: z 
+    };
 }
 
 const to_radians = (num) => {
