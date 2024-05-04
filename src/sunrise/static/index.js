@@ -83,6 +83,7 @@ class Sunrise {
             }
         }
 
+        /* KEEP This is the points list for testing */
 //        let plist = [
 //            new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
 //            new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
@@ -97,47 +98,16 @@ class Sunrise {
         this.rendererUpdate(this.dimension);
     }
 
+    /// @briefSetup the camera to desired initial values
+    /// @returns Nothing
     #setup_camera(position, up) {
         this.camera = new ArcBall();
         this.camera.up = ([0, 1, 0, 1.0]);
         this.camera.position = (position);
 
         this.camera.setBounds(window.innerWidth, window.innerHeight);
-        // this.camera.setBounds(this.settings.width, this.settings.height);
+        //this.camera.setBounds(this.settings.width, this.settings.height);
         this.camera.zoomScale = this.camera.position.elements[2];
-    }
-
-    async makeRequest(tile) {
-        const res = await fetch(`api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`);
-        // const res = await fetch(`api/v1/view/?width=${this.dimension}&height=${this.dimension}&tile=40,${tile.row},${tile.col}&camera=${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}&angle=6&samples=${this.samples}`);
-        return res.blob();
-    }
-
-    /// @brief This is for when the mouse is mouse is pressed to drag the camera
-    onMouseDown() {
-        this.hyperimage.addEventListener("mousemove", this.onMouseMove.bind(this), false);//.(this);
-        this.hyperimage.addEventListener("mouseup", this.onMouseUp.bind(this), false);//.(this);
-
-        this.dimension = this.lowRes;
-        // this.dimension = 128;
-        this.rendererUpdate("");
-        this.#delayUpdate();
-    }
-
-    /// @brief This is for when the mouse is released when dragging the camera
-    onMouseUp() {
-        this.hyperimage.removeEventListener('mousemove', this.onMouseMove.bind(this), false);//.(this);
-        this.hyperimage.removeEventListener('mouseup', this.onMouseUp.bind(this), false);//.(this);
-
-        this.dimension = this.highRes;
-        this.rendererUpdate('up');
-        this.#delayUpdate();
-    }
-
-    /// @brief This is for when the mouse is moving while dragging the camera
-    onMouseMove() {
-        this.rendererUpdate('move');
-        this.#delayUpdate();
     }
 
     /// @brief Update the renderer
@@ -148,14 +118,14 @@ class Sunrise {
         // console.log(`${this.camera.camera.position.x}, ${this.camera.camera.position.y}, ${this.camera.camera.position.y}`);
     }
 
-    #delayUpdate() {
-        if (this.timeout !== null) {
-            clearTimeout(this.timeout);
-        }
-
-        // this.dimension = 128;
-        this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
-    }
+//    #delayUpdate() {
+//        if (this.timeout !== null) {
+//            clearTimeout(this.timeout);
+//        }
+//
+//        // this.dimension = 128;
+//        this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
+//    }
 
     /// @brief Throttle a callback function to 
     /// an interval we specify
@@ -171,12 +141,12 @@ class Sunrise {
         }, time_ms);
     }
 
-    #onTimeout() {
-        clearTimeout(this.timeout);
-        this.timeout = null;
-        this.rendererUpdate(256);
-        this.dimension = 256;
-    }
+//    #onTimeout() {
+//        clearTimeout(this.timeout);
+//        this.timeout = null;
+//        this.rendererUpdate(256);
+//        this.dimension = 256;
+//    }
 
     // @brief Create a new mission and push it to the application's list
     addMission(name, x, y, z) {
@@ -184,16 +154,12 @@ class Sunrise {
         return this;
     }
 
-    /// @brief Render HTML for selecting the missions
-    renderMissions() {
-        // TODO: render a button for each mission added to the application 
-    }
-
     // @brief Render HTML for each image tile we want 
     renderTiles() {
         this.updateTiles();
     }
 
+    /// @brief Update the tiles on the page to the new ones that we rendered on the server
     async updateTiles() {
         Tile = Tile.bind(this);
 
@@ -257,6 +223,8 @@ class Sunrise {
         }
     }
 
+    /// @brief Update the camera to the current information after moving
+    /// @return The new camera positions and the up vector
     updateCameraInfo() {
         var m = $M(this.camera.Transform);
         m = m.inverse();
@@ -273,26 +241,6 @@ class Sunrise {
         var upz = new_camera_up.elements[2];
 
         return { position: new_camera_position.elements, up: new_camera_up.elements };
-    }
-
-    smoothUpdate() 
-    {
-        var p = this.getCameraInfo().position;
-        var orig_p = p;
-        var up = this.getCameraInfo().up;
-        var step = 0.05;
-        while (step < 1.0)
-        {
-            p[0] = (end_p[0] - orig_p[0]) * step;
-            p[1] = (end_p[1] - orig_p[1]) * step;
-            p[2] = (end_p[2] - orig_p[2]) * step;
-            var self = this;
-            setTimeout(function(){
-                self.do_action("position(" + p.slice(0, 3).toString() + ")");
-                console.log(p, step);
-            }, 20);
-            step += 0.05;
-        }
     }
 
     rotate(mouse_x, mouse_y) {
