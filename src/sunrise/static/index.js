@@ -52,8 +52,8 @@ class Sunrise {
 
         this.highres = 512;
         this.lowres = 64;
-        this.hyperimage = document.getElementById('hyperimage');
-        this.root = document.getElementById("hyperimage");
+        // this.hyperimage = document.getElementById('hyperimage');
+        // this.root = document.getElementById("hyperimage");
         this.camera = null;
         this.zoom = 3000;
         this.scroll_counter = 0;
@@ -105,6 +105,7 @@ class Sunrise {
         this.camera.up = ([0, 1, 0, 1.0]);
         this.camera.position = (position);
 
+        // this.camera.setBounds(this.hyperimage.width, this.hyperimage.height);
         this.camera.setBounds(window.innerWidth, window.innerHeight);
         //this.camera.setBounds(this.settings.width, this.settings.height);
         this.camera.zoomScale = this.camera.position.elements[2];
@@ -226,19 +227,20 @@ class Sunrise {
     /// @brief Update the camera to the current information after moving
     /// @return The new camera positions and the up vector
     updateCameraInfo() {
-        var m = $M(this.camera.Transform);
+        let m = $M(this.camera.Transform);
         m = m.inverse();
 
-        var new_camera_position = m.multiply(this.camera.position);
-        var new_camera_up = m.multiply(this.camera.up);
+        const new_camera_position = m.multiply(this.camera.position);
+        const new_camera_up = m.multiply(this.camera.up);
 
-        var x = new_camera_position.elements[0];
-        var y = new_camera_position.elements[1];
-        var z = new_camera_position.elements[2];
+        // TODO: Look into how these are meant ot be used
+        const x = new_camera_position.elements[0];
+        const y = new_camera_position.elements[1];
+        const z = new_camera_position.elements[2];
 
-        var upx = new_camera_up.elements[0];
-        var upy = new_camera_up.elements[1];
-        var upz = new_camera_up.elements[2];
+        const upx = new_camera_up.elements[0];
+        const upy = new_camera_up.elements[1];
+        const upz = new_camera_up.elements[2];
 
         return { position: new_camera_position.elements, up: new_camera_up.elements };
     }
@@ -258,14 +260,14 @@ class Sunrise {
             this.dimension = this.lowres;
             this.is_dragging = true;
             this.camera.LastRot = this.camera.ThisRot;
-            this.camera.click(event.clientX - this.root.getBoundingClientRect().left, event.clientY - this.root.getBoundingClientRect().top);
+            this.camera.click(event.clientX - this.hyperimage.getBoundingClientRect().left, event.clientY - this.hyperimage.getBoundingClientRect().top);
          });
          document.body.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
                 if (this.is_dragging) {
                     console.log("move");
-                    var mouse_x = event.clientX - this.root.getBoundingClientRect().left;
-                    var mouse_y = event.clientY - this.root.getBoundingClientRect().top;
+                    var mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
+                    var mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
                     //self.rotate(mouse_x, mouse_y, self.get_low_resolution()); // Render low quality version
                     this.rotate(mouse_x, mouse_y);
                     this.updateTiles();
@@ -277,8 +279,8 @@ class Sunrise {
         document.body.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
 
-            var mouse_x = event.clientX - this.root.getBoundingClientRect().left;
-            var mouse_y = event.clientY - this.root.getBoundingClientRect().top;
+            const mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
+            const mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
 
             this.rotate(mouse_x, mouse_y); // Render high quality version
             this.is_dragging = false;
@@ -287,11 +289,10 @@ class Sunrise {
 
         document.body.addEventListener('wheel', (event) => {
             this.#throttle(() => {
-                // console.log("ZOOM");
                 // Normalize the scroll speed using a cumulative moving average
-                var delta_sign = event.deltaY < 0 ? -1 : 1;
+                let delta_sign = event.deltaY < 0 ? -1 : 1;
                 // var delta_sign = event.originalEvent.deltaY < 0 ? -1 : 1;
-                var delta = Math.abs(event.deltaY);
+                let delta = Math.abs(event.deltaY);
                 this.scroll_cma = (this.scroll_cma * this.scroll_counter + delta) * 
                     1.0 / (this.scroll_counter + 1);
                 delta = delta_sign * delta / this.scroll_cma;
