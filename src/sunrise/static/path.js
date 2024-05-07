@@ -25,12 +25,7 @@ export class Path {
 
     forward() {
         if (this.current_step !== this.total_steps) {
-        // if (!Position.compare(this.current_position, this.next_point, 0.1)) {
-            
             // Move to next point
-//            this.current_position.x = this.#linterp(this.current_position.x, this.next_point.x, 0.05);
-//            this.current_position.y = this.#linterp(this.current_position.y, this.next_point.y, 0.05);
-//            this.current_position.z = this.#linterp(this.current_position.z, this.next_point.z, 0.05);
             let x = this.#linterp(this.current_position.x, this.next_point.x, (this.current_step / this.total_steps));
             let y = this.#linterp(this.current_position.y, this.next_point.y, (this.current_step / this.total_steps));
             let z = this.#linterp(this.current_position.z, this.next_point.z, (this.current_step / this.total_steps));
@@ -38,7 +33,6 @@ export class Path {
             this.current_step++;
 
             return pos;
-            // return this.current_position;
         }
 
         if (this.current_point_index != this.points.length-2) {
@@ -51,7 +45,6 @@ export class Path {
         }
 
         return null;
-        return false;
     }
 
     #linterp(x1, x2, a) {
