@@ -139,6 +139,23 @@ def Data(
     return dst
 
 
+def Affine3f(
+    *,
+    sx: float = 1.0,
+    sy: float = 1.0,
+    sz: float = 1.0,
+    tx: float = 0.0,
+    ty: float = 0.0,
+    tz: float = 0.0,
+) -> tuple[float, ...]:
+    return (
+        sx, 0, 0,
+        0, sy, 0,
+        0, 0, sz,
+        tx, ty, tz,
+    )
+
+
 def with_exit_stack(func: callable, /):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -272,9 +289,6 @@ class Background(WithExitStackMixin):
         vertex__position = Map(vertex__position, dtype=[
             ('x', 'f4'), ('y', 'f4'), ('z', 'f4'),
         ])
-        vertex__position['x'] *= self.scale
-        vertex__position['y'] *= self.scale
-        vertex__position['z'] *= self.scale
         self.hold(vertex__position)
         vertex__position = Data(vertex__position, type=lib.OSP_VEC3F, share=True)
         self.defer(lib.ospRelease, vertex__position)
@@ -334,6 +348,11 @@ class Background(WithExitStackMixin):
         instance = lib.ospNewInstance(None)
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
+        lib.ospSetAffine3f(instance, b'transform', Affine3f(
+            sx=-1.0 * self.scale,
+            sy=-1.0 * self.scale,
+            sz=-1.0 * self.scale,
+        ))
         lib.ospCommit(instance)
         print('loaded instance')
 
@@ -354,7 +373,7 @@ class City(WithExitStackMixin):
         ))
         print('loaded building')
         
-        earth = self.path / 'Earth'
+        earth = auto.pathlib.Path('data') / 'city' / 'Earth'
         print(f'loading earth {earth}')
         earth = self.enter(Background(
             path=earth,
@@ -549,6 +568,11 @@ class Environment(WithExitStackMixin):
         instance = lib.ospNewInstance(None)
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
+        lib.ospSetAffine3f(instance, b'transform', Affine3f(
+            sx=1/1000,
+            sy=1/1000,
+            sz=1/1000,
+        ))
         lib.ospCommit(instance)
 
         self.instance = instance
@@ -823,12 +847,8 @@ def Render(
     while True:
         f = open('render-times.txt', "a")
 
-        # render_begin = datetime.datetime.now()
         render_begin = time.process_time_ns()
         request = yield response
-        camx, camy, camz = request.camera
-        samples = request.samples
-        # print(f'{camx},{camy},{camz}')
 
         # NOTE: look into open image denoise for low-res rendering
         # lib.ospSetInt(renderer, b'pixelSamples', samples)
@@ -844,14 +864,6 @@ def Render(
         # )
         # height = 1 / (2 ** zoom)
         # print(f'{px=}, {py=}, {pz=} {height=}')
-
-        dx = 0.0
-        dy = request.angle * -0.00001
-        dy = 0.0
-        dz = (
-            # -1.0  # looking at peaks
-            1.0  # looking at valleys
-        )
 
         lib.ospSetVec2f(camera, b'imageStart', *(
             0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
@@ -871,21 +883,24 @@ def Render(
 #         ))
         coef = 201.0
         lib.ospSetVec3f(camera, b'position', *(
+            request.position
             # camx, camy, camz,
-            camx, camy, camz,
+            # camx, camy, camz,
             # px + coef, py + coef, pz + coef,
             # -1700.0, -1400.0, -700.0
         ))
         lib.ospSetVec3f(camera, b'up', *(
-            0.0, 1.0, 0.0,  # y+ up
+            request.up
+            # 0.0, 1.0, 0.0,  # y+ up
             # 0.0, -1.0, 0.0,  # y- up
             # 0.0, 0.0, 1.0,
         ))
         lib.ospSetVec3f(camera, b'direction', *(
+            request.direction
             # dx, dy, dz,
             # -1.0, -1.0, -1.0,
             # -camx, -camy, -camz,
-            -camx, -camy, -camz,
+            # -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
 

@@ -62,8 +62,8 @@ class Sunrise {
 
         let original_position =
             what === 'city'
-            ? $V([7000000/1000, 7000000/1000, 7000000/1000, 1])
-            : $V([7000000, 7000000, 7000000, 1])
+            ? [0, 0, 7000000/500, 1]
+            : [0, 0, 7000000/500, 1]
         ;
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
@@ -107,8 +107,8 @@ class Sunrise {
     /// @returns Nothing
     #setup_camera(position, up) {
         this.camera = new ArcBall();
-        this.camera.up = ([0, 1, 0, 1.0]);
-        this.camera.position = (position);
+        this.camera.up = $V([0, 1, 0, 1.0]);
+        this.camera.position = $V(position);
 
         // this.camera.setBounds(this.hyperimage.width, this.hyperimage.height);
         this.camera.setBounds(window.innerWidth, window.innerHeight);
@@ -200,20 +200,42 @@ class Sunrise {
             m = m.inverse();
 
             const new_camera_position = m.multiply(this.camera.position);
-            const new_camera_up = m.multiply(this.camera.up);
+            let new_camera_up = m.multiply(this.camera.up);
 
-            const precision = 3;
-            const x = new_camera_position.elements[0].toFixed(precision);
-            const y = new_camera_position.elements[1].toFixed(precision);
-            const z = new_camera_position.elements[2].toFixed(precision);
+            const px = new_camera_position.elements[0];
+            const py = new_camera_position.elements[1];
+            const pz = new_camera_position.elements[2];
+
+            let dx = -px;
+            let dy = -py;
+            let dz = -pz;
+
+            // let ux = 0.0;
+            // let uy = 1.0;
+            // let uz = 0.0;
+            let ux = new_camera_up.elements[0];
+            let uy = new_camera_up.elements[1];
+            let uz = new_camera_up.elements[2];
 
             let url = new URL('api/v1/view/', window.location.origin);
             url.searchParams.append('width', this.dimension);
             url.searchParams.append('height', this.dimension);
             url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
-            url.searchParams.append('camera', `${x},${y},${z}`);
-            //url.searchParams.append('camera', `${this.camera.camera.position.x},${this.camera.camera.position.y},${this.camera.camera.position.z}`);
-            url.searchParams.append('angle', '6');
+            url.searchParams.append('position', [
+                px.toFixed(0),
+                py.toFixed(0),
+                pz.toFixed(0),
+            ].join(','));
+            url.searchParams.append('direction', [
+                dx.toFixed(0),
+                dy.toFixed(0),
+                dz.toFixed(0),
+            ].join(','));
+            url.searchParams.append('up', [
+                ux.toFixed(3),
+                uy.toFixed(3),
+                uz.toFixed(3),
+            ].join(','));
             url.searchParams.append('samples', this.samples);
 
             return new Promise((resolve, reject) => {
@@ -227,27 +249,6 @@ class Sunrise {
                 image.src = url;
             });
         }
-    }
-
-    /// @brief Update the camera to the current information after moving
-    /// @return The new camera positions and the up vector
-    updateCameraInfo() {
-        let m = $M(this.camera.Transform);
-        m = m.inverse();
-
-        const new_camera_position = m.multiply(this.camera.position);
-        const new_camera_up = m.multiply(this.camera.up);
-
-        // TODO: Look into how these are meant ot be used
-        const x = new_camera_position.elements[0];
-        const y = new_camera_position.elements[1];
-        const z = new_camera_position.elements[2];
-
-        const upx = new_camera_up.elements[0];
-        const upy = new_camera_up.elements[1];
-        const upz = new_camera_up.elements[2];
-
-        return { position: new_camera_position.elements, up: new_camera_up.elements };
     }
 
     rotate(mouse_x, mouse_y) {

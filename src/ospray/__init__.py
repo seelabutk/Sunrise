@@ -316,6 +316,12 @@ def load_library(name: str) -> ctypes.CDLL:
     declare_setter('Vec3i', ctypes.c_int, n=3)
     declare_setter('Vec4i', ctypes.c_int, n=4)
 
+    def ospSetAffine3f(obj, name, value):
+        assert len(value) == 12
+        as_ctype = (ctypes.c_float * 12)(*value)
+        lib.ospSetParam(obj, name, lib.OSP_AFFINE3F, ctypes.byref(as_ctype))
+    lib.ospSetAffine3f = ospSetAffine3f
+
 
     #--- Rendering (OSPFuture)
 
