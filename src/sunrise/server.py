@@ -1,112 +1,197 @@
+"""
+
+"""
+
 from __future__ import annotations
-
-import sunrise.scene
-
-import atexit
-import contextlib
-import ctypes
-import dataclasses
-import datetime
-import functools
-import itertools
-import math
-import os
-import pathlib
-import pkgutil
-import struct
-import threading
-import typing
-import io
-
-import skyfield, skyfield.api, skyfield.toposlib
-import numpy as np
-import ospray
-import PIL.Image
-import flask
-import jinja2
+from ._auto import auto
+from . import scene
+from . import model
 
 
-app = flask.Flask(
-    __name__,
+# import sunrise.scene
+
+# import atexit
+# import contextlib
+# import ctypes
+# import dataclasses
+# import datetime
+# import functools
+# import itertools
+# import math
+# import os
+# import pathlib
+# import pkgutil
+# import struct
+# import threading
+# import typing
+# import io
+
+# import skyfield, skyfield.api, skyfield.toposlib
+# import numpy as np
+# import ospray
+# import PIL.Image
+# import flask
+# import jinja2
+
+
+# app = flask.Flask(
+#     __name__,
+# )
+
+app = auto.fastapi.FastAPI(
 )
 
 
-# # Thanks https://stackoverflow.com/a/60387043
-# app.jinja_loader = jinja2.FunctionLoader(
-
-#     # Loads file from the templates folder and returns file contents as a string.
-#     # See jinja2.FunctionLoader docs.
-#     lambda name: pkgutil.get_data('sunrise', f'templates/{name}').decode('utf-8'),
-
-# )
+# templates
+templates = auto.fastapi.templating.Jinja2Templates(
+    directory=(
+        auto.pathlib.Path(__file__).parent / 'templates'
+    ),
+)
 
 
-SUNRISE_LIBOSPRAY_PATH = os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospray.so')
-SUNRISE_SCENE_PATH = os.environ['SUNRISE_SCENE_PATH']
+# static
+app.mount(
+    '/static',
+    auto.fastapi.staticfiles.StaticFiles(
+        directory=(
+            auto.pathlib.Path(__file__).parent / 'static'
+        ),
+    ),
+)
 
 
-def _initialize():
-    stack = contextlib.ExitStack()
-    atexit.register(_shutdown, stack)
+SUNRISE_LIBOSPRAY_PATH = auto.os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospray.so')
+SUNRISE_SCENE_PATH = auto.os.environ['SUNRISE_SCENE_PATH']
 
-    with app.app_context():
-        lib = sunrise.scene.load_library(SUNRISE_LIBOSPRAY_PATH)
 
+# @auto.functools.cache
+async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
+    global lib
+    try:
+        lib
+    except NameError:
+        lib = scene.load_library(SUNRISE_LIBOSPRAY_PATH)
         lib.ospInit(None, None)
-        stack.callback(lib.ospShutdown)
 
-        app.render_lock = threading.Lock()
+        auto.atexit.register(lib.ospShutdown)
+    
+    global scenes
+    try:
+        scenes
+    except NameError:
+        scenes = auto.asyncio.Queue()
 
-        app.logger.info(f'{os.getpid()}: Loading scene from {SUNRISE_SCENE_PATH}')
-        app.render = sunrise.scene.Render(
-            path=pathlib.Path(SUNRISE_SCENE_PATH),
-            stack=stack,
+        what = scene.Park(
+            path=auto.pathlib.Path('data'),
         )
-        next(app.render)
-        app.logger.info(f'{os.getpid()}: Scene loaded')
+        what.make()
+
+        for _ in range(6):
+            scene_ = scene.Scene(
+                what=what,
+            )
+            scene_.make()
+
+            scenes.put_nowait(scene_)
+    
+    scene_ = None
+    try:
+        scene_ = await scenes.get()
+        yield scene_
+
+    finally:
+        if scene_ is not None:
+            scenes.put_nowait(scene_)
 
 
-def _shutdown(stack: contextlib.ExitStack, /):
-    with app.app_context():
-        stack.close()
-
-
-_initialize()
-
-
-@app.route('/', methods=['GET'])
-def index():
-    return flask.render_template(
+@app.get('/')
+async def index(
+    *,
+    request: auto.fastapi.Request,
+):
+    return templates.TemplateResponse(
         'index.html.template',
+        dict(
+            request=request,
+        ),
     )
 
 
-@app.route('/api/v1/view/', methods=['GET'])
-def view():
-    args = flask.request.args
-    tile = tuple(map(float, args['tile'].split(',')))
-    position = tuple(map(float, args['position'].split(',')))
-    direction = tuple(map(float, args['direction'].split(',')))
-    up = tuple(map(float, args['up'].split(',')))
-    width = int(args.get('width', default=1024))
-    height = int(args.get('height', default=width//2))
-    samples = int(args.get('samples', default=3))
+@app.get('/api/v1/view/')
+async def view(
+    *,
 
-    with app.render_lock:
-        response = app.render.send(sunrise.model.RenderingRequest(
-            width=width,
-            height=height,
-            tile=tile,
-            position=position,
-            direction=direction,
-            up=up,
-            samples=samples,
-        ))
+    scene: auto.typing.Annotated[
+        scene.Scene,
+        auto.fastapi.Depends(get_scene),
+    ],
+
+    tile: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(
+            alias='tile',
+        ),
+    ],
+
+    position: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(
+            alias='position',
+        ),
+    ],
+    direction: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(
+            alias='direction',
+        ),
+    ],
+    up: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(
+            alias='up',
+        ),
+    ],
+
+    width: auto.typing.Annotated[
+        int,
+        auto.fastapi.Query(
+            alias='width',
+        ),
+    ],
+    height: auto.typing.Annotated[
+        int | None,
+        auto.fastapi.Query(
+            alias='height',
+        ),
+    ],
+
+    samples: auto.typing.Annotated[
+        int,
+        auto.fastapi.Query(
+            alias='samples',
+        ),
+    ],
+):
+    tile = tuple(map(float, tile.split(',')))
+    position = tuple(map(float, position.split(',')))
+    direction = tuple(map(float, direction.split(',')))
+    up = tuple(map(float, up.split(',')))
+
+    response = await scene.arender(model.RenderingRequest(
+        width=width,
+        height=height,
+        tile=tile,
+        position=position,
+        direction=direction,
+        up=up,
+        samples=samples,
+    ))
     
-    with io.BytesIO() as f:
+    with auto.io.BytesIO() as f:
         response.image.save(f, 'PNG')
 
-        return f.getvalue(), 200, {
-            'Content-Type': 'image/png',
-        }
-
+        return auto.fastapi.Response(
+            content=f.getvalue(),
+            media_type='image/png',
+        )

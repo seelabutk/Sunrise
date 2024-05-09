@@ -61,6 +61,7 @@ class AutoImport:
     def fastapi(self):
         import fastapi
         import fastapi.templating
+        import fastapi.staticfiles
         import fastapi.middleware.cors
         return fastapi
  
