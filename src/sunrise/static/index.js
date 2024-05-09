@@ -1,6 +1,7 @@
 import { Arcball } from "arcball"
 import * as THREE from 'three'
 import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { ArcBall } from "tapestry-arcball"
 import { Path, Position } from "path"
 
@@ -119,14 +120,28 @@ class Sunrise {
         let renderer = new THREE.WebGLRenderer();
         let scene = new THREE.Scene();
         this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
-        this.threecontrols = new ArcballControls(this.threecam, this.hyperimage, scene);
+       
+        /// TRACKBALL CONTROLS
+        this.threecontrols = new TrackballControls(this.threecam, this.hyperimage, scene);
         this.threecontrols.addEventListener( 'change', () => {});
-//        this.threecontrols.enableAnimations = true;
-//        this.threecontrols.enableDamping = true;
-//        this.threecontrols.dampingFactor = 0.1000;
-        // this.threecontrols.dampingFactor = 1000;
+        this.threecontrols.rotateSpeed = 90.0;
+        this.threecontrols.zoomSpeed = 1.2;
+        this.threecontrols.noZoom = false;
+        this.threecontrols.noPan = true; // we do not want pannning
+        this.threecontrols.staticMoving = true;
+        this.threecontrols.dynamicDampingFactor = 0.3;
+        this.threecam.position.z = this.z * this.camreduce;
+//        let render = () => {
+//            renderer.render(scene, this.threecam);
+//        }
+//        let animate = () => {
+//            requestAnimationFrame(anime);
+//            this.threecontrols.update();
+//            render();
+//        }
 
-        this.threecam.position.set(this.x * this.camreduce, this.y * this.camreduce, this.z * this.camreduce);
+        // this.threecontrols = new ArcballControls(this.threecam, this.hyperimage, scene);
+        // this.threecam.position.set(this.x * this.camreduce, this.y * this.camreduce, this.z * this.camreduce);
         console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
         this.threecontrols.update();
 
@@ -306,6 +321,7 @@ class Sunrise {
     async run() {
         document.body.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
+            this.threecontrols.update();
             this.is_dragging = true;
             this.camera.LastRot = this.camera.ThisRot;
             this.camera.click(event.clientX - this.hyperimage.getBoundingClientRect().left, event.clientY - this.hyperimage.getBoundingClientRect().top);
@@ -313,6 +329,7 @@ class Sunrise {
          document.body.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
                 if (this.is_dragging) {
+                    this.threecontrols.update();
                     console.log("move");
                     var mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
                     var mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
@@ -327,6 +344,7 @@ class Sunrise {
          
         document.body.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
+            this.threecontrols.update();
 
             const mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
             const mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
@@ -338,6 +356,7 @@ class Sunrise {
 
         document.body.addEventListener('wheel', (event) => {
             this.#throttle(() => {
+                this.threecontrols.update();
                 // Normalize the scroll speed using a cumulative moving average
                 let delta_sign = event.deltaY < 0 ? -1 : 1;
                 // var delta_sign = event.originalEvent.deltaY < 0 ? -1 : 1;
