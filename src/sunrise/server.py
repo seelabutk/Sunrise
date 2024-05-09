@@ -8,36 +8,6 @@ from . import scene
 from . import model
 
 
-# import sunrise.scene
-
-# import atexit
-# import contextlib
-# import ctypes
-# import dataclasses
-# import datetime
-# import functools
-# import itertools
-# import math
-# import os
-# import pathlib
-# import pkgutil
-# import struct
-# import threading
-# import typing
-# import io
-
-# import skyfield, skyfield.api, skyfield.toposlib
-# import numpy as np
-# import ospray
-# import PIL.Image
-# import flask
-# import jinja2
-
-
-# app = flask.Flask(
-#     __name__,
-# )
-
 app = auto.fastapi.FastAPI(
 )
 
