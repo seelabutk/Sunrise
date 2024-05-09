@@ -1,4 +1,6 @@
-// import { Arcball } from "arcball"
+import { Arcball } from "arcball"
+import * as THREE from 'three'
+import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 import { ArcBall } from "tapestry-arcball"
 import { Path, Position } from "path"
 
@@ -41,6 +43,14 @@ class Sunrise {
         this.lowRes = lowRes;
 
         this.hyperimage = $el;
+        this.camreduce = 5;
+        
+        this.threecam = null;
+        this.threecontrols = null;
+        this.x = 700;
+        this.y = 700;
+        this.z = 700;
+        // this.threecam = new Arcball($el, 7000 * this.camreduce, 7000 * this.camreduce, 7000 * this.camreduce); 
 
         this.primary = document.createElement('canvas');
         this.primary.width = this.canvasSize;
@@ -106,6 +116,20 @@ class Sunrise {
     /// @briefSetup the camera to desired initial values
     /// @returns Nothing
     #setup_camera(position, up) {
+        let renderer = new THREE.WebGLRenderer();
+        let scene = new THREE.Scene();
+        this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
+        this.threecontrols = new ArcballControls(this.threecam, this.hyperimage, scene);
+        this.threecontrols.addEventListener( 'change', () => {});
+//        this.threecontrols.enableAnimations = true;
+//        this.threecontrols.enableDamping = true;
+//        this.threecontrols.dampingFactor = 0.1000;
+        // this.threecontrols.dampingFactor = 1000;
+
+        this.threecam.position.set(this.x * this.camreduce, this.y * this.camreduce, this.z * this.camreduce);
+        console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
+        this.threecontrols.update();
+
         this.camera = new ArcBall();
         this.camera.up = $V([0, 1, 0, 1.0]);
         this.camera.position = $V(position);
@@ -202,13 +226,22 @@ class Sunrise {
             const new_camera_position = m.multiply(this.camera.position);
             let new_camera_up = m.multiply(this.camera.up);
 
+            const tx = this.threecam.position.x * this.camreduce;
+            const ty = this.threecam.position.y * this.camreduce;
+            const tz = this.threecam.position.z * this.camreduce;
+
+            // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
+            console.log(`T Position: ${tx} ${ty} ${ty}`);
             const px = new_camera_position.elements[0];
             const py = new_camera_position.elements[1];
             const pz = new_camera_position.elements[2];
 
-            let dx = -px;
-            let dy = -py;
-            let dz = -pz;
+//            let dx = -px;
+//            let dy = -py;
+//            let dz = -pz;
+            let dx = -tx;
+            let dy = -ty;
+            let dz = -tz;
 
             // let ux = 0.0;
             // let uy = 1.0;
@@ -222,19 +255,28 @@ class Sunrise {
             url.searchParams.append('height', this.dimension);
             url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
             url.searchParams.append('position', [
-                px.toFixed(0),
-                py.toFixed(0),
-                pz.toFixed(0),
+                tx,
+                ty,
+                tz,
+//                px.toFixed(0),
+//                py.toFixed(0),
+//                pz.toFixed(0),
             ].join(','));
             url.searchParams.append('direction', [
-                dx.toFixed(0),
-                dy.toFixed(0),
-                dz.toFixed(0),
+                dx,
+                dy,
+                dz,
+//                dx.toFixed(0),
+//                dy.toFixed(0),
+//                dz.toFixed(0),
             ].join(','));
             url.searchParams.append('up', [
-                ux.toFixed(3),
-                uy.toFixed(3),
-                uz.toFixed(3),
+                this.threecam.up.x,
+                this.threecam.up.y,
+                this.threecam.up.z,
+//                ux.toFixed(3),
+//                uy.toFixed(3),
+//                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
 
@@ -275,9 +317,10 @@ class Sunrise {
                     var mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
                     var mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
                     //self.rotate(mouse_x, mouse_y, self.get_low_resolution()); // Render low quality version
-                    this.rotate(mouse_x, mouse_y);
-                    this.updateTiles();
+                   
 
+                    // this.rotate(mouse_x, mouse_y);
+                    this.updateTiles();
                 }
             }, 100);
          });
@@ -288,7 +331,7 @@ class Sunrise {
             const mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
             const mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
 
-            this.rotate(mouse_x, mouse_y); // Render high quality version
+            // this.rotate(mouse_x, mouse_y); // Render high quality version
             this.is_dragging = false;
             this.updateTiles();
         });

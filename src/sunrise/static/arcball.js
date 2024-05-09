@@ -4,20 +4,6 @@ import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 export class Arcball {
     constructor(field, x, y, z) {
         this.renderer = new THREE.WebGLRenderer();
-        // this.renderer.setSize( window.innerWidth, window.outerWidth );
-        // this.renderer.setSize( field.offsetWidth, field.offsetHeight );
-        // console.log(`W: ${field.offsetWidth}, H: ${field.offsetHeight}`);
-        // field.appendChild( this.renderer.domElement );
-//        let elem = field.appendChild( this.renderer.domElement );
-//        // let elem = document.body.appendChild( this.renderer.domElement );
-//        elem.style.zIndex = 100000;
-//        elem.style.opacity = 0.2;
-//        elem.width = field.offsetWidth;
-//        elem.height = field.offsetHeight;
-//        elem.style.position = "absolute";
-//        elem.style.top = 0;
-//        elem.style.left = 0;
-//        // elem.style.background = "green";
 
         this.scene = new THREE.Scene();
 
