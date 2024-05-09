@@ -126,11 +126,11 @@ server_bind=0.0.0.0
 server_port=5000
 go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
-    FLASK_APP=sunrise.server:app \
     SUNRISE_SCENE_PATH=${root:?}/data \
-    pexec flask run \
+    pexec uvicorn \
         --host "${server_bind:?}" \
         --port "${server_port:?}" \
+        sunrise.server:app \
     ##
 }
 

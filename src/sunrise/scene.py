@@ -802,53 +802,14 @@ class Scene(WithExitStackMixin):
         self.world = world
         self.renderer = renderer
         self.camera = camera
+    
+    def render(self, request: model.RenderingRequest):
+        world = self.world
+        renderer = self.renderer
+        camera = self.camera
 
-
-def Render(
-    *,
-    path: pathlib.Path,
-    stack: contextlib.ExitStack=None,
-) -> typing.Generator[
-    sunrise.model.RenderingResponse,
-    sunrise.model.RenderingRequest,
-    None,
-]:
-    if stack is None:
-        with contextlib.ExitStack() as stack:
-            yield from Render(
-                path=path,
-                stack=stack,
-            )
-        return
-
-    # print("2")
-    close = contextlib.closing
-    enter = stack.enter_context
-    defer = stack.callback
-    hold = id
-
-    scene = enter(Scene(
-        # what=enter(City(
-        #     path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
-        # )),
-        what=enter(Park(
-            path=auto.pathlib.Path('data'),
-        )),
-    ))
-    world = scene.world
-    renderer = scene.renderer
-    camera = scene.camera
-
-    response = None
-
-
-    num_x_bins = 2
-    num_y_bins = 2
-    while True:
-        f = open('render-times.txt', "a")
-
-        render_begin = time.process_time_ns()
-        request = yield response
+        num_x_bins = 2
+        num_y_bins = 2
 
         # NOTE: look into open image denoise for low-res rendering
         # lib.ospSetInt(renderer, b'pixelSamples', samples)
@@ -903,6 +864,100 @@ def Render(
             # -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
+
+        framebuffer = lib.ospNewFrameBuffer(
+            request.width,
+            request.height,
+            (
+                # lib.OSP_FB_RGBA8
+                lib.OSP_FB_SRGBA
+            ),
+            lib.OSP_FB_COLOR,
+        )
+
+        _variance: float = lib.ospRenderFrameBlocking(
+            framebuffer,
+            self.renderer,
+            self.camera,
+            self.world,
+        )
+
+        rgba = lib.ospMapFrameBuffer(framebuffer, lib.OSP_FB_COLOR)
+        image = PIL.Image.frombytes(
+            'RGBA',
+            (request.width, request.height),
+            ctypes.string_at(rgba, size=(request.width * request.height * 4)),
+            'raw',
+            'RGBA',
+            0,
+            1,
+        )
+        image.load()
+
+        lib.ospUnmapFrameBuffer(rgba, framebuffer)
+
+        lib.ospRelease(framebuffer)
+
+        return sunrise.model.RenderingResponse(
+            image=image,
+        )
+
+    def arender(self, request: RenderingRequest) -> auto.asyncio.Future[RenderingResponse]:
+        future = auto.asyncio.Future()
+
+        thread = auto.threading.Thread(
+            target=lambda: future.set_result(self.render(request)),
+        )
+        thread.start()
+
+        return future
+    
+
+def Render(
+    *,
+    path: pathlib.Path,
+    stack: contextlib.ExitStack=None,
+) -> typing.Generator[
+    sunrise.model.RenderingResponse,
+    sunrise.model.RenderingRequest,
+    None,
+]:
+    if stack is None:
+        with contextlib.ExitStack() as stack:
+            yield from Render(
+                path=path,
+                stack=stack,
+            )
+        return
+
+    # print("2")
+    close = contextlib.closing
+    enter = stack.enter_context
+    defer = stack.callback
+    hold = id
+
+    scene = enter(Scene(
+        # what=enter(City(
+        #     path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
+        # )),
+        what=enter(Park(
+            path=auto.pathlib.Path('data'),
+        )),
+    ))
+    world = scene.world
+    renderer = scene.renderer
+    camera = scene.camera
+
+    response = None
+
+
+    num_x_bins = 2
+    num_y_bins = 2
+    while True:
+        f = open('render-times.txt', "a")
+
+        render_begin = time.process_time_ns()
+        request = yield response
 
         width = request.width
         height = request.height

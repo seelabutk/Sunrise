@@ -12,12 +12,12 @@ dependencies = [
     "numpy",
     "skyfield",
     "Pillow",
-    "flask",
+    "fastapi",
     "jinja2",
     "bs4",
     "pickleshare",
     "matplotlib",
-    "uwsgi",
+    "uvicorn",
 ]
 
 [tool.setuptools.package-data]
