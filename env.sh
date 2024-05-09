@@ -2,6 +2,7 @@ case "${HOSTNAME:-unset}" in (accona|sinai|kavir|gobi|thar|sahara)
 docker_start+=(
     # --mount="type=bind,src=/mnt/seenas2/data,dst=/home/raustin9/src/Sunrise-Demo/data,readonly=false"
     --mount="type=bind,src=/mnt/seenas2/data,dst=/mnt/seenas2/data,readonly=false"
+    # --mount="type=bind,src=/mnt/data,dst=/mnt/data,readonly=false"
     # --publish=127.202.208.70:33267:33267
     --net=host
 )

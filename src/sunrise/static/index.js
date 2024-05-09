@@ -29,6 +29,7 @@ class Mission {
 /* Sunrise Application */
 class Sunrise {
     constructor($el, {
+        what,
         canvasSize = 512,
         tileSize = (canvasSize / 2) |0,
         highRes = tileSize,
@@ -59,7 +60,11 @@ class Sunrise {
         this.scroll_counter = 0;
         this.scroll_cma = 0;
 
-        let original_position = $V([7000000, 7000000, 7000000, 1]);
+        let original_position =
+            what === 'city'
+            ? $V([7000000/1000, 7000000/1000, 7000000/1000, 1])
+            : $V([7000000, 7000000, 7000000, 1])
+        ;
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
         
@@ -318,6 +323,7 @@ class Sunrise {
 }
 
 let app = new Sunrise(document.getElementById('hyperimage'), {
+    what: 'park',
 });
 // app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();
