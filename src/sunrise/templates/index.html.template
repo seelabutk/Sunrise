@@ -99,6 +99,7 @@ body {
         "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
         "arcball": "./static/arcball.js",
+        "trackball": "./static/trackball.js",
         "tapestry-arcball": "./static/tapestry-arcball.js",
         "path": "./static/path.js",
         "utils": "./static/utils.js",

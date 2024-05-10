@@ -4,6 +4,7 @@ import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { ArcBall } from "tapestry-arcball"
 import { Path, Position } from "path"
+// import { FlippedYTrackballControls } from "trackball";
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -51,7 +52,9 @@ class Sunrise {
         this.x = 700;
         this.y = 700;
         this.z = 700;
-        // this.threecam = new Arcball($el, 7000 * this.camreduce, 7000 * this.camreduce, 7000 * this.camreduce); 
+
+            
+       // this.threecam = new Arcball($el, 7000 * this.camreduce, 7000 * this.camreduce, 7000 * this.camreduce); 
 
         this.primary = document.createElement('canvas');
         this.primary.width = this.canvasSize;
@@ -110,9 +113,21 @@ class Sunrise {
 //        ];
 //        this.path = new Path(plist);
 
+        this.paths = [];
         this.missions = []
 
         this.rendererUpdate(this.dimension);
+    }
+
+    #latlngToCartesian(latitude, longitude, radius) {
+        const phi = (90 - latitude) * Math.PI / 180;
+        const theta = (longitude + 180) * Math.PI / 180;
+    
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+   
+        return new Position(x,y,z);
     }
 
     /// @briefSetup the camera to desired initial values
@@ -134,9 +149,7 @@ class Sunrise {
         this.threecontrols.staticMoving = true;
         this.threecontrols.dynamicDampingFactor = 0.3;
         this.threecam.position.z = this.z * this.camreduce;
-        this.threecam.lookAt(target);
-        this.threecam.up.copy(upVector);
-        this.threecontrols.target.copy(target);
+
 //        let render = () => {
 //            renderer.render(scene, this.threecam);
 //        }
@@ -148,7 +161,7 @@ class Sunrise {
 
         // this.threecontrols = new ArcballControls(this.threecam, this.hyperimage, scene);
         // this.threecam.position.set(this.x * this.camreduce, this.y * this.camreduce, this.z * this.camreduce);
-        console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
+        // console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
         this.threecontrols.update();
 
         this.camera = new ArcBall();
@@ -342,8 +355,28 @@ class Sunrise {
 
         this.threecontrols.rotateSpeed = rotateSpeed;
     }
+    
+    add_path(path) {
+        let converted = [];
+        path.forEach((coord) => {
+            converted.push(this.#latlngToCartesian(coord[0], coord[1], 300));
+        });
+        console.log(converted);
+        this.paths.push(converted);
+    }
+
     /// @brief The run behavior of the application
     async run() {
+        // PATH
+//        for (let i = 0; i < this.paths[0].length; i += 50) {
+//            const newpos = new THREE.Vector3(this.paths[0][i].x, this.paths[0][i].y, this.paths[0][i].z);
+//            this.threecam.position.copy(newpos);
+//            this.threecontrols.update();
+//            console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
+//            await this.updateTiles();
+//        }
+
+
         document.body.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
             this.threecontrols.update();
@@ -412,8 +445,13 @@ class Sunrise {
     }
 }
 
+const resp = await fetch('static/Kingston.json');
+const kingston = await resp.json();
+// console.log(kingston);
+
 let app = new Sunrise(document.getElementById('hyperimage'), {
     what: 'park',
 });
+app.add_path(kingston);
 // app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();

@@ -70,5 +70,5 @@ export class Position {
         return true;
     }
 
-
+    
 }
