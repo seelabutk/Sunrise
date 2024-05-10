@@ -45,16 +45,24 @@ class Sunrise {
         this.lowRes = lowRes;
 
         this.hyperimage = $el;
-        this.camreduce = 5;
+        this.cameraScalingFactor = 5;
         
         this.threecam = null;
         this.threecontrols = null;
-        this.x = 700;
-        this.y = 700;
-        this.z = 700;
+        // this.x = 146.5 * 1.1 / 1;
+        // this.y = 3705.1 * 1.1 / 1;
+        // this.z = -5180.8 * 1.1 / 1;
+        Object.assign(this, {
+            ...this.#latlngToCartesian(
+                35.562744,
+                -83.5 - 13,
+                100,
+            ),
+        });
+
 
             
-       // this.threecam = new Arcball($el, 7000 * this.camreduce, 7000 * this.camreduce, 7000 * this.camreduce); 
+       // this.threecam = new Arcball($el, 7000 * this.cameraScalingFactor, 7000 * this.cameraScalingFactor, 7000 * this.cameraScalingFactor); 
 
         this.primary = document.createElement('canvas');
         this.primary.width = this.canvasSize;
@@ -75,9 +83,10 @@ class Sunrise {
         this.scroll_cma = 0;
 
         let original_position =
-            what === 'city'
-            ? [0, 0, 7000000/500, 1]
-            : [0, 0, 7000000/500, 1]
+            [this.x, this.y, this.z, 1.0]
+            // what === 'city'
+            // ? [0, 0, 7000000/500, 1]
+            // : [0, 0, 7000000/500, 1]
         ;
         
         // let original_position = $V([0, 0, this.zoom, 1]);
@@ -119,15 +128,17 @@ class Sunrise {
         this.rendererUpdate(this.dimension);
     }
 
-    #latlngToCartesian(latitude, longitude, radius) {
-        const phi = (90 - latitude) * Math.PI / 180;
-        const theta = (longitude + 180) * Math.PI / 180;
+    #latlngToCartesian(latitude, longitude, altitude) {
+        const rho = 6371 + altitude;
+        const phi = (latitude) * Math.PI / 180;
+        const theta = (longitude) * Math.PI / 180;
     
-        const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.cos(phi);
-        const z = radius * Math.sin(phi) * Math.sin(theta);
+        const x = rho * Math.cos(phi) * Math.cos(theta);
+        const y = rho * Math.sin(phi);
+        const z = rho * Math.cos(phi) * Math.sin(theta);
    
-        return new Position(x,y,z);
+        // return new Position(x,y,z);
+        return { x, y, z };
     }
 
     /// @briefSetup the camera to desired initial values
@@ -136,19 +147,27 @@ class Sunrise {
         let renderer = new THREE.WebGLRenderer();
         let scene = new THREE.Scene();
         this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
+        this.threecam.position.set(
+            this.x / this.cameraScalingFactor,
+            this.y / this.cameraScalingFactor,
+            this.z / this.cameraScalingFactor,
+        );
+        this.threecam.up.set(0, 1, 0);
      
-        const target = new THREE.Vector3(0, 0, 0);
-        const upVector = new THREE.Vector3(0, -1, 0);
+        // const target = new THREE.Vector3(0, 0, 0);
+        // const upVector = new THREE.Vector3(0, 1, 0);
         /// TRACKBALL CONTROLS
         this.threecontrols = new TrackballControls(this.threecam, this.hyperimage, scene);
         this.threecontrols.addEventListener( 'change', () => {});
-        this.threecontrols.rotateSpeed = 60.0;
+        this.threecontrols.rotateSpeed = 30.0;
         this.threecontrols.zoomSpeed = 1.2;
         this.threecontrols.noZoom = false;
         this.threecontrols.noPan = true; // we do not want pannning
         this.threecontrols.staticMoving = true;
+        this.threecontrols.maxDistance = (6371 + 1000) / this.cameraScalingFactor;
+        this.threecontrols.minDistance = (6371 + 10) / this.cameraScalingFactor;
         this.threecontrols.dynamicDampingFactor = 0.3;
-        this.threecam.position.z = this.z * this.camreduce;
+        // this.threecam.position.z = this.z * this.cameraScalingFactor;
 
 //        let render = () => {
 //            renderer.render(scene, this.threecam);
@@ -160,9 +179,11 @@ class Sunrise {
 //        }
 
         // this.threecontrols = new ArcballControls(this.threecam, this.hyperimage, scene);
-        // this.threecam.position.set(this.x * this.camreduce, this.y * this.camreduce, this.z * this.camreduce);
+        // this.threecam.position.set(this.x * this.cameraScalingFactor, this.y * this.cameraScalingFactor, this.z * this.cameraScalingFactor);
         // console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
         this.threecontrols.update();
+
+        this.updateRotateSpeed();
 
         this.camera = new ArcBall();
         this.camera.up = $V([0, 1, 0, 1.0]);
@@ -261,9 +282,9 @@ class Sunrise {
             let new_camera_up = m.multiply(this.camera.up);
 
             // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
-            const tx = this.threecam.position.x * this.camreduce;
-            const ty = this.threecam.position.y * this.camreduce;
-            const tz = this.threecam.position.z * this.camreduce;
+            const tx = this.threecam.position.x * this.cameraScalingFactor;
+            const ty = this.threecam.position.y * this.cameraScalingFactor;
+            const tz = this.threecam.position.z * this.cameraScalingFactor;
 
             // console.log(`T Position: ${tx} ${ty} ${ty}`);
             const px = new_camera_position.elements[0];
@@ -280,37 +301,40 @@ class Sunrise {
             // let ux = 0.0;
             // let uy = 1.0;
             // let uz = 0.0;
-            let ux = new_camera_up.elements[0];
-            let uy = new_camera_up.elements[1];
-            let uz = new_camera_up.elements[2];
+            let ux = this.threecam.up.x;
+            let uy = this.threecam.up.y;
+            let uz = this.threecam.up.z;
+            // let ux = new_camera_up.elements[0];
+            // let uy = new_camera_up.elements[1];
+            // let uz = new_camera_up.elements[2];
 
             let url = new URL('api/v1/view/', window.location.origin);
             url.searchParams.append('width', this.dimension);
             url.searchParams.append('height', this.dimension);
             url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
             url.searchParams.append('position', [
-                tx,
-                ty,
-                tz,
+                - tx,
+                - ty,
+                - tz,
 //                px.toFixed(0),
 //                py.toFixed(0),
 //                pz.toFixed(0),
             ].join(','));
             url.searchParams.append('direction', [
-                dx,
-                dy,
-                dz,
+                - dx,
+                - dy,
+                - dz,
 //                dx.toFixed(0),
 //                dy.toFixed(0),
 //                dz.toFixed(0),
             ].join(','));
             url.searchParams.append('up', [
-                this.threecam.up.x,
-                this.threecam.up.y,
-                this.threecam.up.z,
-//                ux.toFixed(3),
-//                uy.toFixed(3),
-//                uz.toFixed(3),
+                // this.threecam.up.x,
+                // this.threecam.up.y,
+                // this.threecam.up.z,
+               ux.toFixed(3),
+               uy.toFixed(3),
+               uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
 
@@ -338,10 +362,10 @@ class Sunrise {
     }
 
     updateRotateSpeed() {
-        const maxZoomSpeed = 1.0; // Maximum rotation speed when zoomed out
-        const minZoomSpeed = 0.1; // Minimum rotation speed when zoomed in
-        const maxZoomDistance = 100; // Maximum distance for full rotation speed
-        const minZoomDistance = 10; // Minimum distance for minimum rotation speed
+        const maxSpeed = 3.0; // Maximum rotation speed when zoomed out
+        const minSpeed = 0.01; // Minimum rotation speed when zoomed in
+        const maxZoomDistance = this.threecontrols.maxDistance; // Maximum distance for full rotation speed
+        const minZoomDistance = this.threecontrols.minDistance; // Minimum distance for minimum rotation speed
         
         const distance = this.threecam.position.distanceTo(this.threecontrols.target);
 
@@ -349,8 +373,8 @@ class Sunrise {
             distance,
             minZoomDistance,
             maxZoomDistance,
-            minZoomSpeed,
-            maxZoomSpeed
+            minSpeed,
+            maxSpeed
         );
 
         this.threecontrols.rotateSpeed = rotateSpeed;

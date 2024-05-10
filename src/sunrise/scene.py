@@ -570,7 +570,7 @@ class Environment(WithExitStackMixin):
         lib.ospSetObject(instance, b'group', group)
         lib.ospSetAffine3f(instance, b'transform', Affine3f(
             sx=1/1000,
-            sy=1/1000,
+            sy=1/1000 * -1.0,
             sz=1/1000,
         ))
         lib.ospCommit(instance)
