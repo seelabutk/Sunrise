@@ -76,6 +76,7 @@ class Sunrise {
             ? [0, 0, 7000000/500, 1]
             : [0, 0, 7000000/500, 1]
         ;
+        
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
         
@@ -120,17 +121,22 @@ class Sunrise {
         let renderer = new THREE.WebGLRenderer();
         let scene = new THREE.Scene();
         this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
-       
+     
+        const target = new THREE.Vector3(0, 0, 0);
+        const upVector = new THREE.Vector3(0, -1, 0);
         /// TRACKBALL CONTROLS
         this.threecontrols = new TrackballControls(this.threecam, this.hyperimage, scene);
         this.threecontrols.addEventListener( 'change', () => {});
-        this.threecontrols.rotateSpeed = 90.0;
+        this.threecontrols.rotateSpeed = 60.0;
         this.threecontrols.zoomSpeed = 1.2;
         this.threecontrols.noZoom = false;
         this.threecontrols.noPan = true; // we do not want pannning
         this.threecontrols.staticMoving = true;
         this.threecontrols.dynamicDampingFactor = 0.3;
         this.threecam.position.z = this.z * this.camreduce;
+        this.threecam.lookAt(target);
+        this.threecam.up.copy(upVector);
+        this.threecontrols.target.copy(target);
 //        let render = () => {
 //            renderer.render(scene, this.threecam);
 //        }
@@ -241,12 +247,12 @@ class Sunrise {
             const new_camera_position = m.multiply(this.camera.position);
             let new_camera_up = m.multiply(this.camera.up);
 
+            // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
             const tx = this.threecam.position.x * this.camreduce;
             const ty = this.threecam.position.y * this.camreduce;
             const tz = this.threecam.position.z * this.camreduce;
 
-            // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
-            console.log(`T Position: ${tx} ${ty} ${ty}`);
+            // console.log(`T Position: ${tx} ${ty} ${ty}`);
             const px = new_camera_position.elements[0];
             const py = new_camera_position.elements[1];
             const pz = new_camera_position.elements[2];
@@ -317,6 +323,25 @@ class Sunrise {
             this.is_drag = true;
         }
     }
+
+    updateRotateSpeed() {
+        const maxZoomSpeed = 1.0; // Maximum rotation speed when zoomed out
+        const minZoomSpeed = 0.1; // Minimum rotation speed when zoomed in
+        const maxZoomDistance = 100; // Maximum distance for full rotation speed
+        const minZoomDistance = 10; // Minimum distance for minimum rotation speed
+        
+        const distance = this.threecam.position.distanceTo(this.threecontrols.target);
+
+        const rotateSpeed = THREE.MathUtils.mapLinear(
+            distance,
+            minZoomDistance,
+            maxZoomDistance,
+            minZoomSpeed,
+            maxZoomSpeed
+        );
+
+        this.threecontrols.rotateSpeed = rotateSpeed;
+    }
     /// @brief The run behavior of the application
     async run() {
         document.body.addEventListener('mousedown', (event) => {
@@ -370,6 +395,8 @@ class Sunrise {
                 this.camera.zoomScale -= delta;
                 this.camera.position.elements[2] = this.camera.zoomScale;
                 this.dimension = this.lowRes;
+
+                this.updateRotateSpeed();
                 this.updateTiles();
 
 //                clearTimeout($.data(self, 'timer'));
