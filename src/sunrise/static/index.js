@@ -359,7 +359,7 @@ class Sunrise {
     add_path(path) {
         let converted = [];
         path.forEach((coord) => {
-            converted.push(this.#latlngToCartesian(coord[0], coord[1], 300));
+            converted.push(this.#latlngToCartesian(coord[0], coord[1], 3000));
         });
         console.log(converted);
         this.paths.push(converted);
@@ -368,11 +368,11 @@ class Sunrise {
     /// @brief The run behavior of the application
     async run() {
         // PATH
-//        for (let i = 0; i < this.paths[0].length; i += 50) {
+//        for (let i = 0; i < this.paths[0].length; i += 200) {
 //            const newpos = new THREE.Vector3(this.paths[0][i].x, this.paths[0][i].y, this.paths[0][i].z);
 //            this.threecam.position.copy(newpos);
 //            this.threecontrols.update();
-//            console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
+//            //console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
 //            await this.updateTiles();
 //        }
 
@@ -414,21 +414,8 @@ class Sunrise {
 
         document.body.addEventListener('wheel', (event) => {
             this.#throttle(() => {
+                // console.log(this.threecam.zoom);
                 this.threecontrols.update();
-                // Normalize the scroll speed using a cumulative moving average
-                let delta_sign = event.deltaY < 0 ? -1 : 1;
-                // var delta_sign = event.originalEvent.deltaY < 0 ? -1 : 1;
-                let delta = Math.abs(event.deltaY);
-                this.scroll_cma = (this.scroll_cma * this.scroll_counter + delta) * 
-                    1.0 / (this.scroll_counter + 1);
-                delta = delta_sign * delta / this.scroll_cma;
-                delta *= 600000;
-                this.scroll_counter++; // this will grow indefinitely, must fix later
-
-                this.camera.zoomScale -= delta;
-                this.camera.position.elements[2] = this.camera.zoomScale;
-                this.dimension = this.lowRes;
-
                 this.updateRotateSpeed();
                 this.updateTiles();
 
