@@ -164,7 +164,7 @@ class Sunrise {
         this.threecontrols.noZoom = false;
         this.threecontrols.noPan = true; // we do not want pannning
         this.threecontrols.staticMoving = true;
-        this.threecontrols.maxDistance = (6371 + 1000) / this.cameraScalingFactor;
+        this.threecontrols.maxDistance = (6371 + 5000) / this.cameraScalingFactor;
         this.threecontrols.minDistance = (6371 + 10) / this.cameraScalingFactor;
         this.threecontrols.dynamicDampingFactor = 0.3;
         // this.threecam.position.z = this.z * this.cameraScalingFactor;
