@@ -369,7 +369,7 @@ class Sunrise {
     }
 
     /// Render a point along a path
-    async render_path_point(target) {
+    async render_path_point() {
         Tile = Tile.bind(this);
 
         let ctx = this.secondary.getContext('2d');
@@ -415,12 +415,15 @@ class Sunrise {
             const py = new_camera_position.elements[1];
             const pz = new_camera_position.elements[2];
 
-//            let dx = -px;
-//            let dy = -py;
-//            let dz = -pz;
-            let dx = -tx;
-            let dy = -ty;
-            let dz = -tz;
+            let dirvec = new THREE.Vector3();
+            this.threecam.getWorldDirection(dirvec);
+            console.log(`Up: ${dirvec.x}, ${dirvec.y}, ${dirvec.z}`);
+            let dx = dirvec.x;
+            let dy = dirvec.y;
+            let dz = dirvec.z;
+//            let dx = -tx;
+//            let dy = -ty;
+//            let dz = -tz;
 
             // let ux = 0.0;
             // let uy = 1.0;
@@ -502,18 +505,16 @@ class Sunrise {
                 : this.paths[0][i];
             this.threecontrols.update();
             this.threecam.position.copy(this.paths[0][i]);
-//            this.threecam.up.copy(
-//                new THREE.Vector3 (
-//                    -this.paths[0][i].x,
-//                    -this.paths[0][i].y,
-//                    -this.paths[0][i].z,
-//                )
-//            );
+            this.threecam.up.copy(
+                new THREE.Vector3 (
+                    this.paths[0][i].x,
+                    this.paths[0][i].y,
+                    this.paths[0][i].z,
+                )
+            );
             this.threecam.lookAt(target);
-            // this.threecontrols.update();
-            // console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
-            await this.updateTiles();
-            // await this.render_path_point(target);
+            await this.render_path_point();
+            //await this.updateTiles();
         }
 
 
