@@ -60,6 +60,8 @@ class Sunrise {
             ),
         });
 
+        this.point_vectors = [];
+
 
             
        // this.threecam = new Arcball($el, 7000 * this.cameraScalingFactor, 7000 * this.cameraScalingFactor, 7000 * this.cameraScalingFactor); 
@@ -379,13 +381,127 @@ class Sunrise {
 
         this.threecontrols.rotateSpeed = rotateSpeed;
     }
+
+    /// 
+    async render_path_point(point) {
+        Tile = Tile.bind(this);
+
+        let ctx = this.secondary.getContext('2d');
+
+        let promises = [];
+        for (let i = 0, n = this.definitions.length; i < n; i++) {
+            promises.push(((i) => {
+                let defn = this.definitions[i];
+                let { row, col } = defn;
+
+                let y = row * this.tileSize;
+                let x = col * this.tileSize;
+
+                return Tile(i).then((image) => {
+                    ctx.drawImage(image, x, y, this.tileSize, this.tileSize);
+                });
+            })(i));
+        }
+
+        await Promise.all([
+            ...promises,
+        ]);
+
+        ctx = this.primary.getContext('2d');
+        ctx.drawImage(this.secondary, 0, 0, this.canvasSize, this.canvasSize);
+        
+
+        function Tile(i) {
+            // Camera update
+            let m = $M(this.camera.Transform);
+            m = m.inverse();
+
+            const new_camera_position = m.multiply(this.camera.position);
+            let new_camera_up = m.multiply(this.camera.up);
+
+            // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
+            const tx = this.threecam.position.x * this.cameraScalingFactor;
+            const ty = this.threecam.position.y * this.cameraScalingFactor;
+            const tz = this.threecam.position.z * this.cameraScalingFactor;
+
+            // console.log(`T Position: ${tx} ${ty} ${ty}`);
+            const px = new_camera_position.elements[0];
+            const py = new_camera_position.elements[1];
+            const pz = new_camera_position.elements[2];
+
+//            let dx = -px;
+//            let dy = -py;
+//            let dz = -pz;
+            let dx = -tx;
+            let dy = -ty;
+            let dz = -tz;
+
+            // let ux = 0.0;
+            // let uy = 1.0;
+            // let uz = 0.0;
+            let ux = this.threecam.up.x;
+            let uy = this.threecam.up.y;
+            let uz = this.threecam.up.z;
+            // let ux = new_camera_up.elements[0];
+            // let uy = new_camera_up.elements[1];
+            // let uz = new_camera_up.elements[2];
+
+            let url = new URL('api/v1/view/', window.location.origin);
+            url.searchParams.append('width', this.dimension);
+            url.searchParams.append('height', this.dimension);
+            url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
+            url.searchParams.append('position', [
+                - tx,
+                - ty,
+                - tz,
+//                px.toFixed(0),
+//                py.toFixed(0),
+//                pz.toFixed(0),
+            ].join(','));
+            url.searchParams.append('direction', [
+                - dx,
+                - dy,
+                - dz,
+//                dx.toFixed(0),
+//                dy.toFixed(0),
+//                dz.toFixed(0),
+            ].join(','));
+            url.searchParams.append('up', [
+                // this.threecam.up.x,
+                // this.threecam.up.y,
+                // this.threecam.up.z,
+               ux.toFixed(3),
+               uy.toFixed(3),
+               uz.toFixed(3),
+            ].join(','));
+            url.searchParams.append('samples', this.samples);
+
+            return new Promise((resolve, reject) => {
+                let image = new Image(this.dimension, this.dimension);
+                image.onload = () => {
+                    resolve(image);
+                }
+                image.onerror = () => {
+                    reject();
+                }
+                image.src = url;
+            });
+        }
+    }
    
     /// Add a path for the camera to follow
     add_path(path) {
         let converted = [];
         path.forEach((coord) => {
-            console.log(coord.lat);
-            converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 400));
+            // converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 400));
+            let point = this.#latlngToCartesian(coord.lat, coord.lng, 400);
+            converted.push(
+                new THREE.Vector3(
+                    point.x / this.cameraScalingFactor,
+                    point.y / this.cameraScalingFactor,
+                    point.z / this.cameraScalingFactor,
+                )
+            );
         });
         // console.log(converted);
         this.paths.push(converted);
@@ -394,25 +510,16 @@ class Sunrise {
     /// @brief The run behavior of the application
     async run() {
         // PATH
-//        const newpos = new THREE.Vector3(
-//            this.paths[0][0].x / this.cameraScalingFactor, 
-//            this.paths[0][0].y / this.cameraScalingFactor, 
-//            this.paths[0][0].z / this.cameraScalingFactor
-//        );
-//        this.threecam.position.copy(newpos);
-//        // this.threecontrols.update();
-//        await this.updateTiles();
-        
-        // for (let i = 0; i < 100; i++) {
-        for (let i = 0; i < this.paths[0].length; i += 50) {
+        for (let i = 0; i < this.paths[0].length; i += 100) {
             this.threecontrols.update();
-            const newpos = new THREE.Vector3(
-                this.paths[0][i].x / this.cameraScalingFactor, 
-                (this.paths[0][i].y) / this.cameraScalingFactor, 
-                this.paths[0][i].z / this.cameraScalingFactor
-            );
+//            const newpos = new THREE.Vector3(
+//                this.paths[0][i].x / this.cameraScalingFactor, 
+//                (this.paths[0][i].y) / this.cameraScalingFactor, 
+//                this.paths[0][i].z / this.cameraScalingFactor
+//            );
             // console.log(`PathPos: ${newpos.x} ${newpos.y} ${newpos.z}`);
             // this.threecam.position.set(newpos);
+            let newpos = this.paths[0][i];
             this.threecam.position.copy(newpos);
             // this.threecontrols.update();
             // console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
