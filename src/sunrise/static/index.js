@@ -385,7 +385,7 @@ class Sunrise {
         let converted = [];
         path.forEach((coord) => {
             console.log(coord.lat);
-            converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 100));
+            converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 400));
         });
         // console.log(converted);
         this.paths.push(converted);
@@ -404,7 +404,7 @@ class Sunrise {
 //        await this.updateTiles();
         
         // for (let i = 0; i < 100; i++) {
-        for (let i = 0; i < this.paths[0].length; i += 200) {
+        for (let i = 0; i < this.paths[0].length; i += 50) {
             this.threecontrols.update();
             const newpos = new THREE.Vector3(
                 this.paths[0][i].x / this.cameraScalingFactor, 
