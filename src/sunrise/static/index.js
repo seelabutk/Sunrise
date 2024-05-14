@@ -62,10 +62,6 @@ class Sunrise {
 
         this.point_vectors = [];
 
-
-            
-       // this.threecam = new Arcball($el, 7000 * this.cameraScalingFactor, 7000 * this.cameraScalingFactor, 7000 * this.cameraScalingFactor); 
-
         this.primary = document.createElement('canvas');
         this.primary.width = this.canvasSize;
         this.primary.height = this.canvasSize;
@@ -113,16 +109,6 @@ class Sunrise {
                 this.definitions.push(new Tile(i, j, 40));
             }
         }
-
-        /* KEEP This is the points list for testing */
-//        let plist = [
-//            new Position(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z),
-//            new Position(7817434.156790381, 9195626.52974075, -1152465.1533886464),
-//            // new Position(4102717.909090294,5310907.385761213,-5483181.110617719),
-//            // new Position(933326.3859863493,3912455.5863275626,-5369631.879718453),
-//            // new Position(146.5 * 1010, 3705.1 * 1010, -5180.8 * 1010),
-//        ];
-//        this.path = new Path(plist);
 
         this.paths = [];
         this.missions = []
@@ -382,8 +368,8 @@ class Sunrise {
         this.threecontrols.rotateSpeed = rotateSpeed;
     }
 
-    /// 
-    async render_path_point(point) {
+    /// Render a point along a path
+    async render_path_point(target) {
         Tile = Tile.bind(this);
 
         let ctx = this.secondary.getContext('2d');
@@ -494,7 +480,7 @@ class Sunrise {
         let converted = [];
         path.forEach((coord) => {
             // converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 400));
-            let point = this.#latlngToCartesian(coord.lat, coord.lng, 400);
+            let point = this.#latlngToCartesian(coord.lat, coord.lng - 13, 7);
             converted.push(
                 new THREE.Vector3(
                     point.x / this.cameraScalingFactor,
@@ -510,20 +496,24 @@ class Sunrise {
     /// @brief The run behavior of the application
     async run() {
         // PATH
-        for (let i = 0; i < this.paths[0].length; i += 100) {
+        for (let i = 0; i < this.paths[0].length; i++) {
+            let target = i < this.paths[0].length-1 ? 
+                this.paths[0][i+1]
+                : this.paths[0][i];
             this.threecontrols.update();
-//            const newpos = new THREE.Vector3(
-//                this.paths[0][i].x / this.cameraScalingFactor, 
-//                (this.paths[0][i].y) / this.cameraScalingFactor, 
-//                this.paths[0][i].z / this.cameraScalingFactor
+            this.threecam.position.copy(this.paths[0][i]);
+//            this.threecam.up.copy(
+//                new THREE.Vector3 (
+//                    -this.paths[0][i].x,
+//                    -this.paths[0][i].y,
+//                    -this.paths[0][i].z,
+//                )
 //            );
-            // console.log(`PathPos: ${newpos.x} ${newpos.y} ${newpos.z}`);
-            // this.threecam.position.set(newpos);
-            let newpos = this.paths[0][i];
-            this.threecam.position.copy(newpos);
+            this.threecam.lookAt(target);
             // this.threecontrols.update();
             // console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
             await this.updateTiles();
+            // await this.render_path_point(target);
         }
 
 
@@ -582,7 +572,7 @@ class Sunrise {
     }
 }
 
-const resp = await fetch('static/Kingston.json');
+const resp = await fetch('static/park.json');
 const kingston = await resp.json();
 // console.log(kingston);
 
