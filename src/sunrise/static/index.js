@@ -379,24 +379,43 @@ class Sunrise {
 
         this.threecontrols.rotateSpeed = rotateSpeed;
     }
-    
+   
+    /// Add a path for the camera to follow
     add_path(path) {
         let converted = [];
         path.forEach((coord) => {
-            converted.push(this.#latlngToCartesian(coord[0], coord[1], 3000));
+            console.log(coord.lat);
+            converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 1000));
         });
-        console.log(converted);
+        // console.log(converted);
         this.paths.push(converted);
     }
 
     /// @brief The run behavior of the application
     async run() {
         // PATH
-//        for (let i = 0; i < this.paths[0].length; i += 200) {
-//            const newpos = new THREE.Vector3(this.paths[0][i].x, this.paths[0][i].y, this.paths[0][i].z);
-//            this.threecam.position.copy(newpos);
+        const newpos = new THREE.Vector3(
+            this.paths[0][0].x / this.cameraScalingFactor, 
+            this.paths[0][0].y / this.cameraScalingFactor, 
+            this.paths[0][0].z / this.cameraScalingFactor
+        );
+        this.threecam.position.copy(newpos);
+        // this.threecontrols.update();
+        await this.updateTiles();
+        
+//        for (let i = 0; i < 100; i++) {
+//        // for (let i = 0; i < this.paths[0].length; i += 200) {
 //            this.threecontrols.update();
-//            //console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
+//            const newpos = new THREE.Vector3(
+//                this.paths[0][i].x / this.cameraScalingFactor, 
+//                (this.paths[0][i].y - 13) / this.cameraScalingFactor, 
+//                this.paths[0][i].z / this.cameraScalingFactor
+//            );
+//            console.log(`PathPos: ${newpos.x} ${newpos.y} ${newpos.z}`);
+//            // this.threecam.position.set(newpos);
+//            this.threecam.position.copy(newpos);
+//            // this.threecontrols.update();
+//            console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
 //            await this.updateTiles();
 //        }
 
