@@ -385,7 +385,7 @@ class Sunrise {
         let converted = [];
         path.forEach((coord) => {
             console.log(coord.lat);
-            converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 1000));
+            converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 100));
         });
         // console.log(converted);
         this.paths.push(converted);
