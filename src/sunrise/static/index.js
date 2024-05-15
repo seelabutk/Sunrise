@@ -56,6 +56,52 @@ class Mission {
 
         return this.current_point;
     }
+
+    /// Move forwrads in the path
+    /// Return null when we are at end of the path
+    forward() {
+        if (this.index === this.point_list.length-1) {
+            return null;
+        }
+
+        this.current_point = this.#mean_position(this.index, 9);
+        let target = this.#mean_position(this.index+1, 9);
+        let up = this.current_point;
+
+        this.index++;
+
+        return {
+            current: this.current_point,
+            target: target,
+            up: up
+        };
+    }
+
+    #mean_position(index, range) {
+        let mean_x = 0;
+        let mean_y = 0;
+        let mean_z = 0;
+
+        let begin = Math.max(index - range, 0);
+        let end = Math.min(index + range, this.point_list.length);
+       
+        // Loop <range> indices ahead and average the components of the positions
+        for (
+            let i = begin;
+            i < end;
+            i++
+        ) {
+            mean_x += this.point_list[i].x;
+            mean_y += this.point_list[i].y;
+            mean_z += this.point_list[i].z;
+        }
+
+        return new THREE.Vector3(
+            mean_x / (end - begin),
+            mean_y / (end - begin),
+            mean_z / (end - begin)
+        );
+    }
 }
 
 /* Sunrise Application */
@@ -532,61 +578,20 @@ class Sunrise {
             console.log(`Point: ${point.x}, ${point.y}, ${point.z})`);
         });
         this.paths.push(final);
-        // this.paths.push(converted);
-    }
-
-    /// Return the coordinates of the mean position the given range for the path
-    #mean_position(path, index, range) {
-        let mean_x = 0;
-        let mean_y = 0;
-        let mean_z = 0;
-
-        let begin = Math.max(index - range, 0);
-        let end = Math.min(index + range, path.length);
-       
-        // Loop <range> indices ahead and average the components of the positions
-        for (
-            let i = begin;
-            i < end;
-            i++
-        ) {
-            mean_x += path[i].x;
-            mean_y += path[i].y;
-            mean_z += path[i].z;
-        }
-
-        return new THREE.Vector3(
-            mean_x / (end - begin),
-            mean_y / (end - begin),
-            mean_z / (end - begin)
-        );
     }
 
     /// @brief The run behavior of the application
     async run() {
-        // PATH
-        for (let i = 0; i < this.paths[0].length; i++) {
-            let pos = this.#mean_position(this.paths[0], i, 9);
-            console.log(`Run: Pos: ${pos.x}, ${pos.y}, ${pos.z}`);
-
-            let target = this.#mean_position(this.paths[0], Math.min(i+1, this.paths[0].length), 9);
-            console.log(`Run: Target: ${target.x}, ${target.y}, ${target.z}`);
-            
+        // Render the Park 
+        let render_data = this.park.forward();
+        while (render_data !== null) {
             this.threecontrols.update();
-            this.threecam.position.copy(pos);
-            // this.threecam.position.copy(this.paths[0][i]);
-            console.log(`Run: Cam: ${this.threecam.position.x}, ${this.threecam.position.y}, ${this.threecam.position.z}`);
-            this.threecam.up.copy(
-                new THREE.Vector3 (
-                    pos.x,
-                    pos.y,
-                    pos.z,
-                )
-            );
-            console.log(`Run: Up: ${this.threecam.up.x}, ${this.threecam.up.y}, ${this.threecam.up.z}`);
-            
-            this.threecam.lookAt(target);
+            this.threecam.position.copy(render_data.current);
+            this.threecam.up.copy(render_data.up);
+            this.threecam.lookAt(render_data.target);
+
             await this.render_path_point();
+            render_data = this.park.forward();
         }
 
         document.body.addEventListener('mousedown', (event) => {
