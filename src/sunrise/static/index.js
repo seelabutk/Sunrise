@@ -148,9 +148,6 @@ class Sunrise {
 
         this.highres = 512;
         this.lowres = 64;
-        // this.hyperimage = document.getElementById('hyperimage');
-        // this.root = document.getElementById("hyperimage");
-        // this.camera = null;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
@@ -165,7 +162,6 @@ class Sunrise {
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
         
-        // this.camera = new Arcball(this.hyperimage, 7000000, 7000000, 7000000);
         this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
         this.samples = 1;
         this.is_dragging = false;
@@ -217,15 +213,6 @@ class Sunrise {
         this.threecontrols.update();
 
         this.updateRotateSpeed();
-
-        // this.camera = new ArcBall();
-        // this.camera.up = $V([0, 1, 0, 1.0]);
-        // this.camera.position = $V(position);
-
-        // this.camera.setBounds(this.hyperimage.width, this.hyperimage.height);
-        // this.camera.setBounds(window.innerWidth, window.innerHeight);
-        //this.camera.setBounds(this.settings.width, this.settings.height);
-        // this.camera.zoomScale = this.camera.position.elements[2];
     }
 
     /// @brief Update the renderer
@@ -308,38 +295,17 @@ class Sunrise {
 
         function Tile(i) {
             // Camera update
-            // let m = $M(this.camera.Transform);
-            // m = m.inverse();
-
-            // const new_camera_position = m.multiply(this.camera.position);
-            // let new_camera_up = m.multiply(this.camera.up);
-
-            // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
             const tx = this.threecam.position.x * this.cameraScalingFactor;
             const ty = this.threecam.position.y * this.cameraScalingFactor;
             const tz = this.threecam.position.z * this.cameraScalingFactor;
 
-            // console.log(`T Position: ${tx} ${ty} ${ty}`);
-            // const px = new_camera_position.elements[0];
-            // const py = new_camera_position.elements[1];
-            // const pz = new_camera_position.elements[2];
-
-//            let dx = -px;
-//            let dy = -py;
-//            let dz = -pz;
             let dx = -tx;
             let dy = -ty;
             let dz = -tz;
-
-            // let ux = 0.0;
-            // let uy = 1.0;
-            // let uz = 0.0;
+            
             let ux = this.threecam.up.x;
             let uy = this.threecam.up.y;
             let uz = this.threecam.up.z;
-            // let ux = new_camera_up.elements[0];
-            // let uy = new_camera_up.elements[1];
-            // let uz = new_camera_up.elements[2];
 
             let url = new URL('api/v1/view/', window.location.origin);
             url.searchParams.append('width', this.dimension);
@@ -444,41 +410,19 @@ class Sunrise {
 
         function Tile(i) {
             // Camera update
-            // let m = $M(this.camera.Transform);
-            // m = m.inverse();
-
-            // const new_camera_position = m.multiply(this.camera.position);
-            // let new_camera_up = m.multiply(this.camera.up);
-
-            // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
             const tx = this.threecam.position.x * this.cameraScalingFactor;
             const ty = this.threecam.position.y * this.cameraScalingFactor;
             const tz = this.threecam.position.z * this.cameraScalingFactor;
 
-            // console.log(`T Position: ${tx} ${ty} ${ty}`);
-            // const px = new_camera_position.elements[0];
-            // const py = new_camera_position.elements[1];
-            // const pz = new_camera_position.elements[2];
-
             let dirvec = new THREE.Vector3();
             this.threecam.getWorldDirection(dirvec);
-            // console.log(`Up: ${dirvec.x}, ${dirvec.y}, ${dirvec.z}`);
             let dx = dirvec.x;
             let dy = dirvec.y;
             let dz = dirvec.z;
-//            let dx = -tx;
-//            let dy = -ty;
-//            let dz = -tz;
-
-            // let ux = 0.0;
-            // let uy = 1.0;
-            // let uz = 0.0;
+            
             let ux = this.threecam.up.x;
             let uy = this.threecam.up.y;
             let uz = this.threecam.up.z;
-            // let ux = new_camera_up.elements[0];
-            // let uy = new_camera_up.elements[1];
-            // let uz = new_camera_up.elements[2];
 
             let url = new URL('api/v1/view/', window.location.origin);
             url.searchParams.append('width', this.dimension);
@@ -538,7 +482,7 @@ class Sunrise {
         });
 
         let final = [];
-        const num_steps = 18;
+        const num_steps = 30;
         for (let i = 1; i < converted.length; i++) {
             let prevpoint = converted[i-1];
             let currpoint = converted[i];
