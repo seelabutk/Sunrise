@@ -469,26 +469,27 @@ class Sunrise {
    
     /// Add a path for the camera to follow
     add_path(path) {
-        let converted = [];
-        path.forEach((coord) => {
-            let point = latlng_to_cartesian(coord.lat, coord.lng - 13, 7);
-            converted.push(
-                new THREE.Vector3(
-                    point.x / this.cameraScalingFactor,
-                    point.y / this.cameraScalingFactor,
-                    point.z / this.cameraScalingFactor,
-                )
-            );
-        });
-
-        let final = [];
+        let data = [];
         const num_steps = 30;
-        for (let i = 1; i < converted.length; i++) {
-            let prevpoint = converted[i-1];
-            let currpoint = converted[i];
+        for (let i = 1; i < path.length; i++) {
+            let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
+            let prevpoint = new THREE.Vector3(
+                prev.x / this.cameraScalingFactor,
+                prev.y / this.cameraScalingFactor,
+                prev.z / this.cameraScalingFactor,
+            );
+            
+            let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, 7);
+            let currpoint = new THREE.Vector3(
+                curr.x / this.cameraScalingFactor,
+                curr.y / this.cameraScalingFactor,
+                curr.z / this.cameraScalingFactor,
+            );
 
+            // Use the linear interpolator to fill in and
+            // smooth the distance between points
             for (let j = 0; j < num_steps; j++) {
-                final.push(
+                data.push(
                     new THREE.Vector3(
                         linear_interp(prevpoint.x, currpoint.x, j / num_steps),
                         linear_interp(prevpoint.y, currpoint.y, j / num_steps),
@@ -498,12 +499,9 @@ class Sunrise {
             }
         }
 
-        this.park = new Mission("Park", final);
-        console.log(`Final: Length: ${final.length}`);
-        final.forEach((point) => {
-            console.log(`Point: ${point.x}, ${point.y}, ${point.z})`);
-        });
-        this.paths.push(final);
+        // TODO: Probably use a list of these Missions to hold
+        // rather than hard code it
+        this.park = new Mission("Park", data);
     }
 
     /// @brief The run behavior of the application
