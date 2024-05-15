@@ -527,13 +527,13 @@ class Sunrise {
     async run() {
         // PATH
         for (let i = 0; i < this.paths[0].length; i++) {
-            let pos = this.#mean_position(this.paths[0], i, 5);
+            let pos = this.#mean_position(this.paths[0], i, 9);
             console.log(`Run: Pos: ${pos.x}, ${pos.y}, ${pos.z}`);
 //            let target = i < this.paths[0].length-1 ? 
 //                this.paths[0][i+1]
 //                : this.paths[0][i];
 
-            let target = this.#mean_position(this.paths[0], Math.min(i+1, this.paths[0].length), 5);
+            let target = this.#mean_position(this.paths[0], Math.min(i+1, this.paths[0].length), 9);
             console.log(`Run: Target: ${target.x}, ${target.y}, ${target.z}`);
             
             this.threecontrols.update();
