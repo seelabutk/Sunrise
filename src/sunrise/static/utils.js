@@ -1,3 +1,4 @@
+import * as THREE from 'three'
 export const EARTH_AVG_ALTITUDE = 6_371_000;
 
 /// Convert latitude and longitude coordinates to spherical coordinates
@@ -53,4 +54,18 @@ export const latlng_to_cartesian = (latitude, longitude, altitude) => {
     const z = rho * Math.cos(phi) * Math.sin(theta);
 
     return { x, y, z };
+}
+
+/// Same conversion as above, but returns the values in a THREE.js
+/// Vector3 class
+export const latlng_to_cartesian_vec3 = (latitude, longitude, altitude) => {
+    const rho = 6371 + altitude;
+    const phi = (latitude) * Math.PI / 180;
+    const theta = (longitude) * Math.PI / 180;
+
+    const x = rho * Math.cos(phi) * Math.cos(theta);
+    const y = rho * Math.sin(phi);
+    const z = rho * Math.cos(phi) * Math.sin(theta);
+
+    return new THREE.Vector3(x, y, z);
 }

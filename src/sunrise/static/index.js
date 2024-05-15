@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { ArcBall } from "tapestry-arcball"
-import { linear_interp, latlng_to_cartesian } from "utils";
+import { linear_interp, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -20,17 +20,24 @@ class Mission {
     point_list = [];      // The data of all position coordinates
     current_point = null; // The current point that the index is pointing to. TODO: we might not need this in the future
 
-    constructor(name, raw_position_data, interpolation_steps) {
+    /// NOTE: what to do with 'alt'?
+    constructor(name, position_data) {
         this.name = name;
-        this.point_list = this.#convert_data(raw_position_data, interpolation_steps);
+        this.point_list = position_data;
         this.index = 0;
         this.current_point = this.point_list[0];
     }
 
     /// Increment our index and return the "next" point in the list
     /// This is used to go forwards from where we are in the path
+    /// @returns null when we are at end of list
     next() {
-        this.index = Math.min(this.point_list.length, this.index + 1);
+        // Return early if we are at the end of the list
+        if (this.index == this.point_list.length) {
+            return null;
+        }
+        
+        this.index++;
         this.current_point = this.point_list[this.index];
 
         return this.current_point;
@@ -38,16 +45,16 @@ class Mission {
 
     /// Decremement our index and return the "previous" point
     /// This is used to go backwards from where we are in the path
+    /// @returns null when we are at beginning of list
     back() {
-        this.index = Math.max(0, this.index - 1);
+        if (this.index == 0) {
+            return null;
+        }
+
+        this.index--;
         this.current_point = this.point_list[this.index];
 
         return this.current_point;
-    }
-
-    /// Take the raw data that is given to us, 
-    /// and convert it to THREE.Vector3 components
-    #convert_data(data) {
     }
 }
 
@@ -82,6 +89,8 @@ class Sunrise {
         });
 
         this.point_vectors = [];
+
+        this.park = null;
 
         this.primary = document.createElement('canvas');
         this.primary.width = this.canvasSize;
@@ -490,7 +499,6 @@ class Sunrise {
     add_path(path) {
         let converted = [];
         path.forEach((coord) => {
-            // let point = this.#latlngToCartesian(coord.lat, coord.lng - 13, 7);
             let point = latlng_to_cartesian(coord.lat, coord.lng - 13, 7);
             converted.push(
                 new THREE.Vector3(
@@ -517,6 +525,8 @@ class Sunrise {
                 );
             }
         }
+
+        this.park = new Mission("Park", final);
         console.log(`Final: Length: ${final.length}`);
         final.forEach((point) => {
             console.log(`Point: ${point.x}, ${point.y}, ${point.z})`);
@@ -578,7 +588,6 @@ class Sunrise {
             this.threecam.lookAt(target);
             await this.render_path_point();
         }
-
 
         document.body.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
