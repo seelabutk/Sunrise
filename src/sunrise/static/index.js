@@ -12,8 +12,8 @@ class Tile {
     }
 }
 
-/* Mission for the application */
-// NOTE: x, y, z are camera coords
+/// Missions are used to represent the different flypaths that a user
+/// can follow. They are able to go forwards and backwards
 class Mission {
     name = "";            // The name of the mission. "Knoxville", "City", "Park", etc
     index = 0;            // Points to where in the list of points we are currently at while iterating
@@ -60,6 +60,7 @@ class Mission {
     /// Move forwrads in the path
     /// Return null when we are at end of the path
     forward() {
+        // Return early when at the end of the list
         if (this.index === this.point_list.length-1) {
             return null;
         }
@@ -77,6 +78,7 @@ class Mission {
         };
     }
 
+    /// Average the values of each component of the coordinates +- the specified range
     #mean_position(index, range) {
         let mean_x = 0;
         let mean_y = 0;
@@ -123,9 +125,6 @@ class Sunrise {
         
         this.threecam = null;
         this.threecontrols = null;
-        // this.x = 146.5 * 1.1 / 1;
-        // this.y = 3705.1 * 1.1 / 1;
-        // this.z = -5180.8 * 1.1 / 1;
         Object.assign(this, {
             ...latlng_to_cartesian(
                 35.562744,
@@ -151,7 +150,7 @@ class Sunrise {
         this.lowres = 64;
         // this.hyperimage = document.getElementById('hyperimage');
         // this.root = document.getElementById("hyperimage");
-        this.camera = null;
+        // this.camera = null;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
@@ -194,8 +193,7 @@ class Sunrise {
 
     /// @briefSetup the camera to desired initial values
     /// @returns Nothing
-    #setup_camera(position, up) {
-        let renderer = new THREE.WebGLRenderer();
+    #setup_camera(position) {
         let scene = new THREE.Scene();
         this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
         this.threecam.position.set(
@@ -205,8 +203,6 @@ class Sunrise {
         );
         this.threecam.up.set(0, 1, 0);
      
-        // const target = new THREE.Vector3(0, 0, 0);
-        // const upVector = new THREE.Vector3(0, 1, 0);
         /// TRACKBALL CONTROLS
         this.threecontrols = new TrackballControls(this.threecam, this.hyperimage, scene);
         this.threecontrols.addEventListener( 'change', () => {});
@@ -218,32 +214,18 @@ class Sunrise {
         this.threecontrols.maxDistance = (6371 + 5000) / this.cameraScalingFactor;
         this.threecontrols.minDistance = (6371 + 10) / this.cameraScalingFactor;
         this.threecontrols.dynamicDampingFactor = 0.3;
-        // this.threecam.position.z = this.z * this.cameraScalingFactor;
-
-//        let render = () => {
-//            renderer.render(scene, this.threecam);
-//        }
-//        let animate = () => {
-//            requestAnimationFrame(anime);
-//            this.threecontrols.update();
-//            render();
-//        }
-
-        // this.threecontrols = new ArcballControls(this.threecam, this.hyperimage, scene);
-        // this.threecam.position.set(this.x * this.cameraScalingFactor, this.y * this.cameraScalingFactor, this.z * this.cameraScalingFactor);
-        // console.log(`THREECAM Position: ${this.threecam.position.x} ${this.threecam.position.y} ${this.threecam.position.y}`);
         this.threecontrols.update();
 
         this.updateRotateSpeed();
 
-        this.camera = new ArcBall();
-        this.camera.up = $V([0, 1, 0, 1.0]);
-        this.camera.position = $V(position);
+        // this.camera = new ArcBall();
+        // this.camera.up = $V([0, 1, 0, 1.0]);
+        // this.camera.position = $V(position);
 
         // this.camera.setBounds(this.hyperimage.width, this.hyperimage.height);
-        this.camera.setBounds(window.innerWidth, window.innerHeight);
+        // this.camera.setBounds(window.innerWidth, window.innerHeight);
         //this.camera.setBounds(this.settings.width, this.settings.height);
-        this.camera.zoomScale = this.camera.position.elements[2];
+        // this.camera.zoomScale = this.camera.position.elements[2];
     }
 
     /// @brief Update the renderer
@@ -326,11 +308,11 @@ class Sunrise {
 
         function Tile(i) {
             // Camera update
-            let m = $M(this.camera.Transform);
-            m = m.inverse();
+            // let m = $M(this.camera.Transform);
+            // m = m.inverse();
 
-            const new_camera_position = m.multiply(this.camera.position);
-            let new_camera_up = m.multiply(this.camera.up);
+            // const new_camera_position = m.multiply(this.camera.position);
+            // let new_camera_up = m.multiply(this.camera.up);
 
             // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
             const tx = this.threecam.position.x * this.cameraScalingFactor;
@@ -338,9 +320,9 @@ class Sunrise {
             const tz = this.threecam.position.z * this.cameraScalingFactor;
 
             // console.log(`T Position: ${tx} ${ty} ${ty}`);
-            const px = new_camera_position.elements[0];
-            const py = new_camera_position.elements[1];
-            const pz = new_camera_position.elements[2];
+            // const px = new_camera_position.elements[0];
+            // const py = new_camera_position.elements[1];
+            // const pz = new_camera_position.elements[2];
 
 //            let dx = -px;
 //            let dy = -py;
@@ -462,11 +444,11 @@ class Sunrise {
 
         function Tile(i) {
             // Camera update
-            let m = $M(this.camera.Transform);
-            m = m.inverse();
+            // let m = $M(this.camera.Transform);
+            // m = m.inverse();
 
-            const new_camera_position = m.multiply(this.camera.position);
-            let new_camera_up = m.multiply(this.camera.up);
+            // const new_camera_position = m.multiply(this.camera.position);
+            // let new_camera_up = m.multiply(this.camera.up);
 
             // console.log(`Up: ${this.threecam.up.x} ${this.threecam.up.y} ${this.threecam.up.z}`);
             const tx = this.threecam.position.x * this.cameraScalingFactor;
@@ -474,9 +456,9 @@ class Sunrise {
             const tz = this.threecam.position.z * this.cameraScalingFactor;
 
             // console.log(`T Position: ${tx} ${ty} ${ty}`);
-            const px = new_camera_position.elements[0];
-            const py = new_camera_position.elements[1];
-            const pz = new_camera_position.elements[2];
+            // const px = new_camera_position.elements[0];
+            // const py = new_camera_position.elements[1];
+            // const pz = new_camera_position.elements[2];
 
             let dirvec = new THREE.Vector3();
             this.threecam.getWorldDirection(dirvec);
@@ -598,8 +580,8 @@ class Sunrise {
             this.dimension = this.lowres;
             this.threecontrols.update();
             this.is_dragging = true;
-            this.camera.LastRot = this.camera.ThisRot;
-            this.camera.click(event.clientX - this.hyperimage.getBoundingClientRect().left, event.clientY - this.hyperimage.getBoundingClientRect().top);
+            // this.camera.LastRot = this.camera.ThisRot;
+            // this.camera.click(event.clientX - this.hyperimage.getBoundingClientRect().left, event.clientY - this.hyperimage.getBoundingClientRect().top);
          });
          document.body.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
