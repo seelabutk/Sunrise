@@ -1,5 +1,6 @@
 export const EARTH_AVG_ALTITUDE = 6_371_000;
 
+/// Convert latitude and longitude coordinates to spherical coordinates
 export const convert_location_to_spatial = (
     latitude,
     longitude,
@@ -30,6 +31,13 @@ export const convert_location_to_spatial = (
     };
 }
 
+/// Convert `num` degrees to radians
 const to_radians = (num) => {
     return (num * Math.PI) / 180.0;
+}
+
+/// Linear interpolate between two values with 
+/// `num_steps` number of intervals
+export const linear_interp = (start, end, step) => {
+    return start * (1-step) + end * step;
 }

@@ -4,6 +4,7 @@ import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { ArcBall } from "tapestry-arcball"
 import { Path, Position } from "path"
+import { linear_interp } from "utils";
 // import { FlippedYTrackballControls } from "trackball";
 
 /* Holds information for a tile within the Sunrise application */
@@ -482,7 +483,6 @@ class Sunrise {
     add_path(path) {
         let converted = [];
         path.forEach((coord) => {
-            // converted.push(this.#latlngToCartesian(coord.lat, coord.lng, 400));
             let point = this.#latlngToCartesian(coord.lat, coord.lng - 13, 7);
             converted.push(
                 new THREE.Vector3(
@@ -492,8 +492,29 @@ class Sunrise {
                 )
             );
         });
-        // console.log(converted);
-        this.paths.push(converted);
+
+        let final = [];
+        const num_steps = 18;
+        for (let i = 1; i < converted.length; i++) {
+            let prevpoint = converted[i-1];
+            let currpoint = converted[i];
+
+            for (let j = 0; j < num_steps; j++) {
+                final.push(
+                    new THREE.Vector3(
+                        linear_interp(prevpoint.x, currpoint.x, j / num_steps),
+                        linear_interp(prevpoint.y, currpoint.y, j / num_steps),
+                        linear_interp(prevpoint.z, currpoint.z, j / num_steps),
+                    )
+                );
+            }
+        }
+        console.log(`Final: Length: ${final.length}`);
+        final.forEach((point) => {
+            console.log(`Point: ${point.x}, ${point.y}, ${point.z})`);
+        });
+        this.paths.push(final);
+        // this.paths.push(converted);
     }
 
     /// Return the coordinates of the mean position the given range for the path
