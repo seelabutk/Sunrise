@@ -417,7 +417,7 @@ class Sunrise {
 
             let dirvec = new THREE.Vector3();
             this.threecam.getWorldDirection(dirvec);
-            console.log(`Up: ${dirvec.x}, ${dirvec.y}, ${dirvec.z}`);
+            // console.log(`Up: ${dirvec.x}, ${dirvec.y}, ${dirvec.z}`);
             let dx = dirvec.x;
             let dy = dirvec.y;
             let dz = dirvec.z;
@@ -496,22 +496,66 @@ class Sunrise {
         this.paths.push(converted);
     }
 
+    /// Return the coordinates of the mean position the given range for the path
+    #mean_position(path, index, range) {
+        let mean_x = 0;
+        let mean_y = 0;
+        let mean_z = 0;
+
+        let begin = Math.max(index - range, 0);
+        let end = Math.min(index + range, path.length);
+       
+        // Loop <range> indices ahead and average the components of the positions
+        for (
+            let i = begin;
+            i < end;
+            i++
+        ) {
+            mean_x += path[i].x;
+            mean_y += path[i].y;
+            mean_z += path[i].z;
+        }
+
+        return new THREE.Vector3(
+            mean_x / (end - begin),
+            mean_y / (end - begin),
+            mean_z / (end - begin)
+        );
+    }
+
     /// @brief The run behavior of the application
     async run() {
         // PATH
         for (let i = 0; i < this.paths[0].length; i++) {
-            let target = i < this.paths[0].length-1 ? 
-                this.paths[0][i+1]
-                : this.paths[0][i];
+            let pos = this.#mean_position(this.paths[0], i, 5);
+            console.log(`Run: Pos: ${pos.x}, ${pos.y}, ${pos.z}`);
+//            let target = i < this.paths[0].length-1 ? 
+//                this.paths[0][i+1]
+//                : this.paths[0][i];
+
+            let target = this.#mean_position(this.paths[0], Math.min(i+1, this.paths[0].length), 5);
+            console.log(`Run: Target: ${target.x}, ${target.y}, ${target.z}`);
+            
             this.threecontrols.update();
-            this.threecam.position.copy(this.paths[0][i]);
+            this.threecam.position.copy(pos);
+            // this.threecam.position.copy(this.paths[0][i]);
+            console.log(`Run: Cam: ${this.threecam.position.x}, ${this.threecam.position.y}, ${this.threecam.position.z}`);
             this.threecam.up.copy(
                 new THREE.Vector3 (
-                    this.paths[0][i].x,
-                    this.paths[0][i].y,
-                    this.paths[0][i].z,
+                    pos.x,
+                    pos.y,
+                    pos.z,
                 )
             );
+//            this.threecam.up.copy(
+//                new THREE.Vector3 (
+//                    this.paths[0][i].x,
+//                    this.paths[0][i].y,
+//                    this.paths[0][i].z,
+//                )
+//            );
+            console.log(`Run: Up: ${this.threecam.up.x}, ${this.threecam.up.y}, ${this.threecam.up.z}`);
+            
             this.threecam.lookAt(target);
             await this.render_path_point();
             //await this.updateTiles();
