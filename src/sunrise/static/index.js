@@ -1,11 +1,7 @@
-import { Arcball } from "arcball"
 import * as THREE from 'three'
-import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { ArcBall } from "tapestry-arcball"
-import { Path, Position } from "path"
-import { linear_interp } from "utils";
-// import { FlippedYTrackballControls } from "trackball";
+import { linear_interp, latlng_to_cartesian } from "utils";
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -19,15 +15,39 @@ class Tile {
 /* Mission for the application */
 // NOTE: x, y, z are camera coords
 class Mission {
-    constructor(name, x, y, z) {
+    name = "";            // The name of the mission. "Knoxville", "City", "Park", etc
+    index = 0;            // Points to where in the list of points we are currently at while iterating
+    point_list = [];      // The data of all position coordinates
+    current_point = null; // The current point that the index is pointing to. TODO: we might not need this in the future
+
+    constructor(name, raw_position_data, interpolation_steps) {
         this.name = name;
+        this.point_list = this.#convert_data(raw_position_data, interpolation_steps);
+        this.index = 0;
+        this.current_point = this.point_list[0];
+    }
 
-        let points = []
-        points.push(new Position(x, y, z));
-        points.push(new Position(893043.8990594397, 4038936.4694766635, -5389919.75178295));
-        
+    /// Increment our index and return the "next" point in the list
+    /// This is used to go forwards from where we are in the path
+    next() {
+        this.index = Math.min(this.point_list.length, this.index + 1);
+        this.current_point = this.point_list[this.index];
 
-        this.path = new Path(points);
+        return this.current_point;
+    }
+
+    /// Decremement our index and return the "previous" point
+    /// This is used to go backwards from where we are in the path
+    back() {
+        this.index = Math.max(0, this.index - 1);
+        this.current_point = this.point_list[this.index];
+
+        return this.current_point;
+    }
+
+    /// Take the raw data that is given to us, 
+    /// and convert it to THREE.Vector3 components
+    #convert_data(data) {
     }
 }
 
@@ -54,7 +74,7 @@ class Sunrise {
         // this.y = 3705.1 * 1.1 / 1;
         // this.z = -5180.8 * 1.1 / 1;
         Object.assign(this, {
-            ...this.#latlngToCartesian(
+            ...latlng_to_cartesian(
                 35.562744,
                 -83.5 - 13,
                 100,
@@ -115,19 +135,6 @@ class Sunrise {
         this.missions = []
 
         this.rendererUpdate(this.dimension);
-    }
-
-    #latlngToCartesian(latitude, longitude, altitude) {
-        const rho = 6371 + altitude;
-        const phi = (latitude) * Math.PI / 180;
-        const theta = (longitude) * Math.PI / 180;
-    
-        const x = rho * Math.cos(phi) * Math.cos(theta);
-        const y = rho * Math.sin(phi);
-        const z = rho * Math.cos(phi) * Math.sin(theta);
-   
-        // return new Position(x,y,z);
-        return { x, y, z };
     }
 
     /// @briefSetup the camera to desired initial values
@@ -483,7 +490,8 @@ class Sunrise {
     add_path(path) {
         let converted = [];
         path.forEach((coord) => {
-            let point = this.#latlngToCartesian(coord.lat, coord.lng - 13, 7);
+            // let point = this.#latlngToCartesian(coord.lat, coord.lng - 13, 7);
+            let point = latlng_to_cartesian(coord.lat, coord.lng - 13, 7);
             converted.push(
                 new THREE.Vector3(
                     point.x / this.cameraScalingFactor,
@@ -550,9 +558,6 @@ class Sunrise {
         for (let i = 0; i < this.paths[0].length; i++) {
             let pos = this.#mean_position(this.paths[0], i, 9);
             console.log(`Run: Pos: ${pos.x}, ${pos.y}, ${pos.z}`);
-//            let target = i < this.paths[0].length-1 ? 
-//                this.paths[0][i+1]
-//                : this.paths[0][i];
 
             let target = this.#mean_position(this.paths[0], Math.min(i+1, this.paths[0].length), 9);
             console.log(`Run: Target: ${target.x}, ${target.y}, ${target.z}`);
@@ -568,18 +573,10 @@ class Sunrise {
                     pos.z,
                 )
             );
-//            this.threecam.up.copy(
-//                new THREE.Vector3 (
-//                    this.paths[0][i].x,
-//                    this.paths[0][i].y,
-//                    this.paths[0][i].z,
-//                )
-//            );
             console.log(`Run: Up: ${this.threecam.up.x}, ${this.threecam.up.y}, ${this.threecam.up.z}`);
             
             this.threecam.lookAt(target);
             await this.render_path_point();
-            //await this.updateTiles();
         }
 
 

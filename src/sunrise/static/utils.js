@@ -41,3 +41,16 @@ const to_radians = (num) => {
 export const linear_interp = (start, end, step) => {
     return start * (1-step) + end * step;
 }
+
+/// Convert lat, lng, alt coordinates to cartesian
+export const latlng_to_cartesian = (latitude, longitude, altitude) => {
+    const rho = 6371 + altitude;
+    const phi = (latitude) * Math.PI / 180;
+    const theta = (longitude) * Math.PI / 180;
+
+    const x = rho * Math.cos(phi) * Math.cos(theta);
+    const y = rho * Math.sin(phi);
+    const z = rho * Math.cos(phi) * Math.sin(theta);
+
+    return { x, y, z };
+}
