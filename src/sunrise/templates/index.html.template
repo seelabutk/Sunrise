@@ -38,7 +38,8 @@ body {
 .missions {
     border-right: 1px solid darkgray;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     background-color: black;
 }
 
@@ -73,7 +74,7 @@ body {
     <nav class="a" id="navbar">
         Sunrise Demo
     </nav>
-    <div class="b missions" >
+    <div class="b missions" id="mission_list">
         <button id="observation" class="missionButton">Observation</button>
     </div>
     <div class="c"

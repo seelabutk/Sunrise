@@ -78,6 +78,18 @@ class Mission {
         };
     }
 
+    /// Create the button element to be placed in the DOM where
+    /// the App class wants it
+    get_button(callback) {
+        let btn = document.createElement("button");
+        btn.id = `mission_${this.name.toLowerCase()}`;
+        btn.innerText = `${this.name}`;
+        btn.className = "missionButton";
+        btn.onclick = callback;
+
+        return btn;
+    }
+
     /// Average the values of each component of the coordinates +- the specified range
     #mean_position(index, range) {
         let mean_x = 0;
@@ -108,6 +120,7 @@ class Mission {
 
 /* Sunrise Application */
 class Sunrise {
+
     constructor($el, {
         what,
         canvasSize = 512,
@@ -468,7 +481,7 @@ class Sunrise {
     }
    
     /// Add a path for the camera to follow
-    add_path(path) {
+    add_path(name, path) {
         let data = [];
         const num_steps = 30;
         for (let i = 1; i < path.length; i++) {
@@ -501,13 +514,18 @@ class Sunrise {
 
         // TODO: Probably use a list of these Missions to hold
         // rather than hard code it
-        this.park = new Mission("Park", data);
+        let mission = new Mission(name, data);
+        let button = mission.get_button(() => {
+            this.play_mission(mission);
+        });
+        this.missions.push(mission);
+        
+        document.getElementById("mission_list").appendChild(button);
     }
 
-    /// @brief The run behavior of the application
-    async run() {
-        // Render the Park 
-        let render_data = this.park.forward();
+    /// Play the path for the specified mission
+    async play_mission(mission) {
+        let render_data = mission.forward();
         while (render_data !== null) {
             this.threecontrols.update();
             this.threecam.position.copy(render_data.current);
@@ -515,9 +533,12 @@ class Sunrise {
             this.threecam.lookAt(render_data.target);
 
             await this.render_path_point();
-            render_data = this.park.forward();
+            render_data = mission.forward();
         }
+    }
 
+    /// @brief The run behavior of the application
+    async run() {
         document.body.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
             this.threecontrols.update();
@@ -574,12 +595,11 @@ class Sunrise {
 }
 
 const resp = await fetch('static/park.json');
-const kingston = await resp.json();
-// console.log(kingston);
+const park = await resp.json();
 
 let app = new Sunrise(document.getElementById('hyperimage'), {
     what: 'park',
 });
-app.add_path(kingston);
+app.add_path("Park", park);
 // app.addMission("Great Smoky Mountains", 200, 200, 200);
 app.run();
