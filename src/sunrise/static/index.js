@@ -560,14 +560,15 @@ class Sunrise {
     async play_mission(mission) {
         let ips = 40;
         let total_seconds = mission.length() / ips;
-        let start_time = new Date().getSeconds();
+        let start_time = +new Date() / 1000;
         let elapsed_seconds = 0;
 
         console.log(`ips: ${ips}. total_seconds: ${total_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
-        
+       
+        this.dimension = this.lowres;
         let render_data = mission.forward(1);
         while (render_data !== null) {
-            let current_time = new Date().getSeconds();
+            let current_time = +new Date() / 1000;
             elapsed_seconds = current_time - start_time;
             let target_index = Math.floor((elapsed_seconds / total_seconds) * mission.length());
 
@@ -580,8 +581,10 @@ class Sunrise {
             this.threecam.lookAt(render_data.target);
 
             await this.render_path_point();
+            // render_data = mission.forward(1);
             render_data = mission.forward(offset);
         }
+        this.dimension = this.highres;
     }
 
     /// @brief The run behavior of the application
