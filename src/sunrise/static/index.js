@@ -12,6 +12,26 @@ class Tile {
     }
 }
 
+class Clock {
+    start_time = 0;
+    elapsed_time = 0;
+    
+    constructor() {
+        this.start_time = new Date().getMilliseconds();
+        this.elapsed_time = 0;
+    }
+
+    update() {
+        if (this.start_time != 0) {
+            this.elapsed_time += new Date().getMilliseconds() - this.start_time;
+        }
+    }
+
+    stop() {
+        this.start_time = 0;
+    }
+}
+
 /// Missions are used to represent the different flypaths that a user
 /// can follow. They are able to go forwards and backwards
 class Mission {
@@ -26,6 +46,14 @@ class Mission {
         this.point_list = position_data;
         this.index = 0;
         this.current_point = this.point_list[0];
+    }
+
+    length() {
+        return this.point_list.length;
+    }
+
+    current_index() {
+        return this.index;
     }
 
     /// Increment our index and return the "next" point in the list
@@ -59,17 +87,22 @@ class Mission {
 
     /// Move forwrads in the path
     /// Return null when we are at end of the path
-    forward() {
+    forward(offset) {
         // Return early when at the end of the list
         if (this.index === this.point_list.length-1) {
             return null;
+        }
+
+        if (this.index + offset >= this.point_list.length-1) {
+            this.index = this.point_list.length-1;
         }
 
         this.current_point = this.#mean_position(this.index, 9);
         let target = this.#mean_position(this.index+1, 9);
         let up = this.current_point;
 
-        this.index++;
+        this.index += offset;
+        // this.index++;
 
         return {
             current: this.current_point,
@@ -525,15 +558,29 @@ class Sunrise {
 
     /// Play the path for the specified mission
     async play_mission(mission) {
-        let render_data = mission.forward();
+        let ips = 40;
+        let total_seconds = mission.length() / ips;
+        let start_time = new Date().getSeconds();
+        let elapsed_seconds = 0;
+
+        console.log(`ips: ${ips}. total_seconds: ${total_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
+        
+        let render_data = mission.forward(1);
         while (render_data !== null) {
+            let current_time = new Date().getSeconds();
+            elapsed_seconds = current_time - start_time;
+            let target_index = Math.floor((elapsed_seconds / total_seconds) * mission.length());
+
+            let offset = target_index - mission.current_index();
+            
+            console.log(`ips: ${ips}. total_seconds: ${total_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
             this.threecontrols.update();
             this.threecam.position.copy(render_data.current);
             this.threecam.up.copy(render_data.up);
             this.threecam.lookAt(render_data.target);
 
             await this.render_path_point();
-            render_data = mission.forward();
+            render_data = mission.forward(offset);
         }
     }
 
