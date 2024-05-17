@@ -128,9 +128,11 @@ go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     SUNRISE_SCENE_PATH=${root:?}/data \
     pexec uvicorn \
-        --host "${server_bind:?}" \
-        --port "${server_port:?}" \
-        sunrise.server:app \
+        --factory \
+        sunrise.server:main \
+        # sunrise.server:app \
+#        --host "${server_bind:?}" \
+#        --port "${server_port:?}" \
     ##
 }
 

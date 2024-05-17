@@ -49,7 +49,12 @@ class AutoImport:
     @cached_property
     def mpl(self):
         return self.matplotlib
-    
+
+    @cached_property
+    def uvicorn(self):
+        import uvicorn
+        return uvicorn
+
     @cached_property
     def matplotlib(self):
         import matplotlib

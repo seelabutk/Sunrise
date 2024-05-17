@@ -7,6 +7,7 @@ from ._auto import auto
 from . import scene
 from . import model
 import tomli
+import asyncio
 
 app = auto.fastapi.FastAPI(
 )
@@ -40,6 +41,14 @@ app.mount(
     ),
 )
 
+async def main():
+    print("FJKLDSJFKLDSFJKLSDF")
+    server_config = auto.uvicorn.Config("server:app", port=5000, host="0.0.0.0")
+    server = auto.uvicorn.Server(server_config)
+    await server.serve()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 SUNRISE_LIBOSPRAY_PATH = auto.os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospray.so')
 SUNRISE_SCENE_PATH = auto.os.environ['SUNRISE_SCENE_PATH']
@@ -178,3 +187,4 @@ async def view(
             content=f.getvalue(),
             media_type='image/png',
         )
+
