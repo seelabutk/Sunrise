@@ -746,10 +746,15 @@ class Sunlight(WithExitStackMixin):
 
 
 class Scene(WithExitStackMixin):
-    def __init__(self, what: City | Park):
+    def __init__(self, what: City | Park,):
         super().__init__()
 
         self.what = what
+        self.config = {}
+
+    def configure(self, config):
+        self.config = config
+        print(f'CONFIG: {self.config}')
     
     def make(self):
         ambient = self.enter(Ambient(
@@ -778,10 +783,13 @@ class Scene(WithExitStackMixin):
         lib.ospSetObject(world, b'light', lights)
         lib.ospCommit(world)
 
+        print(f'Renderer Type: {self.config["renderer"]["type"]}')
+        renderer_type = f'{self.config["renderer"]["type"]}'
         renderer = (
             # b'ao'  # does not use lights
             # b'pathtracer'
-            b'scivis'
+            # b'scivis'
+            renderer_type.encode('utf-8')
         )
         renderer = lib.ospNewRenderer(renderer)
         self.defer(lib.ospRelease, renderer)

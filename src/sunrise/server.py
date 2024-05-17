@@ -6,10 +6,18 @@ from __future__ import annotations
 from ._auto import auto
 from . import scene
 from . import model
-
+import tomli
 
 app = auto.fastapi.FastAPI(
 )
+
+# Read the configuration
+async def read_config():
+    with open("config.toml", "rb") as f:
+        config = tomli.load(f)
+        print(config)
+        return config
+
 
 
 # templates
@@ -18,6 +26,8 @@ templates = auto.fastapi.templating.Jinja2Templates(
         auto.pathlib.Path(__file__).parent / 'templates'
     ),
 )
+
+
 
 
 # static
@@ -57,10 +67,13 @@ async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
         )
         what.make()
 
+        config = await read_config()
+
         for _ in range(6):
             scene_ = scene.Scene(
                 what=what,
             )
+            scene_.configure(config)
             scene_.make()
 
             scenes.put_nowait(scene_)

@@ -1,0 +1,7 @@
+[server]
+name="sunrise"
+version=1
+
+[renderer]
+type="scivis"
+salmples="10"
