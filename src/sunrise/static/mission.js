@@ -97,6 +97,32 @@ export class Mission {
         };
     }
 
+    /// Move forwrads in the path
+    /// Return null when we are at end of the path
+    backward(offset) {
+        // Return early when at the end of the list
+        if (this.index === 0 || this.paused === true) {
+            return null;
+        }
+
+        if (this.index - offset <= 0) {
+            this.index = 0;
+        }
+
+        this.current_point = this.#mean_position(this.index, 9);
+        let target = this.#mean_position(this.index+1, 9);
+        let up = this.current_point;
+
+        this.index -= offset;
+        // this.index++;
+
+        return {
+            current: this.current_point,
+            target: target,
+            up: up
+        };
+    }
+
     /// Create the button element to be placed in the DOM where
     /// the App class wants it
     get_button(callback) {

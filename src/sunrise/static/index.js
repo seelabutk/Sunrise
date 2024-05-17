@@ -96,7 +96,7 @@ class Sunrise {
         highRes = tileSize,
         lowRes = (highRes / 4) |0,
     }={}) {
-        this.map = new Map();
+        // this.map = new Map();
         this.canvasSize = canvasSize;
         this.tileSize = tileSize;
         this.highRes = highRes;
@@ -456,7 +456,7 @@ class Sunrise {
         const num_steps = 30;
         for (let i = 1; i < path.length; i++) {
             let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
-            this.map.add_marker(path[i-1].lat, path[i-1].lng);
+            // this.map.add_marker(path[i-1].lat, path[i-1].lng);
             let prevpoint = new THREE.Vector3(
                 prev.x / this.cameraScalingFactor,
                 prev.y / this.cameraScalingFactor,
