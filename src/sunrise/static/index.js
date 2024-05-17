@@ -1,3 +1,4 @@
+import * as L from 'leaflet';
 import * as THREE from 'three'
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { ArcBall } from "tapestry-arcball"
@@ -9,6 +10,49 @@ class Tile {
         this.row = row;
         this.col = col;
         this.zoom = zoom;
+    }
+}
+
+// Class for the Leaflet map
+class Map {
+    config = null;
+    // map = null;
+    url = null;
+    tile_layer = null;
+
+    constructor() {
+        this.config =  {
+            angle: 6,
+            position: [0.0, 0.0, 0.0],
+
+            get url() {
+                return `http://160.36.58.111:3000/api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=6&pos=0.0,0.0,0.0`;
+            }
+        };
+        
+        const $map = document.querySelector('.js--map');
+        this.map = L.map($map, {});
+        this.map.fitBounds([
+            [35.747116, -83.949626],  // Maryville, TN
+            [35.483526, -82.987458], // Waynesville, NC
+            // [-35.747116, -83.949626],  // Maryville, TN
+            // [-35.483526, -82.987458], // Waynesville, NC
+            // [-34.0549, -118.2426],  // Los Angeles, CA
+            // [-40.7128, -74.00060], // New York, New York
+        ], {
+            maxZoom: 10,
+        });
+        window.map = this.map;
+
+        this.url = this.config.url;
+        this.tile_layer = L.tileLayer(this.url, {
+            tms: (
+                // true, // y+ is north
+                false  // y+ is south
+            ),
+            noWrap: true,
+        });
+        this.tile_layer.addTo(this.map);
     }
 }
 
@@ -161,6 +205,7 @@ class Sunrise {
         highRes = tileSize,
         lowRes = (highRes / 4) |0,
     }={}) {
+        this.map = new Map();
         this.canvasSize = canvasSize;
         this.tileSize = tileSize;
         this.highRes = highRes;
@@ -193,7 +238,7 @@ class Sunrise {
         this.secondary.height = this.canvasSize;
 
         this.highres = 512;
-        this.lowres = 64;
+        this.lowres = 128;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
@@ -228,7 +273,8 @@ class Sunrise {
         }
 
         this.paths = [];
-        this.missions = []
+        this.missions = [];
+        this.current_mission = null;
 
         this.rendererUpdate(this.dimension);
     }
@@ -558,23 +604,30 @@ class Sunrise {
 
     /// Play the path for the specified mission
     async play_mission(mission) {
+        let selector = document.getElementById("path_speed_selector");
+        let display = document.getElementById("ips_display");
+        this.current_mission = mission;
         let ips = 40;
-        let total_seconds = mission.length() / ips;
+        let total_remaining_seconds = mission.length() / ips;
         let start_time = +new Date() / 1000;
         let elapsed_seconds = 0;
+        selector.value = ips;
+        let should_pause = false;
 
-        console.log(`ips: ${ips}. total_seconds: ${total_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
+        console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
        
         this.dimension = this.lowres;
         let render_data = mission.forward(1);
-        while (render_data !== null) {
+        while (render_data !== null && !should_pause) {
+            ips = selector.value;
+            display.innerText = ips;
             let current_time = +new Date() / 1000;
             elapsed_seconds = current_time - start_time;
-            let target_index = Math.floor((elapsed_seconds / total_seconds) * mission.length());
+            let target_index = Math.floor((elapsed_seconds / total_remaining_seconds) * mission.length());
 
             let offset = target_index - mission.current_index();
             
-            console.log(`ips: ${ips}. total_seconds: ${total_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
+            console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
             this.threecontrols.update();
             this.threecam.position.copy(render_data.current);
             this.threecam.up.copy(render_data.up);
@@ -589,56 +642,35 @@ class Sunrise {
 
     /// @brief The run behavior of the application
     async run() {
-        document.body.addEventListener('mousedown', (event) => {
+        this.hyperimage.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
             this.threecontrols.update();
             this.is_dragging = true;
-            // this.camera.LastRot = this.camera.ThisRot;
-            // this.camera.click(event.clientX - this.hyperimage.getBoundingClientRect().left, event.clientY - this.hyperimage.getBoundingClientRect().top);
          });
-         document.body.addEventListener('mousemove', (event) => {
+         
+        this.hyperimage.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
                 if (this.is_dragging) {
                     this.threecontrols.update();
-                    console.log("move");
-                    var mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
-                    var mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
-                    //self.rotate(mouse_x, mouse_y, self.get_low_resolution()); // Render low quality version
-                   
-
-                    // this.rotate(mouse_x, mouse_y);
                     this.updateTiles();
                 }
             }, 100);
-         });
+        });
          
-        document.body.addEventListener('mouseup', (event) => {
+        this.hyperimage.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
             this.threecontrols.update();
-
-            const mouse_x = event.clientX - this.hyperimage.getBoundingClientRect().left;
-            const mouse_y = event.clientY - this.hyperimage.getBoundingClientRect().top;
-
-            // this.rotate(mouse_x, mouse_y); // Render high quality version
             this.is_dragging = false;
             this.updateTiles();
         });
 
-        document.body.addEventListener('wheel', (event) => {
+        this.hyperimage.addEventListener('wheel', (event) => {
             this.#throttle(() => {
-                // console.log(this.threecam.zoom);
                 this.threecontrols.update();
                 this.updateRotateSpeed();
                 this.updateTiles();
-
-//                clearTimeout($.data(self, 'timer'));
-//                $.data(self, 'timer', setTimeout(function() {
-//                    this.dimension = this.highRes;
-//                    this.updateTiles();
-//                    // self.render(self.get_high_resolution());
-//                }, 500).bind(this));
             }, 100);
-        });
+        }, { passive: true });
     
         return;
     }
