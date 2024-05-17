@@ -19,8 +19,8 @@ body {
     height: 100%;
     display: grid;
     grid-template-areas:
-        "a a"
-        "b c"
+        "a a a"
+        "b c d"
     ;
     grid-template-rows:
         8vh
@@ -31,10 +31,15 @@ body {
     ;
 }
 
-.App__main {
-    background: blue;
+/* This rule belongs to the Leaflet tile container */
+.leaflet-container {
+    background: none !important;
+}
+
+.Map {
     width: 512px;
     height: 512px;
+    border: 1px solid green;
 }
 
 .App__map {
@@ -42,18 +47,10 @@ body {
     grid-area: "map";
 }
 
-.App__control {
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    background-color: lightblue;
-    grid-area: "control";
-}
-
-
 .a { grid-area: a; width: 100%; height: 100%; align-self: start; justify-self: start; }
 .b { grid-area: b; width: 100%; height: 100%; align-self: start; justify-self: start; }
 .c { grid-area: c; width: 100%; height: 100%; align-self: start; justify-self: start; }
+.d { grid-area: d; width: 100%; height: 100%; align-self: center; justify-self: stretch; }
 
 .missions {
     border-right: 1px solid darkgray;
@@ -101,10 +98,11 @@ input {
     </div>
     <div class="c"
         id="hyperimage"
-        style="width: 512px; height: 512px"
-    ></div>
+        style="width: 512px; height: 512px; border: 2px solid red;"
+        ></div>
+    <div class="d Map js--map" style="width: 800px; height: 512px"></div>
 </div>
-<div class="App__main js--map"></div>
+
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
 <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
