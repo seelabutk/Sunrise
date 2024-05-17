@@ -93,6 +93,7 @@ input {
         Sunrise Demo
     </nav>
     <div class="b missions" id="mission_list">
+        <button class="missionButton" id="path-pause">Pause</button>
         <h3 id="ips_display" style="color: white; margin: 10px 0 0 0;">0</h3>
         <input id="path_speed_selector" type="range" min="10" max="60">
     </div>
@@ -115,6 +116,7 @@ input {
         "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
         "arcball": "./static/arcball.js",
+        "missions": "./static/mission.js",
         "trackball": "./static/trackball.js",
         "tapestry-arcball": "./static/tapestry-arcball.js",
         "path": "./static/path.js",

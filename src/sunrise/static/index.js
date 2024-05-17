@@ -1,6 +1,7 @@
 import * as L from 'leaflet';
 import * as THREE from 'three'
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+import { Mission } from 'missions';
 import { ArcBall } from "tapestry-arcball"
 import { linear_interp, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
 
@@ -19,6 +20,7 @@ class Map {
     // map = null;
     url = null;
     tile_layer = null;
+    markers = [];
 
     constructor() {
         this.config =  {
@@ -53,6 +55,14 @@ class Map {
             noWrap: true,
         });
         this.tile_layer.addTo(this.map);
+
+    }
+
+    add_marker(lat, lng) {
+        let m = new L.marker([lat, lng]);
+
+        this.markers.push(m);
+        m.addTo(this.map);
     }
 }
 
@@ -73,125 +83,6 @@ class Clock {
 
     stop() {
         this.start_time = 0;
-    }
-}
-
-/// Missions are used to represent the different flypaths that a user
-/// can follow. They are able to go forwards and backwards
-class Mission {
-    name = "";            // The name of the mission. "Knoxville", "City", "Park", etc
-    index = 0;            // Points to where in the list of points we are currently at while iterating
-    point_list = [];      // The data of all position coordinates
-    current_point = null; // The current point that the index is pointing to. TODO: we might not need this in the future
-
-    /// NOTE: what to do with 'alt'?
-    constructor(name, position_data) {
-        this.name = name;
-        this.point_list = position_data;
-        this.index = 0;
-        this.current_point = this.point_list[0];
-    }
-
-    length() {
-        return this.point_list.length;
-    }
-
-    current_index() {
-        return this.index;
-    }
-
-    /// Increment our index and return the "next" point in the list
-    /// This is used to go forwards from where we are in the path
-    /// @returns null when we are at end of list
-    next() {
-        // Return early if we are at the end of the list
-        if (this.index == this.point_list.length) {
-            return null;
-        }
-        
-        this.index++;
-        this.current_point = this.point_list[this.index];
-
-        return this.current_point;
-    }
-
-    /// Decremement our index and return the "previous" point
-    /// This is used to go backwards from where we are in the path
-    /// @returns null when we are at beginning of list
-    back() {
-        if (this.index == 0) {
-            return null;
-        }
-
-        this.index--;
-        this.current_point = this.point_list[this.index];
-
-        return this.current_point;
-    }
-
-    /// Move forwrads in the path
-    /// Return null when we are at end of the path
-    forward(offset) {
-        // Return early when at the end of the list
-        if (this.index === this.point_list.length-1) {
-            return null;
-        }
-
-        if (this.index + offset >= this.point_list.length-1) {
-            this.index = this.point_list.length-1;
-        }
-
-        this.current_point = this.#mean_position(this.index, 9);
-        let target = this.#mean_position(this.index+1, 9);
-        let up = this.current_point;
-
-        this.index += offset;
-        // this.index++;
-
-        return {
-            current: this.current_point,
-            target: target,
-            up: up
-        };
-    }
-
-    /// Create the button element to be placed in the DOM where
-    /// the App class wants it
-    get_button(callback) {
-        let btn = document.createElement("button");
-        btn.id = `mission_${this.name.toLowerCase()}`;
-        btn.innerText = `${this.name}`;
-        btn.className = "missionButton";
-        btn.onclick = callback;
-
-        return btn;
-    }
-
-    /// Average the values of each component of the coordinates +- the specified range
-    #mean_position(index, range) {
-        let mean_x = 0;
-        let mean_y = 0;
-        let mean_z = 0;
-
-        let begin = Math.max(index - range, 0);
-        let end = Math.min(index + range, this.point_list.length);
-       
-        // Loop <range> indices ahead and average the components of the positions
-        for (
-            let i = begin;
-            i < end;
-            i++
-        ) {
-            mean_x += this.point_list[i].x;
-            mean_y += this.point_list[i].y;
-            mean_z += this.point_list[i].z;
-        }
-
-        return new THREE.Vector3(
-            mean_x / (end - begin),
-            mean_y / (end - begin),
-            mean_z / (end - begin)
-        );
     }
 }
 
@@ -293,7 +184,7 @@ class Sunrise {
      
         /// TRACKBALL CONTROLS
         this.threecontrols = new TrackballControls(this.threecam, this.hyperimage, scene);
-        this.threecontrols.addEventListener( 'change', () => {});
+        this.threecontrols.addEventListener( 'change', () => {}, { passive: true });
         this.threecontrols.rotateSpeed = 30.0;
         this.threecontrols.zoomSpeed = 1.2;
         this.threecontrols.noZoom = false;
@@ -565,6 +456,7 @@ class Sunrise {
         const num_steps = 30;
         for (let i = 1; i < path.length; i++) {
             let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
+            this.map.add_marker(path[i-1].lat, path[i-1].lng);
             let prevpoint = new THREE.Vector3(
                 prev.x / this.cameraScalingFactor,
                 prev.y / this.cameraScalingFactor,
@@ -604,21 +496,27 @@ class Sunrise {
 
     /// Play the path for the specified mission
     async play_mission(mission) {
+        if (!mission.is_paused()) {
+            console.log("Mission already being played!");
+            return;
+        }
+        mission.unpause();
+        
         let selector = document.getElementById("path_speed_selector");
         let display = document.getElementById("ips_display");
         this.current_mission = mission;
         let ips = 40;
-        let total_remaining_seconds = mission.length() / ips;
+        // let total_remaining_seconds = mission.length() / ips;
+        let total_remaining_seconds = mission.remaining_length() / ips;
         let start_time = +new Date() / 1000;
         let elapsed_seconds = 0;
         selector.value = ips;
-        let should_pause = false;
-
+        
         console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
        
         this.dimension = this.lowres;
         let render_data = mission.forward(1);
-        while (render_data !== null && !should_pause) {
+        while (render_data !== null) {
             ips = selector.value;
             display.innerText = ips;
             let current_time = +new Date() / 1000;
@@ -626,7 +524,7 @@ class Sunrise {
             let target_index = Math.floor((elapsed_seconds / total_remaining_seconds) * mission.length());
 
             let offset = target_index - mission.current_index();
-            
+
             console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
             this.threecontrols.update();
             this.threecam.position.copy(render_data.current);
@@ -634,7 +532,6 @@ class Sunrise {
             this.threecam.lookAt(render_data.target);
 
             await this.render_path_point();
-            // render_data = mission.forward(1);
             render_data = mission.forward(offset);
         }
         this.dimension = this.highres;
@@ -642,11 +539,22 @@ class Sunrise {
 
     /// @brief The run behavior of the application
     async run() {
+        document.getElementById("path-pause").addEventListener('click', () => {
+            if (this.current_mission.is_paused()) {
+                this.play_mission(this.current_mission);
+                // console.log(`PATH INDEX: ${this.current_mission.
+            } else {
+                this.current_mission.pause();
+            }
+            
+            path_is_paused = !path_is_paused;
+        }, { passive: true });
+
         this.hyperimage.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
             this.threecontrols.update();
             this.is_dragging = true;
-         });
+         }, { passive: true });
          
         this.hyperimage.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
@@ -655,14 +563,14 @@ class Sunrise {
                     this.updateTiles();
                 }
             }, 100);
-        });
+        }, { passive: true });
          
         this.hyperimage.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
             this.threecontrols.update();
             this.is_dragging = false;
             this.updateTiles();
-        });
+        }, { passive: true });
 
         this.hyperimage.addEventListener('wheel', (event) => {
             this.#throttle(() => {
