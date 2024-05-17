@@ -4,4 +4,4 @@ version=1
 
 [renderer]
 type="scivis"
-samples=10
+samples=15
