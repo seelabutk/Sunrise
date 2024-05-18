@@ -6,9 +6,8 @@ from __future__ import annotations
 from ._auto import auto
 from . import scene
 from . import model
-import tomli
+from . import config as conf
 import asyncio
-import uvicorn
 
 app = auto.fastapi.FastAPI(
 )
@@ -26,14 +25,16 @@ app.mount(
 # Read the configuration from the "config.toml" file 
 async def read_config():
     with open("config.toml", "rb") as f:
-        config = tomli.load(f)
+        config = auto.tomli.load(f)
         print(config)
+        con = conf.Config(config)
+        con.validate()
         return config
 
 async def run_server():
     config_info = await read_config()
-    config = uvicorn.Config("sunrise.server:app", port=config_info["server"]["port"], host=config_info["server"]["host"])
-    server = uvicorn.Server(config)
+    config = auto.uvicorn.Config("sunrise.server:app", port=config_info["server"]["port"], host=config_info["server"]["host"])
+    server = auto.uvicorn.Server(config)
     await server.serve()
 
 if __name__ == "__main__":

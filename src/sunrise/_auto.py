@@ -51,6 +51,11 @@ class AutoImport:
         return self.matplotlib
 
     @cached_property
+    def tomli(self):
+        import tomli
+        return tomli
+
+    @cached_property
     def uvicorn(self):
         import uvicorn
         return uvicorn
