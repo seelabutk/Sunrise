@@ -130,12 +130,6 @@ go---server() {
     pexec python -m \
         sunrise.server \
     ##
-
-    #pexec uvicorn \
-        #--host "${server_bind:?}" \
-        #--port "${server_port:?}" \
-        #sunrise.server:app \
-    ##
 }
 
 go-scalene() {

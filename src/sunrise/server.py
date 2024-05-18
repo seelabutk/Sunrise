@@ -23,21 +23,21 @@ app.mount(
     ),
 )
 
-# Read the configuration
+# Read the configuration from the "config.toml" file 
 async def read_config():
     with open("config.toml", "rb") as f:
         config = tomli.load(f)
         print(config)
         return config
 
-async def main():
+async def run_server():
     config_info = await read_config()
     config = uvicorn.Config("sunrise.server:app", port=config_info["server"]["port"], host=config_info["server"]["host"])
     server = uvicorn.Server(config)
     await server.serve()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_server())
 
 # templates
 templates = auto.fastapi.templating.Jinja2Templates(
