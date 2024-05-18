@@ -127,8 +127,7 @@ server_port=5000
 go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     SUNRISE_SCENE_PATH=${root:?}/data \
-    pexec python \
-        -m \
+    pexec python -m \
         sunrise.server \
     ##
 

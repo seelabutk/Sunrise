@@ -8,6 +8,7 @@ from . import scene
 from . import model
 import tomli
 import asyncio
+import uvicorn
 
 app = auto.fastapi.FastAPI(
 )
@@ -22,14 +23,6 @@ app.mount(
     ),
 )
 
-if __name__ == "__main__":
-    print("MAIN")
-    config = auto.uvicorn.Config("server:app", port=5000, host="0.0.0.0")
-    server = auto.uvicorn.Server(config)
-    server.run()
-
-
-
 # Read the configuration
 async def read_config():
     with open("config.toml", "rb") as f:
@@ -37,7 +30,14 @@ async def read_config():
         print(config)
         return config
 
+async def main():
+    config_info = await read_config()
+    config = uvicorn.Config("sunrise.server:app", port=config_info["server"]["port"], host="0.0.0.0")
+    server = uvicorn.Server(config)
+    await server.serve()
 
+if __name__ == "__main__":
+    asyncio.run(main())
 
 # templates
 templates = auto.fastapi.templating.Jinja2Templates(
