@@ -12,6 +12,24 @@ import asyncio
 app = auto.fastapi.FastAPI(
 )
 
+# static
+app.mount(
+    '/static',
+    auto.fastapi.staticfiles.StaticFiles(
+        directory=(
+            auto.pathlib.Path(__file__).parent / 'static'
+        ),
+    ),
+)
+
+if __name__ == "__main__":
+    print("MAIN")
+    config = auto.uvicorn.Config("server:app", port=5000, host="0.0.0.0")
+    server = auto.uvicorn.Server(config)
+    server.run()
+
+
+
 # Read the configuration
 async def read_config():
     with open("config.toml", "rb") as f:
@@ -28,27 +46,6 @@ templates = auto.fastapi.templating.Jinja2Templates(
     ),
 )
 
-
-
-
-# static
-app.mount(
-    '/static',
-    auto.fastapi.staticfiles.StaticFiles(
-        directory=(
-            auto.pathlib.Path(__file__).parent / 'static'
-        ),
-    ),
-)
-
-async def main():
-    print("FJKLDSJFKLDSFJKLSDF")
-    server_config = auto.uvicorn.Config("server:app", port=5000, host="0.0.0.0")
-    server = auto.uvicorn.Server(server_config)
-    await server.serve()
-
-if __name__ == "__main__":
-    asyncio.run(main())
 
 SUNRISE_LIBOSPRAY_PATH = auto.os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospray.so')
 SUNRISE_SCENE_PATH = auto.os.environ['SUNRISE_SCENE_PATH']
