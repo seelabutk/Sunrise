@@ -1,3 +1,10 @@
+# These are the valid types of OSPRay renderers that we support
+valid_renderer_types = [
+    "scivis",
+    "ao",
+    "pathtracer",
+]
+
 class Config:
     def __init__(self, config_data):
         self.config = config_data
@@ -6,7 +13,11 @@ class Config:
 
     def validate(self):
         print("Validating renderer type...", end="")
-        if self.renderer_info["type"] != "scivis" and self.renderer_info["type"] != "ao" and self.renderer_info["type"] != "pathtracer":
+        if self.renderer_info['type'] not in valid_renderer_types:
             print(f'ERROR: Invalid renderer type: {self.renderer_info["type"]}')
             exit()
+
+#        if self.renderer_info["type"] != "scivis" and self.renderer_info["type"] != "ao" and self.renderer_info["type"] != "pathtracer":
+#            print(f'ERROR: Invalid renderer type: {self.renderer_info["type"]}')
+#            exit()
         print(" success")
