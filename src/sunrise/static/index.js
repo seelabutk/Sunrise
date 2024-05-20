@@ -111,7 +111,8 @@ class Sunrise {
             ...latlng_to_cartesian(
                 35.562744,
                 -83.5 - 13,
-                100,
+                // 100,
+                10000,
             ),
         });
 

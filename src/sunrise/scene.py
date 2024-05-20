@@ -771,9 +771,9 @@ class Scene(WithExitStackMixin):
 
         lights = Data([
             ambient.light,
-            distant.light,
-            point.light,
-            sunlight.light,
+            # distant.light,
+            # point.light,
+            # sunlight.light,
         ], type=lib.OSP_LIGHT)
         self.defer(lib.ospRelease, lights)
 
@@ -794,7 +794,9 @@ class Scene(WithExitStackMixin):
         
         lib.ospSetInt(renderer, b'pixelSamples', self.config.renderer.samples())
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
-            0.8, 0.2, 0.2, 1.0,
+            0.0, 0.0, 0.0, 0.0, # Black background
+            # 1.0, 1.0, 1.0, 1.0, # White background
+            # 0.8, 0.2, 0.2, 1.0,
         ))
         lib.ospCommit(renderer)
 
