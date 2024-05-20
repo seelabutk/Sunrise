@@ -783,8 +783,8 @@ class Scene(WithExitStackMixin):
         lib.ospSetObject(world, b'light', lights)
         lib.ospCommit(world)
 
-        print(f'Renderer Type: {self.config["renderer"]["type"]}')
-        renderer_type = f'{self.config["renderer"]["type"]}'
+        print(f'Renderer Type: {self.config.type()}')
+        renderer_type = f'{self.config.type()}'
         renderer = (
             # b'ao'  # does not use lights
             # b'pathtracer'
@@ -794,8 +794,8 @@ class Scene(WithExitStackMixin):
         renderer = lib.ospNewRenderer(renderer)
         self.defer(lib.ospRelease, renderer)
         
-        print(f'Sample Count: {self.config["renderer"]["samples"]}')
-        lib.ospSetInt(renderer, b'pixelSamples', self.config["renderer"]["samples"])
+        print(f'Sample Count: {self.config.samples()}')
+        lib.ospSetInt(renderer, b'pixelSamples', self.config.samples())
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
             0.8, 0.2, 0.2, 1.0,
         ))

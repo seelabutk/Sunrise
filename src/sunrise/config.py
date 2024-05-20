@@ -1,23 +1,90 @@
-# These are the valid types of OSPRay renderers that we support
-valid_renderer_types = [
-    "scivis",
-    "ao",
-    "pathtracer",
-]
+class RendererConfig:
+    def __init__(self, render_data):
+        self.data = render_data
+        self._type = self.data["type"]
+        self._samples = self.data["samples"]
 
+        self._valid_types = [
+            "scivis",
+            "ao",
+            "pathtracer",
+        ]
+
+    # Validate that the config has valid values we can use
+    def validate(self):
+        print("Validating renderer type...", end=" ")
+        if self._type not in self._valid_types:
+            print(f'ERROR: Invalid renderer type: {self._type}')
+            exit()
+        print("success")
+
+    # Get the type of renderer from the config
+    def type(self):
+        return self._type
+
+    # Get the number of pixel samples we want to use in the renderer
+    def samples(self):
+        return self._samples
+
+class ServerConfig:
+    def __init__(self, server_data):
+        self.data = server_data
+        
+        self._name = self.data['name']
+        self._version = self.data['version']
+        self._host = self.data['host']
+        self._port = self.data['port']
+
+    def validate(self):
+        print("Validating server...", end=" ")
+        print("success")
+
+    # Get the port the server should run on
+    def port(self):
+        return self._port
+
+    # Get the host the server should run on
+    def host(self):
+        return self._host
+
+    # Get the name of the server
+    def name(self):
+        return self._name
+
+    # Get the version of the server
+    def version(self):
+        return self._version
+
+# Overall configuration
 class Config:
     def __init__(self, config_data):
         self.config = config_data
-        self.server_info = self.config["server"]
-        self.renderer_info = self.config["renderer"]
+        self.render_config = RendererConfig(self.config["renderer"])
+        self.server_config = ServerConfig(self.config["server"])
 
-    def validate(self):
-        print("Validating renderer type...", end="")
-        if self.renderer_info['type'] not in valid_renderer_types:
-            print(f'ERROR: Invalid renderer type: {self.renderer_info["type"]}')
-            exit()
+        self.server_config.validate()
+        self.render_config.validate()
 
-#        if self.renderer_info["type"] != "scivis" and self.renderer_info["type"] != "ao" and self.renderer_info["type"] != "pathtracer":
-#            print(f'ERROR: Invalid renderer type: {self.renderer_info["type"]}')
-#            exit()
-        print(" success")
+    # Get the port the server should run on
+    def port(self):
+        return self.server_config.port()
+
+    # Get the host the server should run on
+    def host(self):
+        return self.server_config.host()
+
+    # Get the name of the server
+    def name(self):
+        return self.server_config.name()
+
+    # Get the version of the server
+    def version(self):
+        return self.server_config.version()
+
+    # Get the type of renderer we want
+    def type(self):
+        return self.render_config.type()
+
+    # Get the number of pixel samples for the renderer
+    def samples(self):
+        return self.render_config.samples()

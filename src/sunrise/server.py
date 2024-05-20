@@ -28,12 +28,11 @@ async def read_config():
         config = auto.tomli.load(f)
         print(config)
         con = conf.Config(config)
-        con.validate()
-        return config
+        return con
 
 async def run_server():
     config_info = await read_config()
-    config = auto.uvicorn.Config("sunrise.server:app", port=config_info["server"]["port"], host=config_info["server"]["host"])
+    config = auto.uvicorn.Config("sunrise.server:app", port=config_info.port(), host=config_info.host())
     server = auto.uvicorn.Server(config)
     await server.serve()
 
