@@ -5,5 +5,5 @@ host="0.0.0.0"
 port=5000
 
 [renderer]
-type="pathtracer"
-samples=9
+type="scivis"
+samples=20

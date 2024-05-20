@@ -77,7 +77,6 @@ def Map(
 ) -> auto.np.NDArray:
     return auto.np.memmap(path, dtype=dtype, mode='c')
 
-
 def Data(
     array: np.ndarray,
     /,
@@ -717,15 +716,21 @@ class Distant(WithExitStackMixin):
 
 
 class Sunlight(WithExitStackMixin):
-    def __init__(self):
+    def __init__(self, now: datetime.datetime):
         super().__init__()
 
+        self.now = now
+
     def make(self):
+        # Get the position of the Sun in the sky based on the date & time
+        location = self.location_from_datetime(self.now, alt=10_000.0)
+        position = sunrise.model.position_from_location(location)
+
         light = lib.ospNewLight(b'sunSky')
         self.defer(lib.ospRelease, light)
         lib.ospSetInt(light, b'intensityQuantity', 1)
-        lib.ospSetVec3f(light, b'color', 1.0, 0.77, 0.41)
-        # lib.ospSetVec3f(light, b'color', 0.8, 0.8, 0.8)
+        # lib.ospSetVec3f(light, b'color', 1.0, 0.77, 0.41)
+        lib.ospSetVec3f(light, b'color', 1.0, 1.0, 1.0)
         lib.ospSetFloat(light, b'intensity', 1.0)
         lib.ospSetVec3f(light, b'direction', 0.0, 0.0, -1.0)
         lib.ospSetFloat(light, b'albedo', 0.5)
@@ -744,6 +749,32 @@ class Sunlight(WithExitStackMixin):
         # lib.ospCommit(instance)
 
         # self.instance = instance
+
+    def location_from_datetime(
+        self,
+        when: datetime.datetime,
+        /,
+        *,
+        alt: float,
+        planets=skyfield.api.load('de421.bsp'),
+        timescale=skyfield.api.load.timescale(),
+        cls=sunrise.model.Location,
+    ):
+        sun = planets['sun']
+        earth = planets['earth']
+
+        now = timescale.from_datetime(when)
+        position = earth.at(now).observe(sun).apparent()
+
+        location = skyfield.toposlib.wgs84.geographic_position_of(position)
+        lat = location.latitude.degrees
+        lng = location.longitude.degrees
+
+        return cls(
+            lat=lat,
+            lng=lng,
+            alt=alt,
+        )
 
 
 class Scene(WithExitStackMixin):
@@ -768,10 +799,19 @@ class Scene(WithExitStackMixin):
         ))
 
         sunlight = self.enter(Sunlight(
+            now=(
+                datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=-5),
+                    name='EST'
+                    ))
+                + 
+                datetime.timedelta(hours=5)
+                # datetime.timedelta(hours=request.hour)
+            )
         ))
 
         lights = Data([
-            # ambient.light,
+            ambient.light,
             # distant.light,
             # point.light,
             sunlight.light,
@@ -782,6 +822,7 @@ class Scene(WithExitStackMixin):
         self.defer(lib.ospRelease, world)
         lib.ospSetObject(world, b'instance', self.what.instances)
         lib.ospSetObject(world, b'light', lights)
+        lib.ospSetBool(world, b'dynamicScene', True)
         lib.ospCommit(world)
 
         renderer = (
@@ -795,7 +836,7 @@ class Scene(WithExitStackMixin):
         
         lib.ospSetInt(renderer, b'pixelSamples', self.config.renderer.samples())
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
-            0.0, 0.0, 0.0, 0.0, # Black background
+            0.0, 0.0, 0.0, 1.0, # Black background
             # 1.0, 1.0, 1.0, 1.0, # White background
             # 0.8, 0.2, 0.2, 1.0,
         ))
