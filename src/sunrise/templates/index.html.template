@@ -101,7 +101,7 @@ input {
         id="hyperimage"
         style="width: 512px; height: 512px; border: 2px solid red;"
         ></div>
-    <!--<div class="d Map js--map" style="width: 800px; height: 512px"></div>-->
+    <div class="d Map js--map" style="width: 800px; height: 512px"></div>
 </div>
 
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>

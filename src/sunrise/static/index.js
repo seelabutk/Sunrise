@@ -22,13 +22,16 @@ class Map {
     tile_layer = null;
     markers = [];
 
-    constructor() {
+    constructor(url) {
+        console.log(`Map: ${url}`);
+
         this.config =  {
             angle: 6,
             position: [0.0, 0.0, 0.0],
 
             get url() {
-                return `http://160.36.58.111:3000/api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=6&pos=0.0,0.0,0.0`;
+                return url;
+                // return `http://160.36.58.111:3000/api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=6&pos=0.0,0.0,0.0`;
             }
         };
         
@@ -88,6 +91,8 @@ class Clock {
 
 /* Sunrise Application */
 class Sunrise {
+    config = null;
+    selection_map = null;
 
     constructor($el, {
         what,
@@ -96,6 +101,7 @@ class Sunrise {
         highRes = tileSize,
         lowRes = (highRes / 4) |0,
     }={}) {
+        this.get_config();
         // this.map = new Map();
         this.canvasSize = canvasSize;
         this.tileSize = tileSize;
@@ -115,6 +121,7 @@ class Sunrise {
                 10000,
             ),
         });
+
 
         this.point_vectors = [];
 
@@ -169,8 +176,12 @@ class Sunrise {
         this.current_mission = null;
 
         this.rendererUpdate(this.dimension);
+        this.create_map();
+    }
 
-        this.config = this.get_config();
+    async create_map() {
+        await this.get_config();
+        this.selection_map = new Map(this.config["map-route"]);
     }
 
     /// @briefSetup the camera to desired initial values
@@ -256,7 +267,7 @@ class Sunrise {
         const res = await fetch(url);
         const config = await res.json();
         console.log(config);
-        return config;
+        this.config = config;
     }
 
     /// @brief Update the tiles on the page to the new ones that we rendered on the server
