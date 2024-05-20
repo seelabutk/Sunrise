@@ -640,7 +640,7 @@ class Ambient(WithExitStackMixin):
     def make(self):
         light = lib.ospNewLight(b'ambient')
         self.defer(lib.ospRelease, light)
-        lib.ospSetFloat(light, b'intensity', 0.75)
+        lib.ospSetFloat(light, b'intensity', 0.15)
         lib.ospSetInt(light, b'intensityQuantity', 1)
         lib.ospCommit(light)
 
@@ -724,7 +724,8 @@ class Sunlight(WithExitStackMixin):
         light = lib.ospNewLight(b'sunSky')
         self.defer(lib.ospRelease, light)
         lib.ospSetInt(light, b'intensityQuantity', 1)
-        lib.ospSetVec3f(light, b'color', 0.8, 0.8, 0.8)
+        lib.ospSetVec3f(light, b'color', 1.0, 0.77, 0.41)
+        # lib.ospSetVec3f(light, b'color', 0.8, 0.8, 0.8)
         lib.ospSetFloat(light, b'intensity', 1.0)
         lib.ospSetVec3f(light, b'direction', 0.0, 0.0, -1.0)
         lib.ospSetFloat(light, b'albedo', 0.5)
@@ -770,10 +771,10 @@ class Scene(WithExitStackMixin):
         ))
 
         lights = Data([
-            ambient.light,
+            # ambient.light,
             # distant.light,
             # point.light,
-            # sunlight.light,
+            sunlight.light,
         ], type=lib.OSP_LIGHT)
         self.defer(lib.ospRelease, lights)
 
