@@ -170,7 +170,7 @@ class Sunrise {
 
         this.rendererUpdate(this.dimension);
 
-        this.get_config();
+        this.config = this.get_config();
     }
 
     /// @briefSetup the camera to desired initial values
@@ -255,7 +255,8 @@ class Sunrise {
 
         const res = await fetch(url);
         const config = await res.json();
-        console.log(`Config: ${config}`);
+        console.log(config);
+        return config;
     }
 
     /// @brief Update the tiles on the page to the new ones that we rendered on the server
