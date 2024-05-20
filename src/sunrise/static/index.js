@@ -169,6 +169,8 @@ class Sunrise {
         this.current_mission = null;
 
         this.rendererUpdate(this.dimension);
+
+        this.get_config();
     }
 
     /// @briefSetup the camera to desired initial values
@@ -246,6 +248,14 @@ class Sunrise {
     // @brief Render HTML for each image tile we want 
     renderTiles() {
         this.updateTiles();
+    }
+
+    async get_config() {
+        let url = new URL('api/config/', window.location.origin);
+
+        const res = await fetch(url);
+        const config = await res.json();
+        console.log(`Config: ${config}`);
     }
 
     /// @brief Update the tiles on the page to the new ones that we rendered on the server

@@ -106,6 +106,14 @@ async def index(
         ),
     )
 
+@app.get('/api/config')
+async def config():
+    config = await read_config()
+    return auto.fastapi.Response(
+        content=config.client_data_response(),
+        media_type='application/json'
+    )
+
 
 @app.get('/api/v1/view/')
 async def view(

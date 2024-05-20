@@ -1,3 +1,5 @@
+import json
+
 class RendererConfig:
     def __init__(self, render_data):
         self.data = render_data
@@ -55,15 +57,32 @@ class ServerConfig:
     def version(self):
         return self._version
 
+class ClientConfig:
+    def __init__(self, client_data):
+        self.data = client_data
+
+        self._maproute = self.data["maproute"]
+
+    def validate(self):
+        print("Validating client...", end=" ")
+        print("success")
+
+    @property
+    def maproute(self):
+        return self._maproute
+
+
 # Overall configuration
 class Config:
     def __init__(self, config_data):
         self.config = config_data
         self._renderer = RendererConfig(self.config["renderer"])
         self._server = ServerConfig(self.config["server"])
+        self._client = ClientConfig(self.config["client"])
 
         self._server.validate()
         self._renderer.validate()
+        self._client
 
     @property
     def renderer(self):
@@ -72,3 +91,14 @@ class Config:
     @property
     def server(self):
         return self._server
+
+    
+    def client_data_response(self):
+        config_obj = json.dumps({
+            "map-route": self._client.maproute,
+        })
+
+        print(config_obj)
+        return config_obj
+
+

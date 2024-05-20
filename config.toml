@@ -7,3 +7,6 @@ port=5000
 [renderer]
 type="scivis"
 samples=20
+
+[client]
+maproute="testurl"
