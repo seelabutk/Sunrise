@@ -752,9 +752,9 @@ class Scene(WithExitStackMixin):
         self.what = what
         self.config = {}
 
+    # Set the configuration of the renderer
     def configure(self, config):
         self.config = config
-        print(f'CONFIG: {self.config}')
     
     def make(self):
         ambient = self.enter(Ambient(
@@ -783,18 +783,15 @@ class Scene(WithExitStackMixin):
         lib.ospSetObject(world, b'light', lights)
         lib.ospCommit(world)
 
-        print(f'Renderer Type: {self.config.type()}')
-        renderer_type = f'{self.config.type()}'
         renderer = (
             # b'ao'  # does not use lights
             # b'pathtracer'
             # b'scivis'
-            renderer_type.encode('utf-8')
+            self.config.type().encode('utf-8')
         )
         renderer = lib.ospNewRenderer(renderer)
         self.defer(lib.ospRelease, renderer)
         
-        print(f'Sample Count: {self.config.samples()}')
         lib.ospSetInt(renderer, b'pixelSamples', self.config.samples())
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
             0.8, 0.2, 0.2, 1.0,
