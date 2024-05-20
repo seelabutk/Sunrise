@@ -787,12 +787,12 @@ class Scene(WithExitStackMixin):
             # b'ao'  # does not use lights
             # b'pathtracer'
             # b'scivis'
-            self.config.type().encode('utf-8')
+            self.config.renderer.type().encode('utf-8')
         )
         renderer = lib.ospNewRenderer(renderer)
         self.defer(lib.ospRelease, renderer)
         
-        lib.ospSetInt(renderer, b'pixelSamples', self.config.samples())
+        lib.ospSetInt(renderer, b'pixelSamples', self.config.renderer.samples())
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
             0.8, 0.2, 0.2, 1.0,
         ))

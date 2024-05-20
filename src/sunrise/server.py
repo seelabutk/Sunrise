@@ -32,7 +32,7 @@ async def read_config():
 
 async def run_server():
     config_info = await read_config()
-    config = auto.uvicorn.Config("sunrise.server:app", port=config_info.port(), host=config_info.host())
+    config = auto.uvicorn.Config("sunrise.server:app", port=config_info.server.port(), host=config_info.server.host())
     server = auto.uvicorn.Server(config)
     await server.serve()
 

@@ -59,32 +59,16 @@ class ServerConfig:
 class Config:
     def __init__(self, config_data):
         self.config = config_data
-        self.render_config = RendererConfig(self.config["renderer"])
-        self.server_config = ServerConfig(self.config["server"])
+        self._renderer = RendererConfig(self.config["renderer"])
+        self._server = ServerConfig(self.config["server"])
 
-        self.server_config.validate()
-        self.render_config.validate()
+        self._server.validate()
+        self._renderer.validate()
 
-    # Get the port the server should run on
-    def port(self):
-        return self.server_config.port()
+    @property
+    def renderer(self):
+        return self._renderer
 
-    # Get the host the server should run on
-    def host(self):
-        return self.server_config.host()
-
-    # Get the name of the server
-    def name(self):
-        return self.server_config.name()
-
-    # Get the version of the server
-    def version(self):
-        return self.server_config.version()
-
-    # Get the type of renderer we want
-    def type(self):
-        return self.render_config.type()
-
-    # Get the number of pixel samples for the renderer
-    def samples(self):
-        return self.render_config.samples()
+    @property
+    def server(self):
+        return self._server
