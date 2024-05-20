@@ -127,10 +127,8 @@ server_port=5000
 go---server() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     SUNRISE_SCENE_PATH=${root:?}/data \
-    pexec uvicorn \
-        --host "${server_bind:?}" \
-        --port "${server_port:?}" \
-        sunrise.server:app \
+    pexec python -m \
+        sunrise.server \
     ##
 }
 

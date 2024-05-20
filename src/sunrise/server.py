@@ -6,19 +6,11 @@ from __future__ import annotations
 from ._auto import auto
 from . import scene
 from . import model
-
+from . import config as conf
+import asyncio
 
 app = auto.fastapi.FastAPI(
 )
-
-
-# templates
-templates = auto.fastapi.templating.Jinja2Templates(
-    directory=(
-        auto.pathlib.Path(__file__).parent / 'templates'
-    ),
-)
-
 
 # static
 app.mount(
@@ -27,6 +19,30 @@ app.mount(
         directory=(
             auto.pathlib.Path(__file__).parent / 'static'
         ),
+    ),
+)
+
+# Read the configuration from the "config.toml" file 
+async def read_config():
+    with open("config.toml", "rb") as f:
+        config = auto.tomli.load(f)
+        print(config)
+        con = conf.Config(config)
+        return con
+
+async def run_server():
+    config_info = await read_config()
+    config = auto.uvicorn.Config("sunrise.server:app", port=config_info.server.port(), host=config_info.server.host())
+    server = auto.uvicorn.Server(config)
+    await server.serve()
+
+if __name__ == "__main__":
+    asyncio.run(run_server())
+
+# templates
+templates = auto.fastapi.templating.Jinja2Templates(
+    directory=(
+        auto.pathlib.Path(__file__).parent / 'templates'
     ),
 )
 
@@ -57,10 +73,13 @@ async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
         )
         what.make()
 
+        config = await read_config()
+
         for _ in range(6):
             scene_ = scene.Scene(
                 what=what,
             )
+            scene_.configure(config)
             scene_.make()
 
             scenes.put_nowait(scene_)
@@ -165,3 +184,4 @@ async def view(
             content=f.getvalue(),
             media_type='image/png',
         )
+

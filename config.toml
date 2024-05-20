@@ -1,0 +1,9 @@
+[server]
+name="sunrise"
+version=1
+host="0.0.0.0"
+port=5000
+
+[renderer]
+type="scivis"
+samples=15
