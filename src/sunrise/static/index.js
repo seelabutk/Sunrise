@@ -186,8 +186,8 @@ class Sunrise {
     async create_map() {
         if (!this.selection_map || !this.config) {
             await this.get_config();
-            console.log(this.config["map-data"]["routes"][0]);
-            this.selection_map = new Map(this.config["map-data"]["routes"][0]);
+            console.log(this.config["map-data"]["routes"]["vaas"]);
+            this.selection_map = new Map(this.config["map-data"]["routes"]["vaas"]);
             console.log('map created');
         }
     }
