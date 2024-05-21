@@ -227,6 +227,17 @@ class Sunrise {
         }
     }
 
+    goto_point(index, mission) {
+        let render_data = mission.goto_point(index);
+
+        this.threecontrols.update();
+        this.threecam.position.copy(render_data.current);
+        this.threecam.up.copy(render_data.up);
+        this.threecam.lookAt(render_data.target);
+
+        this.render_path_point();
+    }
+
     /// @briefSetup the camera to desired initial values
     /// @returns Nothing
     #setup_camera(position) {
@@ -523,42 +534,51 @@ class Sunrise {
         if (!this.selection_map) {
             await this.create_map();
         }
+        let mission = new Mission(name);
 
         let data = [];
         const num_steps = 30;
-        for (let i = 2; i < path.length; i++) {
+        let point_index = 1;
+        for (let i = 1; i < path.length; i++) {
             let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
             console.log(`Selection Map: ${this.selection_map}`);
-            this.selection_map.add_marker(path[i-1].lat, path[i-1].lng);
+            this.selection_map.add_marker(path[i-1].lat, path[i-1].lng, () => {
+                this.goto_point(i, mission);
+            });
             let prevpoint = new THREE.Vector3(
                 prev.x / this.cameraScalingFactor,
                 prev.y / this.cameraScalingFactor,
                 prev.z / this.cameraScalingFactor,
             );
             
-            let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, 7);
-            let currpoint = new THREE.Vector3(
-                curr.x / this.cameraScalingFactor,
-                curr.y / this.cameraScalingFactor,
-                curr.z / this.cameraScalingFactor,
-            );
+//            let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, 7);
+//            let currpoint = new THREE.Vector3(
+//                curr.x / this.cameraScalingFactor,
+//                curr.y / this.cameraScalingFactor,
+//                curr.z / this.cameraScalingFactor,
+//            );
 
-            // Use the linear interpolator to fill in and
-            // smooth the distance between points
-            for (let j = 0; j < num_steps; j++) {
-                data.push(
-                    new THREE.Vector3(
-                        linear_interp(prevpoint.x, currpoint.x, j / num_steps),
-                        linear_interp(prevpoint.y, currpoint.y, j / num_steps),
-                        linear_interp(prevpoint.z, currpoint.z, j / num_steps),
-                    )
-                );
-            }
+            mission.add_point(prevpoint);
+
+//            // Use the linear interpolator to fill in and
+//            // smooth the distance between points
+//            for (let j = 0; j < num_steps; j++) {
+//                data.push(
+//                    new THREE.Vector3(
+//                        linear_interp(prevpoint.x, currpoint.x, j / num_steps),
+//                        linear_interp(prevpoint.y, currpoint.y, j / num_steps),
+//                        linear_interp(prevpoint.z, currpoint.z, j / num_steps),
+//                    )
+//                );
+//                point_index++;
+//            }
+
+            point_index++;
         }
 
         // TODO: Probably use a list of these Missions to hold
         // rather than hard code it
-        let mission = new Mission(name, data);
+        // let mission = new Mission(name, data);
         let button = mission.get_button(() => {
             this.play_mission(mission);
         });

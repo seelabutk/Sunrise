@@ -861,12 +861,12 @@ class Scene(WithExitStackMixin):
     def update_lights(self, hour: int):
         sunlight = self.enter(Sunlight(
             now=(
-                datetime.datetime(year=2023, month=6, day=1, hour=hour, tzinfo=datetime.timezone(
-                    offset=datetime.timedelta(hours=-5),
+                datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=-5),  # Eastern Time
                     name='EST'
-                    ))
+                ))
                 + 
-                datetime.timedelta(hours=5)
+                datetime.timedelta(hours=hour)
                 # datetime.timedelta(hours=request.hour)
             )
         ))

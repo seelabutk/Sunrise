@@ -10,11 +10,16 @@ export class Mission {
     paused = true;
 
     /// NOTE: what to do with 'alt'?
-    constructor(name, position_data) {
+    constructor(name) {
+    // constructor(name, position_data) {
         this.name = name;
-        this.point_list = position_data;
+        this.point_list = [];
         this.index = 0;
         this.current_point = this.point_list[0];
+    }
+
+    add_point(point) {
+        this.point_list.push(point);
     }
 
     pause() {
