@@ -58,7 +58,12 @@ class Map {
             noWrap: true,
         });
         this.tile_layer.addTo(this.map);
+    }
 
+    /// @brief Change the url for the request to the new 
+    ///        specified one
+    set_url(url) {
+        this.url = url;
     }
 
     add_marker(lat, lng) {
@@ -101,7 +106,6 @@ class Sunrise {
         highRes = tileSize,
         lowRes = (highRes / 4) |0,
     }={}) {
-        this.get_config();
         // this.map = new Map();
         this.canvasSize = canvasSize;
         this.tileSize = tileSize;
@@ -176,12 +180,16 @@ class Sunrise {
         this.current_mission = null;
 
         this.rendererUpdate(this.dimension);
-        this.create_map();
+        // this.create_map();
     }
 
     async create_map() {
-        await this.get_config();
-        this.selection_map = new Map(this.config["map-route"]);
+        if (!this.selection_map || !this.config) {
+            await this.get_config();
+            console.log(this.config["map-data"]["routes"][0]);
+            this.selection_map = new Map(this.config["map-data"]["routes"][0]);
+            console.log('map created');
+        }
     }
 
     /// @briefSetup the camera to desired initial values
@@ -261,13 +269,13 @@ class Sunrise {
         this.updateTiles();
     }
 
+    /// @brief Send request to the server to get the configuration
+    ///        details for the client
     async get_config() {
         let url = new URL('api/config/', window.location.origin);
-
-        const res = await fetch(url);
-        const config = await res.json();
-        console.log(config);
-        this.config = config;
+        let res = await fetch(url);
+        this.config = await res.json();
+        console.log(this.config);
     }
 
     /// @brief Update the tiles on the page to the new ones that we rendered on the server
@@ -474,12 +482,17 @@ class Sunrise {
     }
    
     /// Add a path for the camera to follow
-    add_path(name, path) {
+    async add_path(name, path) {
+        if (!this.selection_map) {
+            await this.create_map();
+        }
+
         let data = [];
         const num_steps = 30;
         for (let i = 1; i < path.length; i++) {
             let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
-            // this.map.add_marker(path[i-1].lat, path[i-1].lng);
+            console.log(`Selection Map: ${this.selection_map}`);
+            this.selection_map.add_marker(path[i-1].lat, path[i-1].lng);
             let prevpoint = new THREE.Vector3(
                 prev.x / this.cameraScalingFactor,
                 prev.y / this.cameraScalingFactor,

@@ -60,16 +60,17 @@ class ServerConfig:
 class ClientConfig:
     def __init__(self, client_data):
         self.data = client_data
-
-        self._maproute = self.data["maproute"]
+        
+        print(self.data)
+        self._map_data = self.data["map"]
 
     def validate(self):
         print("Validating client...", end=" ")
         print("success")
 
     @property
-    def maproute(self):
-        return self._maproute
+    def map_data(self):
+        return self._map_data
 
 
 # Overall configuration
@@ -95,7 +96,7 @@ class Config:
     
     def client_data_response(self):
         config_obj = json.dumps({
-            "map-route": self._client.maproute,
+            "map-data": self._client.map_data,
         })
 
         print(config_obj)
