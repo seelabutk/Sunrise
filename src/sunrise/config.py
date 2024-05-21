@@ -4,12 +4,19 @@ class RendererConfig:
     def __init__(self, render_data):
         self.data = render_data
         self._type = self.data["type"]
+        self._modules = self.data["modules"]
         self._samples = self.data["samples"]
 
+        # Valid types that we allow for the renderer
         self._valid_types = [
             "scivis",
             "ao",
             "pathtracer",
+        ]
+
+        # Valid modules that we allow the renderer to load
+        self._valid_modules = [
+            "denoiser",
         ]
 
     # Validate that the config has valid values we can use
@@ -18,11 +25,20 @@ class RendererConfig:
         if self._type not in self._valid_types:
             print(f'ERROR: Invalid renderer type: {self._type}')
             exit()
+        if len(self._modules) != 0:
+            for module in self._modules:
+                if module not in self._valid_modules:
+                    print(f'ERROR: Invalid module: ${module}')
+                    exit()
         print("success")
 
     # Get the type of renderer from the config
     def type(self):
         return self._type
+
+    @property
+    def modules(self):
+        return self._modules
 
     # Get the number of pixel samples we want to use in the renderer
     def samples(self):

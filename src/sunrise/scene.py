@@ -802,7 +802,7 @@ class Scene(WithExitStackMixin):
 
         sunlight = self.enter(Sunlight(
             now=(
-                datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                datetime.datetime(year=2023, month=6, day=1, hour=15, tzinfo=datetime.timezone(
                     offset=datetime.timedelta(hours=-5),
                     name='EST'
                     ))
@@ -812,13 +812,14 @@ class Scene(WithExitStackMixin):
             )
         ))
 
+
         lights = Data([
             ambient.light,
             # distant.light,
             # point.light,
             sunlight.light,
         ], type=lib.OSP_LIGHT)
-        self.defer(lib.ospRelease, lights)
+        # self.defer(lib.ospRelease, lights)
 
         world = lib.ospNewWorld()
         self.defer(lib.ospRelease, world)
@@ -855,6 +856,31 @@ class Scene(WithExitStackMixin):
         self.world = world
         self.renderer = renderer
         self.camera = camera
+        self.lights = lights
+
+    def update_lights(self, hour: int):
+        sunlight = self.enter(Sunlight(
+            now=(
+                datetime.datetime(year=2023, month=6, day=1, hour=hour, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=-5),
+                    name='EST'
+                    ))
+                + 
+                datetime.timedelta(hours=5)
+                # datetime.timedelta(hours=request.hour)
+            )
+        ))
+        
+        ambient = self.enter(Ambient(
+        ))
+
+        lights = Data([
+            ambient.light,
+            # distant.light,
+            # point.light,
+            sunlight.light,
+        ], type=lib.OSP_LIGHT)
+        return lights
     
     def render(self, request: model.RenderingRequest):
         world = self.world
@@ -864,7 +890,15 @@ class Scene(WithExitStackMixin):
         num_x_bins = 2
         num_y_bins = 2
 
-        # NOTE: look into open image denoise for low-res rendering
+        
+        lib.ospRelease(self.lights)
+        self.lights = self.update_lights(request.hour)
+        lib.ospSetObject(world, b'light', self.lights)
+        lib.ospCommit(self.lights)
+        # self.defer(lib.ospRelease, lights)
+        lib.ospCommit(world)
+
+            
         # lib.ospSetInt(renderer, b'pixelSamples', samples)
 
         zoom, row, col = request.tile
@@ -917,6 +951,16 @@ class Scene(WithExitStackMixin):
             # -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
+        
+#        denoiser = lib.ospNewImageOperation(b'denoiser')
+#        self.defer(lib.ospRelease, denoiser)
+#        lib.ospCommit(denoiser)
+#
+#        imageops = Data([
+#            denoiser
+#        ], type=lib.OSP_IMAGE_OPERATION)
+#        self.defer(lib.ospRelease, imageops)
+#        lib.ospCommit(imageops)
 
         framebuffer = lib.ospNewFrameBuffer(
             request.width,
@@ -927,6 +971,9 @@ class Scene(WithExitStackMixin):
             ),
             lib.OSP_FB_COLOR,
         )
+
+#        lib.ospSetObject(framebuffer, b'imageOperation', imageops)
+        lib.ospCommit(framebuffer)
 
         _variance: float = lib.ospRenderFrameBlocking(
             framebuffer,
@@ -946,6 +993,7 @@ class Scene(WithExitStackMixin):
             1,
         )
         image.load()
+
 
         lib.ospUnmapFrameBuffer(rgba, framebuffer)
 

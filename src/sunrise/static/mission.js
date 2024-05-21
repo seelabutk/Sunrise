@@ -123,6 +123,18 @@ export class Mission {
         };
     }
 
+    goto_point(index) {
+        if (index > this.point_list.length - 1) {
+            console.error(`Index ${index} out of bounds of this mission`);
+        }
+
+        return {
+            current: this.point_list[index],
+            target: this.point_list[index+1],
+            up: this.point_list[index],
+        }
+    }
+
     /// Create the button element to be placed in the DOM where
     /// the App class wants it
     get_button(callback) {

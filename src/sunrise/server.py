@@ -23,7 +23,8 @@ app.mount(
 )
 
 # Read the configuration from the "config.toml" file 
-async def read_config():
+@auto.functools.cache
+def get_config():
     with open("config.toml", "rb") as f:
         config = auto.tomli.load(f)
         print(config)
@@ -31,7 +32,7 @@ async def read_config():
         return con
 
 async def run_server():
-    config_info = await read_config()
+    config_info = get_config()
     config = auto.uvicorn.Config("sunrise.server:app", port=config_info.server.port(), host=config_info.server.host())
     server = auto.uvicorn.Server(config)
     await server.serve()
@@ -46,19 +47,28 @@ templates = auto.fastapi.templating.Jinja2Templates(
     ),
 )
 
-
 SUNRISE_LIBOSPRAY_PATH = auto.os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospray.so')
 SUNRISE_SCENE_PATH = auto.os.environ['SUNRISE_SCENE_PATH']
 
 
 # @auto.functools.cache
-async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
+async def get_scene(
+    config: auto.typing.Annotated[
+        auto.typing.Any,
+        auto.fastapi.Depends(get_config),
+    ],
+) -> auto.typing.Generator[scene.Scene, None, None]:
     global lib
     try:
         lib
     except NameError:
         lib = scene.load_library(SUNRISE_LIBOSPRAY_PATH)
         lib.ospInit(None, None)
+
+#        if len(config.renderer.modules) != 0:
+#            for module in config.renderer.modules:
+#                lib.ospLoadModule(module.encode())
+
 
         auto.atexit.register(lib.ospShutdown)
     
@@ -72,8 +82,6 @@ async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
             path=auto.pathlib.Path('data'),
         )
         what.make()
-
-        config = await read_config()
 
         for _ in range(6):
             scene_ = scene.Scene(
@@ -107,8 +115,12 @@ async def index(
     )
 
 @app.get('/api/config')
-async def config():
-    config = await read_config()
+async def config(
+    config: auto.typing.Annotated[
+        auto.typing.Any,
+        auto.fastapi.Depends(get_config),
+    ],
+):
     return auto.fastapi.Response(
         content=config.client_data_response(),
         media_type='application/json'
@@ -169,6 +181,13 @@ async def view(
             alias='samples',
         ),
     ],
+    
+    hour: auto.typing.Annotated[
+        int,
+        auto.fastapi.Query(
+            alias='hour',
+        ),
+    ],
 ):
     tile = tuple(map(float, tile.split(',')))
     position = tuple(map(float, position.split(',')))
@@ -183,6 +202,7 @@ async def view(
         direction=direction,
         up=up,
         samples=samples,
+        hour=hour,
     ))
     
     with auto.io.BytesIO() as f:

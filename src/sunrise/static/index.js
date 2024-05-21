@@ -64,10 +64,27 @@ class Map {
     ///        specified one
     set_url(url) {
         this.url = url;
+        this.tile_layer = L.tileLayer(this.url, {
+            tms: (
+                // true, // y+ is north
+                false  // y+ is south
+            ),
+            noWrap: true,
+        });
+        this.map.removeLayer(this.tile_layer);
+        this.tile_layer = L.tileLayer(this.url, {
+            tms: (
+                // true, // y+ is north
+                false  // y+ is south
+            ),
+            noWrap: true,
+        });
+        this.tile_layer.addTo(this.map);
     }
 
-    add_marker(lat, lng) {
+    add_marker(lat, lng, callback) {
         let m = new L.marker([lat, lng]);
+        m.on('click', callback);
 
         this.markers.push(m);
         m.addTo(this.map);
@@ -121,8 +138,8 @@ class Sunrise {
             ...latlng_to_cartesian(
                 35.562744,
                 -83.5 - 13,
-                // 100,
-                10000,
+                100,
+                // 10000,
             ),
         });
 
@@ -141,7 +158,7 @@ class Sunrise {
         this.secondary.height = this.canvasSize;
 
         this.highres = 512;
-        this.lowres = 128;
+        this.lowres = 64;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
@@ -180,14 +197,32 @@ class Sunrise {
         this.current_mission = null;
 
         this.rendererUpdate(this.dimension);
-        // this.create_map();
     }
 
+    /// Create the leaflet map for selecting points along the path
     async create_map() {
         if (!this.selection_map || !this.config) {
             await this.get_config();
-            console.log(this.config["map-data"]["routes"]["vaas"]);
+            // console.log(this.config["map-data"]["routes"]["vaas"]);
             this.selection_map = new Map(this.config["map-data"]["routes"]["vaas"]);
+
+            console.log(this.config["map-data"]["routes"]);
+            for (const key in this.config["map-data"]["routes"]) {
+            let btn = document.createElement("button");
+                btn.id = `map_type_${key.toLowerCase()}`;
+                btn.innerText = `${key}`;
+                btn.className = "missionButton";
+                btn.onclick = () => {
+                    this.selection_map.set_url(this.config["map-data"]["routes"][key]);
+                }
+                console.log(key);
+
+                document.getElementById("mission_list").appendChild(btn);
+            }
+//            this.config["map-data"]["routes"].forEach((route) => {
+//                console.log(route);
+//            });
+
             console.log('map created');
         }
     }
@@ -350,6 +385,7 @@ class Sunrise {
                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
+            url.searchParams.append('hour', 20);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -467,6 +503,7 @@ class Sunrise {
                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
+            url.searchParams.append('hour', 20);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -489,7 +526,7 @@ class Sunrise {
 
         let data = [];
         const num_steps = 30;
-        for (let i = 1; i < path.length; i++) {
+        for (let i = 2; i < path.length; i++) {
             let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
             console.log(`Selection Map: ${this.selection_map}`);
             this.selection_map.add_marker(path[i-1].lat, path[i-1].lng);
@@ -548,7 +585,7 @@ class Sunrise {
         let elapsed_seconds = 0;
         selector.value = ips;
         
-        console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
+        // console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
        
         this.dimension = this.lowres;
         let render_data = mission.forward(1);
@@ -561,7 +598,7 @@ class Sunrise {
 
             let offset = target_index - mission.current_index();
 
-            console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
+            // console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
             this.threecontrols.update();
             this.threecam.position.copy(render_data.current);
             this.threecam.up.copy(render_data.up);
