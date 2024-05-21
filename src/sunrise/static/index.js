@@ -385,7 +385,7 @@ class Sunrise {
                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
-            url.searchParams.append('hour', 20);
+            url.searchParams.append('hour', new Date().getHours() + 5);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -503,7 +503,7 @@ class Sunrise {
                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
-            url.searchParams.append('hour', 20);
+            url.searchParams.append('hour', new Date().getHours() + 5);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
