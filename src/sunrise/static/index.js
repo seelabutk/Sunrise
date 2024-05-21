@@ -45,7 +45,10 @@ class Map {
             // [-34.0549, -118.2426],  // Los Angeles, CA
             // [-40.7128, -74.00060], // New York, New York
         ], {
-            maxZoom: 10,
+            maxNativeZoom: 13,
+            minNativeZoom: 9,
+            maxZoom: 13,
+            minZoom: 9,
         });
         window.map = this.map;
 
@@ -55,6 +58,10 @@ class Map {
                 // true, // y+ is north
                 false  // y+ is south
             ),
+            maxNativeZoom: 13,
+            minNativeZoom: 9,
+            maxZoom: 13,
+            minZoom: 9,
             noWrap: true,
         });
         this.tile_layer.addTo(this.map);
@@ -69,6 +76,10 @@ class Map {
                 // true, // y+ is north
                 false  // y+ is south
             ),
+            maxNativeZoom: 13,
+            minNativeZoom: 9,
+            maxZoom: 13,
+            minZoom: 9,
             noWrap: true,
         });
         this.map.removeLayer(this.tile_layer);
