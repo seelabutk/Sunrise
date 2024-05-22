@@ -117,6 +117,7 @@ input {
         "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
         "arcball": "./static/arcball.js",
         "missions": "./static/mission.js",
+        "map": "./static/map.js",
         "trackball": "./static/trackball.js",
         "tapestry-arcball": "./static/tapestry-arcball.js",
         "path": "./static/path.js",
