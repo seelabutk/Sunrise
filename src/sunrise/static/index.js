@@ -170,7 +170,7 @@ class Sunrise {
         // this.trackball_controls.update();
 
         this.updateTiles(
-            new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+            new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
         );
 
         // Uncomment this to play the sunrise animation when going to a point
@@ -269,7 +269,7 @@ class Sunrise {
         */
     renderTiles() {
         this.updateTiles(
-            new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+            new RenderData(this.#trackball_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
         );
     }
 
@@ -489,7 +489,7 @@ class Sunrise {
     async play_sunrise() {
         this.camera_enabled = false;
         let step = 1;
-        let start = new Date().getHours();
+        let start = new Date().getHours() -5;
         let end = start + 24;
 
         for (let i = start; i < end; i += step) {
@@ -539,7 +539,7 @@ class Sunrise {
             this.threecam.lookAt(render_data.target);
 
             await this.updateTiles(
-                new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
             );
             render_data = mission.forward(offset);
         }
@@ -589,7 +589,7 @@ class Sunrise {
                         if (this.use_trackball) {
                             this.trackball_controls.update();
                             this.updateTiles(
-                                new RenderData(this.#trackball_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
+                                new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.dimension, this.dimension,)
                             );
                         } else {
                             const deltaMouse = {
@@ -609,7 +609,7 @@ class Sunrise {
                                 y: event.offsetY,
                             };
                             this.updateTiles(
-                                new RenderData(this.#world_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
+                                new RenderData(this.#world_direction(), new Date().getHours() -5, 1, 1, this.dimension, this.dimension,)
                             );
                         }
                     } 
@@ -628,11 +628,11 @@ class Sunrise {
                 if (this.use_trackball) {
                     this.trackball_controls.update();
                     this.updateTiles(
-                        new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
                     );
                 } else {
                     this.updateTiles(
-                        new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                        new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
                     );
                 }
             } else {
@@ -646,7 +646,7 @@ class Sunrise {
                     this.trackball_controls.update();
                     this.updateRotateSpeed();
                     this.updateTiles(
-                        new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
                     );
                 }, 100);
             } else {
