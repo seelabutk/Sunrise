@@ -151,7 +151,7 @@ class RenderingRequest:
         typing.Annotated[float, 'z'],
     ]
     samples: int
-    hour: int
+    hour: float
 
 
 @dataclasses.dataclass

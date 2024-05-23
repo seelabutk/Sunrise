@@ -14,6 +14,21 @@ class Tile {
     }
 }
 
+class RenderData {
+    direction = null;
+    
+    hour = null;
+
+    /**
+    *   @param {number} hour The hour query parameter for the request
+    *   @param {THREE.Vector3} direction The direction vector to look at 
+        */
+    constructor(direction, hour) {
+        this.direction = direction;
+        this.hour = hour;
+    }
+}
+
 /* Sunrise Application */
 class Sunrise {
     config = null;
@@ -67,6 +82,19 @@ class Sunrise {
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
+
+        this.prev_mouse_pos = {
+            x: 0,
+            y: 0,
+        };
+        this.mouse_pos = {
+            x: 0,
+            y: 0,
+        };
+        this.mouse_sensitivity = 0.002;
+        this.use_trackball = true;
+
+
 
         let original_position =
             [this.x, this.y, this.z, 1.0]
@@ -134,13 +162,19 @@ class Sunrise {
     goto_point(index, mission) {
         let render_data = mission.goto_point(index);
 
+        this.use_trackball = false;
         this.trackball_controls.enabled = false;
         this.position = render_data.current;
         this.threecam.position.copy(render_data.current);
         this.threecam.up.copy(render_data.up);
         this.threecam.lookAt(render_data.target);
+        // this.trackball_controls.update();
 
-        this.updateTiles(this.#world_direction());
+        this.updateTiles(
+            new RenderData(this.#world_direction(), new Date().getHours())
+        );
+
+        // this.play_sunrise();
     }
 
     /// @briefSetup the camera to desired initial values
@@ -167,7 +201,7 @@ class Sunrise {
         this.trackball_controls.minDistance = (6371 + 10) / this.cameraScalingFactor;
         this.trackball_controls.dynamicDampingFactor = 0.3;
         this.trackball_controls.update();
-        this.trackball_controls.enabled = true;
+        // this.trackball_controls.enabled = true;
 
         this.updateRotateSpeed();
     }
@@ -218,7 +252,9 @@ class Sunrise {
 
     // @brief Render HTML for each image tile we want 
     renderTiles() {
-        this.updateTiles(this.#trackball_direction());
+        this.updateTiles(
+            new RenderData(this.#trackball_direction(), new Date().getHours())
+        );
     }
 
     /// @brief Send request to the server to get the configuration
@@ -231,9 +267,9 @@ class Sunrise {
     }
 
     /** @brief Update the tiles on the page to the new ones that we rendered on the server
-    *   @param {THREE.Vector3} look_direction The direction the camera should look
+    *   @param {RenderData} look_direction The direction the camera should look
         */
-    async updateTiles(look_direction) {
+    async updateTiles(render_data) {
         Tile = Tile.bind(this);
 
         let ctx = this.secondary.getContext('2d');
@@ -288,9 +324,9 @@ class Sunrise {
 //                pz.toFixed(0),
             ].join(','));
             url.searchParams.append('direction', [
-                look_direction.x,
-                look_direction.y,
-                look_direction.z,
+                render_data.direction.x,
+                render_data.direction.y,
+                render_data.direction.z,
 //                - dx,
 //                - dy,
 //                - dz,
@@ -307,7 +343,7 @@ class Sunrise {
                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
-            url.searchParams.append('hour', new Date().getHours() + 5);
+            url.searchParams.append('hour', render_data.hour);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -421,6 +457,16 @@ class Sunrise {
         document.getElementById("mission_list").appendChild(button);
     }
 
+    async play_sunrise() {
+        let step = 1;
+        let start = new Date().getHours();
+        let end = start + 24;
+
+        for (let i = start; i < end; i += step) {
+            this.updateTiles(new RenderData(this.#world_direction(), i));
+        }
+    }
+
     /// Play the path for the specified mission
     async play_mission(mission) {
         if (!mission.is_paused()) {
@@ -458,7 +504,9 @@ class Sunrise {
             this.threecam.up.copy(render_data.up);
             this.threecam.lookAt(render_data.target);
 
-            await this.updateTiles(this.#world_direction());
+            await this.updateTiles(
+                new RenderData(this.#world_direction(), new Date().getHours())
+            );
             render_data = mission.forward(offset);
         }
         this.dimension = this.highres;
@@ -479,15 +527,48 @@ class Sunrise {
 
         this.hyperimage.addEventListener('mousedown', (event) => {
             this.dimension = this.lowres;
-            this.trackball_controls.update();
+            if (this.use_trackball) {
+                this.trackball_controls.update();
+            }
+
             this.is_dragging = true;
+            this.prev_mouse_pos = {
+                x: event.offsetX,
+                y: event.offsetY,
+            };
+            console.log({ROTX: this.threecam.rotation.x, ROTY: this.threecam.rotation.y});
          }, { passive: true });
          
         this.hyperimage.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
                 if (this.is_dragging) {
-                    this.trackball_controls.update();
-                    this.updateTiles(this.#trackball_direction());
+                    // Check if we are using TrackBall controls
+                    if (this.use_trackball) {
+                        this.trackball_controls.update();
+                        this.updateTiles(
+                            new RenderData(this.#trackball_direction(), new Date().getHours())
+                        );
+                    } else {
+                        const deltaMouse = {
+                            x: event.offsetX - this.prev_mouse_pos.x,
+                            y: event.offsetY - this.prev_mouse_pos.y,
+                        };
+                        console.log(deltaMouse);
+
+                        this.threecam.rotateX(-deltaMouse.y * this.mouse_sensitivity);
+                        this.threecam.rotateY(deltaMouse.x * this.mouse_sensitivity);
+                        // this.threecam.rotation.y += deltaMouse.y * this.mouse_sensitivity;
+                        // this.threecam.rotation.x += deltaMouse.x * this.mouse_sensitivity;
+                        // this.trackball_controls.update();
+
+                        this.prev_mouse_pos = {
+                            x: event.offsetX,
+                            y: event.offsetY,
+                        };
+                        this.updateTiles(
+                            new RenderData(this.#world_direction(), new Date().getHours())
+                        );
+                    }
                 } 
             }, 100);
         }, { passive: true });
@@ -495,16 +576,26 @@ class Sunrise {
         this.hyperimage.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
             this.is_dragging = false;
-            // console.log("ENABLED");
-            this.trackball_controls.update();
-            this.updateTiles(this.#trackball_direction());
+
+            if (this.use_trackball) {
+                this.trackball_controls.update();
+                this.updateTiles(
+                    new RenderData(this.#trackball_direction(), new Date().getHours())
+                );
+            } else {
+                this.updateTiles(
+                    new RenderData(this.#world_direction(), new Date().getHours())
+                );
+            }
         }, { passive: true });
 
         this.hyperimage.addEventListener('wheel', (event) => {
             this.#throttle(() => {
                 this.trackball_controls.update();
                 this.updateRotateSpeed();
-                this.updateTiles(this.#trackball_direction());
+                this.updateTiles(
+                    new RenderData(this.#trackball_direction(), new Date().getHours())
+                );
             }, 100);
         }, { passive: true });
     

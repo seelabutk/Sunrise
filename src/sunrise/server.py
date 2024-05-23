@@ -183,7 +183,7 @@ async def view(
     ],
     
     hour: auto.typing.Annotated[
-        int,
+        float,
         auto.fastapi.Query(
             alias='hour',
         ),

@@ -862,7 +862,8 @@ class Scene(WithExitStackMixin):
         sunlight = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
-                    offset=datetime.timedelta(hours=-5),  # Eastern Time
+                    offset=datetime.timedelta(hours=0),  # Eastern Time
+                    # offset=datetime.timedelta(hours=-5),  # Eastern Time
                     name='EST'
                 ))
                 + 
