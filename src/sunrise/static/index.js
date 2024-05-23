@@ -3,7 +3,7 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Mission } from 'missions';
 import { Map } from 'map';
-import { linear_interp, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
+import { RenderData, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -11,42 +11,6 @@ class Tile {
         this.row = row;
         this.col = col;
         this.zoom = zoom;
-    }
-}
-
-class RenderData {
-    direction = null;
-    
-    hour = null;
-
-    num_cols = 0;
-    num_rows = 0;
-
-    width = 0;
-    height = 0;
-
-    /**
-    *   @param {number} hour The hour query parameter for the request
-    *   @param {THREE.Vector3} direction The direction vector to look at 
-    *   @param {number} col_count The number of columns we are requesting from the server
-    *   @param {number} row_count The number of rows we are requesting from the server
-    *   @param {number} width The width of the image
-    *   @param {number} height The height of the image
-    */
-    constructor(
-        direction, 
-        hour, 
-        col_count, 
-        row_count,
-        width,
-        height
-    ) {
-        this.direction = direction;
-        this.hour = hour;
-        this.num_cols = col_count;
-        this.num_rows = row_count;
-        this.width = width;
-        this.height = height;
     }
 }
 
@@ -108,10 +72,6 @@ class Sunrise {
             x: 0,
             y: 0,
         };
-        this.mouse_pos = {
-            x: 0,
-            y: 0,
-        };
         this.mouse_sensitivity = 0.002;
         this.use_trackball = true;
 
@@ -141,11 +101,6 @@ class Sunrise {
         // Create the tiles
         this.definitions = [];
         this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
-//        for (let i = 0; i < this.num_tiles[0]; i++) {
-//            for (let j = 0; j < this.num_tiles[1]; j++) {
-//                this.definitions.push(new Tile(i, j, 40));
-//            }
-//        }
 
         this.paths = [];
         this.missions = [];
@@ -154,6 +109,11 @@ class Sunrise {
         this.rendererUpdate(this.dimension);
     }
 
+    /**
+        * @description (Re)create the tiles that we are using to render
+        * @param {number} num_rows The number of rows in the grid of tiles
+        * @param {number} num_cols The number of columns in the grid of tiles
+        */
     #create_tiles(num_rows, num_cols) {
         this.definitions = [];
         for (let i = 0; i < num_rows; i++) {
@@ -163,7 +123,9 @@ class Sunrise {
         }
     }
 
-    /// Create the leaflet map for selecting points along the path
+    /**
+        * @description Create the leaflet map for selecting points along the path
+        */
     async create_map() {
         if (!this.selection_map || !this.config) {
             await this.get_config();
@@ -182,14 +144,16 @@ class Sunrise {
 
                 document.getElementById("mission_list").appendChild(btn);
             }
-//            this.config["map-data"]["routes"].forEach((route) => {
-//                console.log(route);
-//            });
 
             console.log('map created');
         }
     }
 
+    /**
+        * @description Place the camera at a point along a path and look outwards rather than towards the center of the earth
+        * @param {number} index The index of the point we are trying to go to
+        * @param {Mission} mission The mission of the path we are going to
+        */
     goto_point(index, mission) {
         let render_data = mission.goto_point(index);
 
@@ -208,8 +172,10 @@ class Sunrise {
         // this.play_sunrise();
     }
 
-    /// @briefSetup the camera to desired initial values
-    /// @returns Nothing
+    /**
+        * @description Setup the camera to the desired initial values
+        * @param {THREE.Vector3} position The initial position of the camera
+        */
     #setup_camera(position) {
         let scene = new THREE.Scene();
         this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
@@ -237,7 +203,10 @@ class Sunrise {
         this.updateRotateSpeed();
     }
 
-    /// @brief Update the renderer
+    /** 
+        * @description Update the renderer
+        * @param {string} msg Information to send to the renderer
+        */
     rendererUpdate(msg) {
         // document.getElementById("movement").innerHTML = this.dimension;
         // console.log(msg);
@@ -254,8 +223,11 @@ class Sunrise {
 //        this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
 //    }
 
-    /// @brief Throttle a callback function to 
-    /// an interval we specify
+    /**
+        * @brief Throttle a callback function to an interval we specify
+        * @param {Function} callback The callback function to call while throttling
+        * @param {number} time_ms the number of milliseconds to throttle for
+        */
     #throttle(callback, time_ms) {
         if (this.throttlepause) {
             return;
@@ -275,21 +247,30 @@ class Sunrise {
 //        this.dimension = 256;
 //    }
 
-    // @brief Create a new mission and push it to the application's list
+    /**
+        * @description Create a new mission and push it to the application's list
+        * @param {string} name The desired name of the mission
+        * @param {number} x The x position of the mission
+        * @param {number} y The y position of the mission
+        * @param {number} z The z position of the mission
+        */
     addMission(name, x, y, z) {
         this.missions.push(new Mission(name, x, y, z));
         return this;
     }
 
-    // @brief Render HTML for each image tile we want 
+    /**
+        * @description Render HTML for each image tile we want 
+        */
     renderTiles() {
         this.updateTiles(
             new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
         );
     }
 
-    /// @brief Send request to the server to get the configuration
-    ///        details for the client
+    /**
+        * @description Send request to the server to get the configuration details for the client
+        */
     async get_config() {
         let url = new URL('api/config/', window.location.origin);
         let res = await fetch(url);
@@ -297,8 +278,9 @@ class Sunrise {
         console.log(this.config);
     }
 
-    /** @brief Update the tiles on the page to the new ones that we rendered on the server
-    *   @param {RenderData} render_data The direction the camera should look
+    /** 
+        * @description Update the tiles on the page to the new ones that we rendered on the server
+        * @param {RenderData} render_data The direction the camera should look
         */
     async updateTiles(render_data) {
         Tile = Tile.bind(this);
@@ -392,6 +374,9 @@ class Sunrise {
         }
     }
 
+    /**
+        * @description Update how much we want to rotate based on how zoomed in we are
+        */
     updateRotateSpeed() {
         const maxSpeed = 3.0; // Maximum rotation speed when zoomed out
         const minSpeed = 0.01; // Minimum rotation speed when zoomed in
@@ -412,7 +397,8 @@ class Sunrise {
     }
 
     /**
-    *   @returns The direction vector that we want when using the trackball controls
+        * @description Get the direction vector when using the TrackBall controls
+        * @returns {THREE.Vector3}
         */
     #trackball_direction() {
         return new THREE.Vector3(
@@ -423,7 +409,7 @@ class Sunrise {
     }
 
     /**
-    *   @returns A vector for the world direction of the THREE.js camera
+        * @description Get the vector for the world direction of the THREE.js camera
         */
     #world_direction() {
         let dirvec = new THREE.Vector3();
@@ -431,9 +417,10 @@ class Sunrise {
         return dirvec;
     }
 
-    /** @description Add a path for the camera to follow
-    *   @param {string} name The name of the path
-    *   @param {[]} path 
+    /** 
+        * @description Add a path for the camera to follow
+        * @param {string} name The name of the path
+        * @param {number[]} path 
         */
     async add_path(name, path) {
         if (!this.selection_map) {
@@ -491,6 +478,9 @@ class Sunrise {
         document.getElementById("mission_list").appendChild(button);
     }
 
+    /**
+        * @description Play the sunrise animation of the sun rising and setting based on changing the hour
+        */
     async play_sunrise() {
         let step = 1;
         let start = new Date().getHours();
@@ -501,7 +491,9 @@ class Sunrise {
         }
     }
 
-    /// Play the path for the specified mission
+    /**
+        * @description Play the path for the specified mission
+        */
     async play_mission(mission) {
         if (!mission.is_paused()) {
             console.log("Mission already being played!");
@@ -546,7 +538,9 @@ class Sunrise {
         this.dimension = this.highres;
     }
 
-    /// @brief The run behavior of the application
+    /**
+        * @description The run behavior of the application
+        */
     async run() {
         document.getElementById("path-pause").addEventListener('click', () => {
             if (this.current_mission.is_paused()) {
