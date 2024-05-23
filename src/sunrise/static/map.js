@@ -41,7 +41,7 @@ export class Map {
         this.url = this.config.url;
         this.tile_layer = L.tileLayer(this.url, {
             tms: (
-                // true, // y+ is north
+                // true // y+ is north
                 false  // y+ is south
             ),
             maxNativeZoom: 13,
