@@ -77,7 +77,6 @@ def Map(
 ) -> auto.np.NDArray:
     return auto.np.memmap(path, dtype=dtype, mode='c')
 
-
 def Data(
     array: np.ndarray,
     /,
@@ -640,7 +639,7 @@ class Ambient(WithExitStackMixin):
     def make(self):
         light = lib.ospNewLight(b'ambient')
         self.defer(lib.ospRelease, light)
-        lib.ospSetFloat(light, b'intensity', 0.75)
+        lib.ospSetFloat(light, b'intensity', 0.15)
         lib.ospSetInt(light, b'intensityQuantity', 1)
         lib.ospCommit(light)
 
@@ -717,16 +716,25 @@ class Distant(WithExitStackMixin):
 
 
 class Sunlight(WithExitStackMixin):
-    def __init__(self):
+    def __init__(self, now: datetime.datetime):
         super().__init__()
 
+        self.now = now
+
     def make(self):
+        # Get the position of the Sun in the sky based on the date & time
+        location = self.location_from_datetime(self.now, alt=10_000.0)
+        position = sunrise.model.position_from_location(location)
+
         light = lib.ospNewLight(b'sunSky')
         self.defer(lib.ospRelease, light)
         lib.ospSetInt(light, b'intensityQuantity', 1)
-        lib.ospSetVec3f(light, b'color', 0.8, 0.8, 0.8)
-        lib.ospSetFloat(light, b'intensity', 1.0)
-        lib.ospSetVec3f(light, b'direction', 0.0, 0.0, -1.0)
+        lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
+        # lib.ospSetVec3f(light, b'color', 1.0, 1.0, 1.0)
+        lib.ospSetFloat(light, b'intensity', 0.2)
+        lib.ospSetVec3f(light, b'position', position.x, position.y, position.z)
+        lib.ospSetVec3f(light, b'direction', -position.x, -position.y, -position.z)
+        # lib.ospSetVec3f(light, b'direction', 0.0, 0.0, -1.0)
         lib.ospSetFloat(light, b'albedo', 0.5)
         lib.ospCommit(light)
 
@@ -743,6 +751,32 @@ class Sunlight(WithExitStackMixin):
         # lib.ospCommit(instance)
 
         # self.instance = instance
+
+    def location_from_datetime(
+        self,
+        when: datetime.datetime,
+        /,
+        *,
+        alt: float,
+        planets=skyfield.api.load('de421.bsp'),
+        timescale=skyfield.api.load.timescale(),
+        cls=sunrise.model.Location,
+    ):
+        sun = planets['sun']
+        earth = planets['earth']
+
+        now = timescale.from_datetime(when)
+        position = earth.at(now).observe(sun).apparent()
+
+        location = skyfield.toposlib.wgs84.geographic_position_of(position)
+        lat = location.latitude.degrees
+        lng = location.longitude.degrees
+
+        return cls(
+            lat=lat,
+            lng=lng,
+            alt=alt,
+        )
 
 
 class Scene(WithExitStackMixin):
@@ -767,20 +801,31 @@ class Scene(WithExitStackMixin):
         ))
 
         sunlight = self.enter(Sunlight(
+            now=(
+                datetime.datetime(year=2023, month=6, day=1, hour=15, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=-5),
+                    name='EST'
+                    ))
+                + 
+                datetime.timedelta(hours=5)
+                # datetime.timedelta(hours=request.hour)
+            )
         ))
+
 
         lights = Data([
             ambient.light,
-            distant.light,
-            point.light,
+            # distant.light,
+            # point.light,
             sunlight.light,
         ], type=lib.OSP_LIGHT)
-        self.defer(lib.ospRelease, lights)
+        # self.defer(lib.ospRelease, lights)
 
         world = lib.ospNewWorld()
         self.defer(lib.ospRelease, world)
         lib.ospSetObject(world, b'instance', self.what.instances)
         lib.ospSetObject(world, b'light', lights)
+        lib.ospSetBool(world, b'dynamicScene', True)
         lib.ospCommit(world)
 
         renderer = (
@@ -794,7 +839,9 @@ class Scene(WithExitStackMixin):
         
         lib.ospSetInt(renderer, b'pixelSamples', self.config.renderer.samples())
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
-            0.8, 0.2, 0.2, 1.0,
+            0.0, 0.0, 0.0, 1.0, # Black background
+            # 1.0, 1.0, 1.0, 1.0, # White background
+            # 0.8, 0.2, 0.2, 1.0,
         ))
         lib.ospCommit(renderer)
 
@@ -809,19 +856,56 @@ class Scene(WithExitStackMixin):
         self.world = world
         self.renderer = renderer
         self.camera = camera
+        self.lights = lights
+
+    def update_lights(self, hour: int):
+        sunlight = self.enter(Sunlight(
+            now=(
+                datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=0),  # Eastern Time
+                    # offset=datetime.timedelta(hours=-5),  # Eastern Time
+                    name='EST'
+                ))
+                + 
+                datetime.timedelta(hours=hour)
+                # datetime.timedelta(hours=request.hour)
+            )
+        ))
+        
+        ambient = self.enter(Ambient(
+        ))
+
+        lights = Data([
+            ambient.light,
+            # distant.light,
+            # point.light,
+            sunlight.light,
+        ], type=lib.OSP_LIGHT)
+        return lights
     
     def render(self, request: model.RenderingRequest):
         world = self.world
         renderer = self.renderer
         camera = self.camera
 
-        num_x_bins = 2
-        num_y_bins = 2
+        
+        lib.ospRelease(self.lights)
+        self.lights = self.update_lights(request.hour)
+        lib.ospSetObject(world, b'light', self.lights)
+        lib.ospCommit(self.lights)
+        # self.defer(lib.ospRelease, lights)
+        lib.ospCommit(world)
 
-        # NOTE: look into open image denoise for low-res rendering
+            
         # lib.ospSetInt(renderer, b'pixelSamples', samples)
+        # 2of2
+        row, col = request.tile
+        
+        row_id, num_x_bins = map(int, row.split('of'))
+        col_id, num_y_bins = map(int, col.split('of'))
+        # num_x_bins = 2
+        # num_y_bins = 2
 
-        zoom, row, col = request.tile
         # px = (col + 0.5) / (2 ** (zoom))
         # px = 1 - px  # flip x
         # py = (row + 0.5) / (2 ** (zoom))
@@ -834,13 +918,15 @@ class Scene(WithExitStackMixin):
         # print(f'{px=}, {py=}, {pz=} {height=}')
 
         lib.ospSetVec2f(camera, b'imageStart', *(
-            0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
+            0.0 + (col_id / num_x_bins), 0.0 + (row_id / num_y_bins)
+            # 0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
             # 1.0, 0.0,  # flip x
             # 0.0, 1.0,  # flip y
             # 1.0, 1.0,  # flip x and y
         ))
         lib.ospSetVec2f(camera, b'imageEnd', *(
-            0.0 + ((1+col) / num_x_bins), 0.0 + ((1+row) / num_y_bins)
+            0.0 + ((1+col_id) / num_x_bins), 0.0 + ((1+row_id) / num_y_bins)
+            # 0.0 + ((1+col) / num_x_bins), 0.0 + ((1+row) / num_y_bins)
             # 1.0, 1.0,  # flip none
             # 0.0, 1.0  # flip x
             # 1.0, 0.0,  # flip y
@@ -871,6 +957,16 @@ class Scene(WithExitStackMixin):
             # -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
+        
+#        denoiser = lib.ospNewImageOperation(b'denoiser')
+#        self.defer(lib.ospRelease, denoiser)
+#        lib.ospCommit(denoiser)
+#
+#        imageops = Data([
+#            denoiser
+#        ], type=lib.OSP_IMAGE_OPERATION)
+#        self.defer(lib.ospRelease, imageops)
+#        lib.ospCommit(imageops)
 
         framebuffer = lib.ospNewFrameBuffer(
             request.width,
@@ -881,6 +977,9 @@ class Scene(WithExitStackMixin):
             ),
             lib.OSP_FB_COLOR,
         )
+
+#        lib.ospSetObject(framebuffer, b'imageOperation', imageops)
+        lib.ospCommit(framebuffer)
 
         _variance: float = lib.ospRenderFrameBlocking(
             framebuffer,
@@ -900,6 +999,7 @@ class Scene(WithExitStackMixin):
             1,
         )
         image.load()
+
 
         lib.ospUnmapFrameBuffer(rgba, framebuffer)
 

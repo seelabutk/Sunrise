@@ -33,7 +33,7 @@ export const convert_location_to_spatial = (
 }
 
 /// Convert `num` degrees to radians
-const to_radians = (num) => {
+export const to_radians = (num) => {
     return (num * Math.PI) / 180.0;
 }
 
@@ -69,3 +69,44 @@ export const latlng_to_cartesian_vec3 = (latitude, longitude, altitude) => {
 
     return new THREE.Vector3(x, y, z);
 }
+
+
+/**
+    * @description A collection of information relevant to rendering
+    */
+export class RenderData {
+    direction = null;
+    
+    hour = null;
+
+    num_cols = 0;
+    num_rows = 0;
+
+    width = 0;
+    height = 0;
+
+    /**
+    *   @param {number} hour The hour query parameter for the request
+    *   @param {THREE.Vector3} direction The direction vector to look at 
+    *   @param {number} col_count The number of columns we are requesting from the server
+    *   @param {number} row_count The number of rows we are requesting from the server
+    *   @param {number} width The width of the image
+    *   @param {number} height The height of the image
+    */
+    constructor(
+        direction, 
+        hour, 
+        col_count, 
+        row_count,
+        width,
+        height
+    ) {
+        this.direction = direction;
+        this.hour = hour;
+        this.num_cols = col_count;
+        this.num_rows = row_count;
+        this.width = width;
+        this.height = height;
+    }
+}
+

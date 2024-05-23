@@ -1,13 +1,22 @@
+import json
+
 class RendererConfig:
     def __init__(self, render_data):
         self.data = render_data
         self._type = self.data["type"]
+        self._modules = self.data["modules"]
         self._samples = self.data["samples"]
 
+        # Valid types that we allow for the renderer
         self._valid_types = [
             "scivis",
             "ao",
             "pathtracer",
+        ]
+
+        # Valid modules that we allow the renderer to load
+        self._valid_modules = [
+            "denoiser",
         ]
 
     # Validate that the config has valid values we can use
@@ -16,11 +25,20 @@ class RendererConfig:
         if self._type not in self._valid_types:
             print(f'ERROR: Invalid renderer type: {self._type}')
             exit()
+        if len(self._modules) != 0:
+            for module in self._modules:
+                if module not in self._valid_modules:
+                    print(f'ERROR: Invalid module: ${module}')
+                    exit()
         print("success")
 
     # Get the type of renderer from the config
     def type(self):
         return self._type
+
+    @property
+    def modules(self):
+        return self._modules
 
     # Get the number of pixel samples we want to use in the renderer
     def samples(self):
@@ -55,15 +73,33 @@ class ServerConfig:
     def version(self):
         return self._version
 
+class ClientConfig:
+    def __init__(self, client_data):
+        self.data = client_data
+        
+        print(self.data)
+        self._map_data = self.data["map"]
+
+    def validate(self):
+        print("Validating client...", end=" ")
+        print("success")
+
+    @property
+    def map_data(self):
+        return self._map_data
+
+
 # Overall configuration
 class Config:
     def __init__(self, config_data):
         self.config = config_data
         self._renderer = RendererConfig(self.config["renderer"])
         self._server = ServerConfig(self.config["server"])
+        self._client = ClientConfig(self.config["client"])
 
         self._server.validate()
         self._renderer.validate()
+        self._client
 
     @property
     def renderer(self):
@@ -72,3 +108,14 @@ class Config:
     @property
     def server(self):
         return self._server
+
+    
+    def client_data_response(self):
+        config_obj = json.dumps({
+            "map-data": self._client.map_data,
+        })
+
+        print(config_obj)
+        return config_obj
+
+

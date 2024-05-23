@@ -1,9 +1,9 @@
-import * as L from 'leaflet';
 import * as THREE from 'three'
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Mission } from 'missions';
-import { ArcBall } from "tapestry-arcball"
-import { linear_interp, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
+import { Map } from 'map';
+import { RenderData, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -14,81 +14,14 @@ class Tile {
     }
 }
 
-// Class for the Leaflet map
-class Map {
-    config = null;
-    // map = null;
-    url = null;
-    tile_layer = null;
-    markers = [];
-
-    constructor() {
-        this.config =  {
-            angle: 6,
-            position: [0.0, 0.0, 0.0],
-
-            get url() {
-                return `http://160.36.58.111:3000/api/v1/view/?width=256&height=256&tile={z},{y},{x}&angle=6&pos=0.0,0.0,0.0`;
-            }
-        };
-        
-        const $map = document.querySelector('.js--map');
-        this.map = L.map($map, {});
-        this.map.fitBounds([
-            [35.747116, -83.949626],  // Maryville, TN
-            [35.483526, -82.987458], // Waynesville, NC
-            // [-35.747116, -83.949626],  // Maryville, TN
-            // [-35.483526, -82.987458], // Waynesville, NC
-            // [-34.0549, -118.2426],  // Los Angeles, CA
-            // [-40.7128, -74.00060], // New York, New York
-        ], {
-            maxZoom: 10,
-        });
-        window.map = this.map;
-
-        this.url = this.config.url;
-        this.tile_layer = L.tileLayer(this.url, {
-            tms: (
-                // true, // y+ is north
-                false  // y+ is south
-            ),
-            noWrap: true,
-        });
-        this.tile_layer.addTo(this.map);
-
-    }
-
-    add_marker(lat, lng) {
-        let m = new L.marker([lat, lng]);
-
-        this.markers.push(m);
-        m.addTo(this.map);
-    }
-}
-
-class Clock {
-    start_time = 0;
-    elapsed_time = 0;
-    
-    constructor() {
-        this.start_time = new Date().getMilliseconds();
-        this.elapsed_time = 0;
-    }
-
-    update() {
-        if (this.start_time != 0) {
-            this.elapsed_time += new Date().getMilliseconds() - this.start_time;
-        }
-    }
-
-    stop() {
-        this.start_time = 0;
-    }
-}
-
 /* Sunrise Application */
 class Sunrise {
+    config = null;
+    selection_map = null;
 
+    /**
+        * @constructor
+        */
     constructor($el, {
         what,
         canvasSize = 512,
@@ -97,6 +30,7 @@ class Sunrise {
         lowRes = (highRes / 4) |0,
     }={}) {
         // this.map = new Map();
+        this.position = null;
         this.canvasSize = canvasSize;
         this.tileSize = tileSize;
         this.highRes = highRes;
@@ -104,16 +38,20 @@ class Sunrise {
 
         this.hyperimage = $el;
         this.cameraScalingFactor = 5;
-        
+       
+        this.camera_enabled = true;
         this.threecam = null;
-        this.threecontrols = null;
+        this.current_camera_controls = null;
+        this.trackball_controls = null;
         Object.assign(this, {
             ...latlng_to_cartesian(
                 35.562744,
                 -83.5 - 13,
                 100,
+                // 10000,
             ),
         });
+
 
         this.point_vectors = [];
 
@@ -129,10 +67,19 @@ class Sunrise {
         this.secondary.height = this.canvasSize;
 
         this.highres = 512;
-        this.lowres = 128;
+        this.lowres = 64;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
+
+        this.prev_mouse_pos = {
+            x: 0,
+            y: 0,
+        };
+        this.mouse_sensitivity = 0.002;
+        this.use_trackball = true;
+
+
 
         let original_position =
             [this.x, this.y, this.z, 1.0]
@@ -157,11 +104,7 @@ class Sunrise {
         
         // Create the tiles
         this.definitions = [];
-        for (let i = 0; i < this.num_tiles[0]; i++) {
-            for (let j = 0; j < this.num_tiles[1]; j++) {
-                this.definitions.push(new Tile(i, j, 40));
-            }
-        }
+        this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
 
         this.paths = [];
         this.missions = [];
@@ -170,8 +113,74 @@ class Sunrise {
         this.rendererUpdate(this.dimension);
     }
 
-    /// @briefSetup the camera to desired initial values
-    /// @returns Nothing
+    /**
+        * @description (Re)create the tiles that we are using to render
+        * @param {number} num_rows The number of rows in the grid of tiles
+        * @param {number} num_cols The number of columns in the grid of tiles
+        */
+    #create_tiles(num_rows, num_cols) {
+        this.definitions = [];
+        for (let i = 0; i < num_rows; i++) {
+            for (let j = 0; j < num_cols; j++) {
+                this.definitions.push(new Tile(i, j, 40));
+            }
+        }
+    }
+
+    /**
+        * @description Create the leaflet map for selecting points along the path
+        */
+    async create_map() {
+        if (!this.selection_map || !this.config) {
+            await this.get_config();
+            this.selection_map = new Map(this.config["map-data"]["routes"]["streets"]);
+
+            console.log(this.config["map-data"]["routes"]);
+            for (const key in this.config["map-data"]["routes"]) {
+            let btn = document.createElement("button");
+                btn.id = `map_type_${key.toLowerCase()}`;
+                btn.innerText = `${key}`;
+                btn.className = "missionButton";
+                btn.onclick = () => {
+                    this.selection_map.set_url(this.config["map-data"]["routes"][key]);
+                }
+                console.log(key);
+
+                document.getElementById("mission_list").appendChild(btn);
+            }
+
+            console.log('map created');
+        }
+    }
+
+    /**
+        * @description Place the camera at a point along a path and look outwards rather than towards the center of the earth
+        * @param {number} index The index of the point we are trying to go to
+        * @param {Mission} mission The mission of the path we are going to
+        */
+    goto_point(index, mission) {
+        let render_data = mission.goto_point(index);
+
+        this.use_trackball = false;
+        this.trackball_controls.enabled = false;
+        this.position = render_data.current;
+        this.threecam.position.copy(render_data.current);
+        this.threecam.up.copy(render_data.up);
+        this.threecam.lookAt(render_data.target);
+        // this.trackball_controls.update();
+
+        this.updateTiles(
+            new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+        );
+
+        // Uncomment this to play the sunrise animation when going to a point
+        this.play_sunrise(); 
+    }
+
+    /**
+        * @description Setup the camera to the desired initial values
+        * @param {THREE.Vector3} position The initial position of the camera
+        */
     #setup_camera(position) {
         let scene = new THREE.Scene();
         this.threecam = new THREE.PerspectiveCamera(45, this.hyperimage.offsetWidth, this.hyperimage.offsetHeight, 1, 10000);
@@ -183,22 +192,26 @@ class Sunrise {
         this.threecam.up.set(0, 1, 0);
      
         /// TRACKBALL CONTROLS
-        this.threecontrols = new TrackballControls(this.threecam, this.hyperimage, scene);
-        this.threecontrols.addEventListener( 'change', () => {}, { passive: true });
-        this.threecontrols.rotateSpeed = 30.0;
-        this.threecontrols.zoomSpeed = 1.2;
-        this.threecontrols.noZoom = false;
-        this.threecontrols.noPan = true; // we do not want pannning
-        this.threecontrols.staticMoving = true;
-        this.threecontrols.maxDistance = (6371 + 5000) / this.cameraScalingFactor;
-        this.threecontrols.minDistance = (6371 + 10) / this.cameraScalingFactor;
-        this.threecontrols.dynamicDampingFactor = 0.3;
-        this.threecontrols.update();
+        this.trackball_controls = new TrackballControls(this.threecam, this.hyperimage, scene);
+        this.trackball_controls.addEventListener( 'change', () => {}, { passive: true });
+        this.trackball_controls.rotateSpeed = 30.0;
+        this.trackball_controls.zoomSpeed = 1.2;
+        this.trackball_controls.noZoom = false;
+        this.trackball_controls.noPan = true; // we do not want pannning
+        this.trackball_controls.staticMoving = true;
+        this.trackball_controls.maxDistance = (6371 + 5000) / this.cameraScalingFactor;
+        this.trackball_controls.minDistance = (6371 + 10) / this.cameraScalingFactor;
+        this.trackball_controls.dynamicDampingFactor = 0.3;
+        this.trackball_controls.update();
+        // this.trackball_controls.enabled = true;
 
         this.updateRotateSpeed();
     }
 
-    /// @brief Update the renderer
+    /** 
+        * @description Update the renderer
+        * @param {string} msg Information to send to the renderer
+        */
     rendererUpdate(msg) {
         // document.getElementById("movement").innerHTML = this.dimension;
         // console.log(msg);
@@ -215,8 +228,11 @@ class Sunrise {
 //        this.timeout = setTimeout(this.#onTimeout.bind(this), 500);
 //    }
 
-    /// @brief Throttle a callback function to 
-    /// an interval we specify
+    /**
+        * @brief Throttle a callback function to an interval we specify
+        * @param {Function} callback The callback function to call while throttling
+        * @param {number} time_ms the number of milliseconds to throttle for
+        */
     #throttle(callback, time_ms) {
         if (this.throttlepause) {
             return;
@@ -236,34 +252,60 @@ class Sunrise {
 //        this.dimension = 256;
 //    }
 
-    // @brief Create a new mission and push it to the application's list
+    /**
+        * @description Create a new mission and push it to the application's list
+        * @param {string} name The desired name of the mission
+        * @param {number} x The x position of the mission
+        * @param {number} y The y position of the mission
+        * @param {number} z The z position of the mission
+        */
     addMission(name, x, y, z) {
         this.missions.push(new Mission(name, x, y, z));
         return this;
     }
 
-    // @brief Render HTML for each image tile we want 
+    /**
+        * @description Render HTML for each image tile we want 
+        */
     renderTiles() {
-        this.updateTiles();
+        this.updateTiles(
+            new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+        );
     }
 
-    /// @brief Update the tiles on the page to the new ones that we rendered on the server
-    async updateTiles() {
+    /**
+        * @description Send request to the server to get the configuration details for the client
+        */
+    async get_config() {
+        let url = new URL('api/config/', window.location.origin);
+        let res = await fetch(url);
+        this.config = await res.json();
+        console.log(this.config);
+    }
+
+    /** 
+        * @description Update the tiles on the page to the new ones that we rendered on the server
+        * @param {RenderData} render_data The direction the camera should look
+        */
+    async updateTiles(render_data) {
         Tile = Tile.bind(this);
 
         let ctx = this.secondary.getContext('2d');
-
         let promises = [];
         for (let i = 0, n = this.definitions.length; i < n; i++) {
             promises.push(((i) => {
                 let defn = this.definitions[i];
                 let { row, col } = defn;
 
-                let y = row * this.tileSize;
-                let x = col * this.tileSize;
+                const tileWidth = this.canvasSize / render_data.num_rows;
+                const tileHeight = this.canvasSize / render_data.num_cols;
+
+                let y = (row / render_data.num_rows) * this.canvasSize;
+                // * this.tileSize;
+                let x = (col / render_data.num_cols) * this.canvasSize; // * this.tileSize
 
                 return Tile(i).then((image) => {
-                    ctx.drawImage(image, x, y, this.tileSize, this.tileSize);
+                    ctx.drawImage(image, x, y, tileWidth, tileHeight);
                 });
             })(i));
         }
@@ -282,18 +324,18 @@ class Sunrise {
             const ty = this.threecam.position.y * this.cameraScalingFactor;
             const tz = this.threecam.position.z * this.cameraScalingFactor;
 
-            let dx = -tx;
-            let dy = -ty;
-            let dz = -tz;
+//            let dx = -tx;
+//            let dy = -ty;
+//            let dz = -tz;
             
             let ux = this.threecam.up.x;
             let uy = this.threecam.up.y;
             let uz = this.threecam.up.z;
 
             let url = new URL('api/v1/view/', window.location.origin);
-            url.searchParams.append('width', this.dimension);
-            url.searchParams.append('height', this.dimension);
-            url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
+            url.searchParams.append('width', render_data.width);
+            url.searchParams.append('height', render_data.height);
+            url.searchParams.append('tile', `${`${this.definitions[i].row}of${render_data.num_rows}`},${`${this.definitions[i].col}of${render_data.num_cols}`}`);
             url.searchParams.append('position', [
                 - tx,
                 - ty,
@@ -303,9 +345,12 @@ class Sunrise {
 //                pz.toFixed(0),
             ].join(','));
             url.searchParams.append('direction', [
-                - dx,
-                - dy,
-                - dz,
+                render_data.direction.x,
+                render_data.direction.y,
+                render_data.direction.z,
+//                - dx,
+//                - dy,
+//                - dz,
 //                dx.toFixed(0),
 //                dy.toFixed(0),
 //                dz.toFixed(0),
@@ -319,6 +364,7 @@ class Sunrise {
                uz.toFixed(3),
             ].join(','));
             url.searchParams.append('samples', this.samples);
+            url.searchParams.append('hour', render_data.hour);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -333,23 +379,16 @@ class Sunrise {
         }
     }
 
-    rotate(mouse_x, mouse_y) {
-        if (this.is_dragging)
-        {
-            this.is_draggin = false;
-            this.camera.move(mouse_x, mouse_y);
-            this.updateTiles;
-            this.is_drag = true;
-        }
-    }
-
+    /**
+        * @description Update how much we want to rotate based on how zoomed in we are
+        */
     updateRotateSpeed() {
         const maxSpeed = 3.0; // Maximum rotation speed when zoomed out
         const minSpeed = 0.01; // Minimum rotation speed when zoomed in
-        const maxZoomDistance = this.threecontrols.maxDistance; // Maximum distance for full rotation speed
-        const minZoomDistance = this.threecontrols.minDistance; // Minimum distance for minimum rotation speed
+        const maxZoomDistance = this.trackball_controls.maxDistance; // Maximum distance for full rotation speed
+        const minZoomDistance = this.trackball_controls.minDistance; // Minimum distance for minimum rotation speed
         
-        const distance = this.threecam.position.distanceTo(this.threecontrols.target);
+        const distance = this.threecam.position.distanceTo(this.trackball_controls.target);
 
         const rotateSpeed = THREE.MathUtils.mapLinear(
             distance,
@@ -359,133 +398,83 @@ class Sunrise {
             maxSpeed
         );
 
-        this.threecontrols.rotateSpeed = rotateSpeed;
+        this.trackball_controls.rotateSpeed = rotateSpeed;
     }
 
-    /// Render a point along a path
-    async render_path_point() {
-        Tile = Tile.bind(this);
-
-        let ctx = this.secondary.getContext('2d');
-
-        let promises = [];
-        for (let i = 0, n = this.definitions.length; i < n; i++) {
-            promises.push(((i) => {
-                let defn = this.definitions[i];
-                let { row, col } = defn;
-
-                let y = row * this.tileSize;
-                let x = col * this.tileSize;
-
-                return Tile(i).then((image) => {
-                    ctx.drawImage(image, x, y, this.tileSize, this.tileSize);
-                });
-            })(i));
-        }
-
-        await Promise.all([
-            ...promises,
-        ]);
-
-        ctx = this.primary.getContext('2d');
-        ctx.drawImage(this.secondary, 0, 0, this.canvasSize, this.canvasSize);
-        
-
-        function Tile(i) {
-            // Camera update
-            const tx = this.threecam.position.x * this.cameraScalingFactor;
-            const ty = this.threecam.position.y * this.cameraScalingFactor;
-            const tz = this.threecam.position.z * this.cameraScalingFactor;
-
-            let dirvec = new THREE.Vector3();
-            this.threecam.getWorldDirection(dirvec);
-            let dx = dirvec.x;
-            let dy = dirvec.y;
-            let dz = dirvec.z;
-            
-            let ux = this.threecam.up.x;
-            let uy = this.threecam.up.y;
-            let uz = this.threecam.up.z;
-
-            let url = new URL('api/v1/view/', window.location.origin);
-            url.searchParams.append('width', this.dimension);
-            url.searchParams.append('height', this.dimension);
-            url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
-            url.searchParams.append('position', [
-                - tx,
-                - ty,
-                - tz,
-//                px.toFixed(0),
-//                py.toFixed(0),
-//                pz.toFixed(0),
-            ].join(','));
-            url.searchParams.append('direction', [
-                - dx,
-                - dy,
-                - dz,
-//                dx.toFixed(0),
-//                dy.toFixed(0),
-//                dz.toFixed(0),
-            ].join(','));
-            url.searchParams.append('up', [
-                // this.threecam.up.x,
-                // this.threecam.up.y,
-                // this.threecam.up.z,
-               ux.toFixed(3),
-               uy.toFixed(3),
-               uz.toFixed(3),
-            ].join(','));
-            url.searchParams.append('samples', this.samples);
-
-            return new Promise((resolve, reject) => {
-                let image = new Image(this.dimension, this.dimension);
-                image.onload = () => {
-                    resolve(image);
-                }
-                image.onerror = () => {
-                    reject();
-                }
-                image.src = url;
-            });
-        }
+    /**
+        * @description Get the direction vector when using the TrackBall controls
+        * @returns {THREE.Vector3}
+        */
+    #trackball_direction() {
+        return new THREE.Vector3(
+            this.threecam.position.x,
+            this.threecam.position.y,
+            this.threecam.position.z,
+        );
     }
-   
-    /// Add a path for the camera to follow
-    add_path(name, path) {
+
+    /**
+        * @description Get the vector for the world direction of the THREE.js camera
+        */
+    #world_direction() {
+        let dirvec = new THREE.Vector3();
+        this.threecam.getWorldDirection(dirvec);
+        return dirvec;
+    }
+
+    /** 
+        * @description Add a path for the camera to follow
+        * @param {string} name The name of the path
+        * @param {number[]} path 
+        */
+    async add_path(name, path) {
+        if (!this.selection_map) {
+            await this.create_map();
+        }
+        let mission = new Mission(name);
+
         let data = [];
         const num_steps = 30;
+        let point_index = 1;
         for (let i = 1; i < path.length; i++) {
             let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
-            // this.map.add_marker(path[i-1].lat, path[i-1].lng);
+            this.selection_map.add_marker(path[i-1].lat, path[i-1].lng, () => {
+                this.goto_point(i, mission);
+            });
             let prevpoint = new THREE.Vector3(
                 prev.x / this.cameraScalingFactor,
                 prev.y / this.cameraScalingFactor,
                 prev.z / this.cameraScalingFactor,
             );
             
-            let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, 7);
-            let currpoint = new THREE.Vector3(
-                curr.x / this.cameraScalingFactor,
-                curr.y / this.cameraScalingFactor,
-                curr.z / this.cameraScalingFactor,
-            );
+//            let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, 7);
+//            let currpoint = new THREE.Vector3(
+//                curr.x / this.cameraScalingFactor,
+//                curr.y / this.cameraScalingFactor,
+//                curr.z / this.cameraScalingFactor,
+//            );
 
-            // Use the linear interpolator to fill in and
-            // smooth the distance between points
-            for (let j = 0; j < num_steps; j++) {
-                data.push(
-                    new THREE.Vector3(
-                        linear_interp(prevpoint.x, currpoint.x, j / num_steps),
-                        linear_interp(prevpoint.y, currpoint.y, j / num_steps),
-                        linear_interp(prevpoint.z, currpoint.z, j / num_steps),
-                    )
-                );
-            }
+            mission.add_point(prevpoint);
+
+//            // Use the linear interpolator to fill in and
+//            // smooth the distance between points
+//            for (let j = 0; j < num_steps; j++) {
+//                data.push(
+//                    new THREE.Vector3(
+//                        linear_interp(prevpoint.x, currpoint.x, j / num_steps),
+//                        linear_interp(prevpoint.y, currpoint.y, j / num_steps),
+//                        linear_interp(prevpoint.z, currpoint.z, j / num_steps),
+//                    )
+//                );
+//                point_index++;
+//            }
+
+            point_index++;
         }
 
         // TODO: Probably use a list of these Missions to hold
         // rather than hard code it
-        let mission = new Mission(name, data);
+        // let mission = new Mission(name, data);
         let button = mission.get_button(() => {
             this.play_mission(mission);
         });
@@ -494,12 +483,30 @@ class Sunrise {
         document.getElementById("mission_list").appendChild(button);
     }
 
-    /// Play the path for the specified mission
+    /**
+        * @description Play the sunrise animation of the sun rising and setting based on changing the hour
+        */
+    async play_sunrise() {
+        this.camera_enabled = false;
+        let step = 1;
+        let start = new Date().getHours();
+        let end = start + 24;
+
+        for (let i = start; i < end; i += step) {
+            await this.updateTiles(new RenderData(this.#world_direction(), i, 2, 2, this.dimension, this.dimension,));
+        }
+        this.camera_enabled = true;
+    }
+
+    /**
+        * @description Play the path for the specified mission
+        */
     async play_mission(mission) {
         if (!mission.is_paused()) {
             console.log("Mission already being played!");
             return;
         }
+        this.camera_enabled = false;
         mission.unpause();
         
         let selector = document.getElementById("path_speed_selector");
@@ -512,7 +519,7 @@ class Sunrise {
         let elapsed_seconds = 0;
         selector.value = ips;
         
-        console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
+        // console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}`);
        
         this.dimension = this.lowres;
         let render_data = mission.forward(1);
@@ -525,19 +532,24 @@ class Sunrise {
 
             let offset = target_index - mission.current_index();
 
-            console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
-            this.threecontrols.update();
+            // console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
+            this.trackball_controls.update();
             this.threecam.position.copy(render_data.current);
             this.threecam.up.copy(render_data.up);
             this.threecam.lookAt(render_data.target);
 
-            await this.render_path_point();
+            await this.updateTiles(
+                new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+            );
             render_data = mission.forward(offset);
         }
         this.dimension = this.highres;
+        this.camera_enabled = true;
     }
 
-    /// @brief The run behavior of the application
+    /**
+        * @description The run behavior of the application
+        */
     async run() {
         document.getElementById("path-pause").addEventListener('click', () => {
             if (this.current_mission.is_paused()) {
@@ -551,33 +563,95 @@ class Sunrise {
         }, { passive: true });
 
         this.hyperimage.addEventListener('mousedown', (event) => {
-            this.dimension = this.lowres;
-            this.threecontrols.update();
-            this.is_dragging = true;
-         }, { passive: true });
+            if (this.camera_enabled) {
+                this.dimension = this.lowres;
+                if (this.use_trackball) {
+                    this.trackball_controls.update();
+                }
+
+                this.is_dragging = true;
+                this.prev_mouse_pos = {
+                    x: event.offsetX,
+                    y: event.offsetY,
+                };
+                console.log({ROTX: this.threecam.rotation.x, ROTY: this.threecam.rotation.y});
+            } else {
+                return;
+            }
+         });
          
         this.hyperimage.addEventListener('mousemove', (event) => {
-            this.#throttle(() => {
-                if (this.is_dragging) {
-                    this.threecontrols.update();
-                    this.updateTiles();
-                }
-            }, 100);
-        }, { passive: true });
+            if (this.camera_enabled) {
+                this.#throttle(() => {
+                    if (this.is_dragging) {
+                        this.#create_tiles(1, 1);
+                        // Check if we are using TrackBall controls
+                        if (this.use_trackball) {
+                            this.trackball_controls.update();
+                            this.updateTiles(
+                                new RenderData(this.#trackball_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
+                            );
+                        } else {
+                            const deltaMouse = {
+                                x: event.offsetX - this.prev_mouse_pos.x,
+                                y: event.offsetY - this.prev_mouse_pos.y,
+                            };
+                            console.log(deltaMouse);
+
+                            this.threecam.rotateX(-deltaMouse.y * this.mouse_sensitivity);
+                            this.threecam.rotateY(deltaMouse.x * this.mouse_sensitivity);
+                            // this.threecam.rotation.y += deltaMouse.y * this.mouse_sensitivity;
+                            // this.threecam.rotation.x += deltaMouse.x * this.mouse_sensitivity;
+                            // this.trackball_controls.update();
+
+                            this.prev_mouse_pos = {
+                                x: event.offsetX,
+                                y: event.offsetY,
+                            };
+                            this.updateTiles(
+                                new RenderData(this.#world_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
+                            );
+                        }
+                    } 
+                }, 100);
+            } else {
+                return;
+            }
+        });
          
         this.hyperimage.addEventListener('mouseup', (event) => {
-            this.dimension = this.highres;
-            this.threecontrols.update();
-            this.is_dragging = false;
-            this.updateTiles();
-        }, { passive: true });
+            if (this.camera_enabled) {
+                this.dimension = this.highres;
+                this.is_dragging = false;
+                this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
+
+                if (this.use_trackball) {
+                    this.trackball_controls.update();
+                    this.updateTiles(
+                        new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                    );
+                } else {
+                    this.updateTiles(
+                        new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                    );
+                }
+            } else {
+                return;
+            }
+        });
 
         this.hyperimage.addEventListener('wheel', (event) => {
-            this.#throttle(() => {
-                this.threecontrols.update();
-                this.updateRotateSpeed();
-                this.updateTiles();
-            }, 100);
+            if (this.camera_enabled) {
+                this.#throttle(() => {
+                    this.trackball_controls.update();
+                    this.updateRotateSpeed();
+                    this.updateTiles(
+                        new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                    );
+                }, 100);
+            } else {
+                return;
+            }
         }, { passive: true });
     
         return;

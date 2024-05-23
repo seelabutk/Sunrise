@@ -131,9 +131,8 @@ class RenderingRequest:
     width: int
     height: int
     tile: tuple[
-        typing.Annotated[int, 'zoom'],
-        typing.Annotated[int, 'row'],
-        typing.Annotated[int, 'col'],
+        typing.Annotated[str, 'row'],
+        typing.Annotated[str, 'col'],
     ]
     position: tuple[
         typing.Annotated[float, 'x'],
@@ -151,6 +150,7 @@ class RenderingRequest:
         typing.Annotated[float, 'z'],
     ]
     samples: int
+    hour: float
 
 
 @dataclasses.dataclass
