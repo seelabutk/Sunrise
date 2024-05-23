@@ -19,13 +19,34 @@ class RenderData {
     
     hour = null;
 
+    num_cols = 0;
+    num_rows = 0;
+
+    width = 0;
+    height = 0;
+
     /**
     *   @param {number} hour The hour query parameter for the request
     *   @param {THREE.Vector3} direction The direction vector to look at 
-        */
-    constructor(direction, hour) {
+    *   @param {number} col_count The number of columns we are requesting from the server
+    *   @param {number} row_count The number of rows we are requesting from the server
+    *   @param {number} width The width of the image
+    *   @param {number} height The height of the image
+    */
+    constructor(
+        direction, 
+        hour, 
+        col_count, 
+        row_count,
+        width,
+        height
+    ) {
         this.direction = direction;
         this.hour = hour;
+        this.num_cols = col_count;
+        this.num_rows = row_count;
+        this.width = width;
+        this.height = height;
     }
 }
 
@@ -119,17 +140,27 @@ class Sunrise {
         
         // Create the tiles
         this.definitions = [];
-        for (let i = 0; i < this.num_tiles[0]; i++) {
-            for (let j = 0; j < this.num_tiles[1]; j++) {
-                this.definitions.push(new Tile(i, j, 40));
-            }
-        }
+        this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
+//        for (let i = 0; i < this.num_tiles[0]; i++) {
+//            for (let j = 0; j < this.num_tiles[1]; j++) {
+//                this.definitions.push(new Tile(i, j, 40));
+//            }
+//        }
 
         this.paths = [];
         this.missions = [];
         this.current_mission = null;
 
         this.rendererUpdate(this.dimension);
+    }
+
+    #create_tiles(num_rows, num_cols) {
+        this.definitions = [];
+        for (let i = 0; i < num_rows; i++) {
+            for (let j = 0; j < num_cols; j++) {
+                this.definitions.push(new Tile(i, j, 40));
+            }
+        }
     }
 
     /// Create the leaflet map for selecting points along the path
@@ -171,7 +202,7 @@ class Sunrise {
         // this.trackball_controls.update();
 
         this.updateTiles(
-            new RenderData(this.#world_direction(), new Date().getHours())
+            new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
         );
 
         // this.play_sunrise();
@@ -253,7 +284,7 @@ class Sunrise {
     // @brief Render HTML for each image tile we want 
     renderTiles() {
         this.updateTiles(
-            new RenderData(this.#trackball_direction(), new Date().getHours())
+            new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
         );
     }
 
@@ -267,24 +298,27 @@ class Sunrise {
     }
 
     /** @brief Update the tiles on the page to the new ones that we rendered on the server
-    *   @param {RenderData} look_direction The direction the camera should look
+    *   @param {RenderData} render_data The direction the camera should look
         */
     async updateTiles(render_data) {
         Tile = Tile.bind(this);
 
         let ctx = this.secondary.getContext('2d');
-
         let promises = [];
         for (let i = 0, n = this.definitions.length; i < n; i++) {
             promises.push(((i) => {
                 let defn = this.definitions[i];
                 let { row, col } = defn;
 
-                let y = row * this.tileSize;
-                let x = col * this.tileSize;
+                const tileWidth = this.canvasSize / render_data.num_rows;
+                const tileHeight = this.canvasSize / render_data.num_cols;
+
+                let y = (row / render_data.num_rows) * this.canvasSize;
+                // * this.tileSize;
+                let x = (col / render_data.num_cols) * this.canvasSize; // * this.tileSize
 
                 return Tile(i).then((image) => {
-                    ctx.drawImage(image, x, y, this.tileSize, this.tileSize);
+                    ctx.drawImage(image, x, y, tileWidth, tileHeight);
                 });
             })(i));
         }
@@ -312,9 +346,9 @@ class Sunrise {
             let uz = this.threecam.up.z;
 
             let url = new URL('api/v1/view/', window.location.origin);
-            url.searchParams.append('width', this.dimension);
-            url.searchParams.append('height', this.dimension);
-            url.searchParams.append('tile', `40,${this.definitions[i].row},${this.definitions[i].col}`);
+            url.searchParams.append('width', render_data.width);
+            url.searchParams.append('height', render_data.height);
+            url.searchParams.append('tile', `${`${this.definitions[i].row}of${render_data.num_rows}`},${`${this.definitions[i].col}of${render_data.num_cols}`}`);
             url.searchParams.append('position', [
                 - tx,
                 - ty,
@@ -463,7 +497,7 @@ class Sunrise {
         let end = start + 24;
 
         for (let i = start; i < end; i += step) {
-            this.updateTiles(new RenderData(this.#world_direction(), i));
+            this.updateTiles(new RenderData(this.#world_direction(), i, 2, 2, this.dimension, this.dimension,));
         }
     }
 
@@ -505,7 +539,7 @@ class Sunrise {
             this.threecam.lookAt(render_data.target);
 
             await this.updateTiles(
-                new RenderData(this.#world_direction(), new Date().getHours())
+                new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
             );
             render_data = mission.forward(offset);
         }
@@ -542,11 +576,12 @@ class Sunrise {
         this.hyperimage.addEventListener('mousemove', (event) => {
             this.#throttle(() => {
                 if (this.is_dragging) {
+                    this.#create_tiles(1, 1);
                     // Check if we are using TrackBall controls
                     if (this.use_trackball) {
                         this.trackball_controls.update();
                         this.updateTiles(
-                            new RenderData(this.#trackball_direction(), new Date().getHours())
+                            new RenderData(this.#trackball_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
                         );
                     } else {
                         const deltaMouse = {
@@ -566,7 +601,7 @@ class Sunrise {
                             y: event.offsetY,
                         };
                         this.updateTiles(
-                            new RenderData(this.#world_direction(), new Date().getHours())
+                            new RenderData(this.#world_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
                         );
                     }
                 } 
@@ -576,15 +611,16 @@ class Sunrise {
         this.hyperimage.addEventListener('mouseup', (event) => {
             this.dimension = this.highres;
             this.is_dragging = false;
+            this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
 
             if (this.use_trackball) {
                 this.trackball_controls.update();
                 this.updateTiles(
-                    new RenderData(this.#trackball_direction(), new Date().getHours())
+                    new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
                 );
             } else {
                 this.updateTiles(
-                    new RenderData(this.#world_direction(), new Date().getHours())
+                    new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
                 );
             }
         }, { passive: true });
@@ -594,7 +630,7 @@ class Sunrise {
                 this.trackball_controls.update();
                 this.updateRotateSpeed();
                 this.updateTiles(
-                    new RenderData(this.#trackball_direction(), new Date().getHours())
+                    new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
                 );
             }, 100);
         }, { passive: true });

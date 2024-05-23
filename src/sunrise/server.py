@@ -189,7 +189,7 @@ async def view(
         ),
     ],
 ):
-    tile = tuple(map(float, tile.split(',')))
+    tile = tuple(map(str, tile.split(',')))
     position = tuple(map(float, position.split(',')))
     direction = tuple(map(float, direction.split(',')))
     up = tuple(map(float, up.split(',')))

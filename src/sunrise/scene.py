@@ -888,9 +888,6 @@ class Scene(WithExitStackMixin):
         renderer = self.renderer
         camera = self.camera
 
-        num_x_bins = 2
-        num_y_bins = 2
-
         
         lib.ospRelease(self.lights)
         self.lights = self.update_lights(request.hour)
@@ -901,8 +898,14 @@ class Scene(WithExitStackMixin):
 
             
         # lib.ospSetInt(renderer, b'pixelSamples', samples)
+        # 2of2
+        row, col = request.tile
+        
+        row_id, num_x_bins = map(int, row.split('of'))
+        col_id, num_y_bins = map(int, col.split('of'))
+        # num_x_bins = 2
+        # num_y_bins = 2
 
-        zoom, row, col = request.tile
         # px = (col + 0.5) / (2 ** (zoom))
         # px = 1 - px  # flip x
         # py = (row + 0.5) / (2 ** (zoom))
@@ -915,13 +918,15 @@ class Scene(WithExitStackMixin):
         # print(f'{px=}, {py=}, {pz=} {height=}')
 
         lib.ospSetVec2f(camera, b'imageStart', *(
-            0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
+            0.0 + (col_id / num_x_bins), 0.0 + (row_id / num_y_bins)
+            # 0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
             # 1.0, 0.0,  # flip x
             # 0.0, 1.0,  # flip y
             # 1.0, 1.0,  # flip x and y
         ))
         lib.ospSetVec2f(camera, b'imageEnd', *(
-            0.0 + ((1+col) / num_x_bins), 0.0 + ((1+row) / num_y_bins)
+            0.0 + ((1+col_id) / num_x_bins), 0.0 + ((1+row_id) / num_y_bins)
+            # 0.0 + ((1+col) / num_x_bins), 0.0 + ((1+row) / num_y_bins)
             # 1.0, 1.0,  # flip none
             # 0.0, 1.0  # flip x
             # 1.0, 0.0,  # flip y
