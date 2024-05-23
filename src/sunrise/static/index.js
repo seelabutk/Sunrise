@@ -19,6 +19,9 @@ class Sunrise {
     config = null;
     selection_map = null;
 
+    /**
+        * @constructor
+        */
     constructor($el, {
         what,
         canvasSize = 512,
@@ -35,7 +38,8 @@ class Sunrise {
 
         this.hyperimage = $el;
         this.cameraScalingFactor = 5;
-        
+       
+        this.camera_enabled = true;
         this.threecam = null;
         this.current_camera_controls = null;
         this.trackball_controls = null;
@@ -169,7 +173,8 @@ class Sunrise {
             new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
         );
 
-        // this.play_sunrise();
+        // Uncomment this to play the sunrise animation when going to a point
+        this.play_sunrise(); 
     }
 
     /**
@@ -482,13 +487,15 @@ class Sunrise {
         * @description Play the sunrise animation of the sun rising and setting based on changing the hour
         */
     async play_sunrise() {
+        this.camera_enabled = false;
         let step = 1;
         let start = new Date().getHours();
         let end = start + 24;
 
         for (let i = start; i < end; i += step) {
-            this.updateTiles(new RenderData(this.#world_direction(), i, 2, 2, this.dimension, this.dimension,));
+            await this.updateTiles(new RenderData(this.#world_direction(), i, 2, 2, this.dimension, this.dimension,));
         }
+        this.camera_enabled = true;
     }
 
     /**
@@ -499,6 +506,7 @@ class Sunrise {
             console.log("Mission already being played!");
             return;
         }
+        this.camera_enabled = false;
         mission.unpause();
         
         let selector = document.getElementById("path_speed_selector");
@@ -536,6 +544,7 @@ class Sunrise {
             render_data = mission.forward(offset);
         }
         this.dimension = this.highres;
+        this.camera_enabled = true;
     }
 
     /**
@@ -554,79 +563,95 @@ class Sunrise {
         }, { passive: true });
 
         this.hyperimage.addEventListener('mousedown', (event) => {
-            this.dimension = this.lowres;
-            if (this.use_trackball) {
-                this.trackball_controls.update();
-            }
+            if (this.camera_enabled) {
+                this.dimension = this.lowres;
+                if (this.use_trackball) {
+                    this.trackball_controls.update();
+                }
 
-            this.is_dragging = true;
-            this.prev_mouse_pos = {
-                x: event.offsetX,
-                y: event.offsetY,
-            };
-            console.log({ROTX: this.threecam.rotation.x, ROTY: this.threecam.rotation.y});
-         }, { passive: true });
+                this.is_dragging = true;
+                this.prev_mouse_pos = {
+                    x: event.offsetX,
+                    y: event.offsetY,
+                };
+                console.log({ROTX: this.threecam.rotation.x, ROTY: this.threecam.rotation.y});
+            } else {
+                return;
+            }
+         });
          
         this.hyperimage.addEventListener('mousemove', (event) => {
-            this.#throttle(() => {
-                if (this.is_dragging) {
-                    this.#create_tiles(1, 1);
-                    // Check if we are using TrackBall controls
-                    if (this.use_trackball) {
-                        this.trackball_controls.update();
-                        this.updateTiles(
-                            new RenderData(this.#trackball_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
-                        );
-                    } else {
-                        const deltaMouse = {
-                            x: event.offsetX - this.prev_mouse_pos.x,
-                            y: event.offsetY - this.prev_mouse_pos.y,
-                        };
-                        console.log(deltaMouse);
+            if (this.camera_enabled) {
+                this.#throttle(() => {
+                    if (this.is_dragging) {
+                        this.#create_tiles(1, 1);
+                        // Check if we are using TrackBall controls
+                        if (this.use_trackball) {
+                            this.trackball_controls.update();
+                            this.updateTiles(
+                                new RenderData(this.#trackball_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
+                            );
+                        } else {
+                            const deltaMouse = {
+                                x: event.offsetX - this.prev_mouse_pos.x,
+                                y: event.offsetY - this.prev_mouse_pos.y,
+                            };
+                            console.log(deltaMouse);
 
-                        this.threecam.rotateX(-deltaMouse.y * this.mouse_sensitivity);
-                        this.threecam.rotateY(deltaMouse.x * this.mouse_sensitivity);
-                        // this.threecam.rotation.y += deltaMouse.y * this.mouse_sensitivity;
-                        // this.threecam.rotation.x += deltaMouse.x * this.mouse_sensitivity;
-                        // this.trackball_controls.update();
+                            this.threecam.rotateX(-deltaMouse.y * this.mouse_sensitivity);
+                            this.threecam.rotateY(deltaMouse.x * this.mouse_sensitivity);
+                            // this.threecam.rotation.y += deltaMouse.y * this.mouse_sensitivity;
+                            // this.threecam.rotation.x += deltaMouse.x * this.mouse_sensitivity;
+                            // this.trackball_controls.update();
 
-                        this.prev_mouse_pos = {
-                            x: event.offsetX,
-                            y: event.offsetY,
-                        };
-                        this.updateTiles(
-                            new RenderData(this.#world_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
-                        );
-                    }
-                } 
-            }, 100);
-        }, { passive: true });
+                            this.prev_mouse_pos = {
+                                x: event.offsetX,
+                                y: event.offsetY,
+                            };
+                            this.updateTiles(
+                                new RenderData(this.#world_direction(), new Date().getHours(), 1, 1, this.dimension, this.dimension,)
+                            );
+                        }
+                    } 
+                }, 100);
+            } else {
+                return;
+            }
+        });
          
         this.hyperimage.addEventListener('mouseup', (event) => {
-            this.dimension = this.highres;
-            this.is_dragging = false;
-            this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
+            if (this.camera_enabled) {
+                this.dimension = this.highres;
+                this.is_dragging = false;
+                this.#create_tiles(this.num_tiles[0], this.num_tiles[1]);
 
-            if (this.use_trackball) {
-                this.trackball_controls.update();
-                this.updateTiles(
-                    new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
-                );
+                if (this.use_trackball) {
+                    this.trackball_controls.update();
+                    this.updateTiles(
+                        new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                    );
+                } else {
+                    this.updateTiles(
+                        new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                    );
+                }
             } else {
-                this.updateTiles(
-                    new RenderData(this.#world_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
-                );
+                return;
             }
-        }, { passive: true });
+        });
 
         this.hyperimage.addEventListener('wheel', (event) => {
-            this.#throttle(() => {
-                this.trackball_controls.update();
-                this.updateRotateSpeed();
-                this.updateTiles(
-                    new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
-                );
-            }, 100);
+            if (this.camera_enabled) {
+                this.#throttle(() => {
+                    this.trackball_controls.update();
+                    this.updateRotateSpeed();
+                    this.updateTiles(
+                        new RenderData(this.#trackball_direction(), new Date().getHours(), 2, 2, this.dimension, this.dimension,)
+                    );
+                }, 100);
+            } else {
+                return;
+            }
         }, { passive: true });
     
         return;
