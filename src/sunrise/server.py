@@ -35,13 +35,24 @@ SUNRISE_LIBOSPRAY_PATH = auto.os.environ.get('SUNRISE_LIBOSPRAY_PATH', 'libospra
 SUNRISE_SCENE_PATH = auto.os.environ['SUNRISE_SCENE_PATH']
 
 
-# @auto.functools.cache
-async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
+@auto.functools.cache
+def get_scenes():
     global lib
     try:
         lib
     except NameError:
         lib = scene.load_library(SUNRISE_LIBOSPRAY_PATH)
+
+        # argc = auto.ctypes.c_int(3)
+        # argv0 = auto.ctypes.c_char_p(b'sunrise')
+        # argv1 = auto.ctypes.c_char_p(b'--osp:load-modules=gpu')
+        # argv2 = auto.ctypes.c_char_p(b'--osp:device=gpu')
+        # argv = (auto.ctypes.c_char_p * 3)()
+        # argv[0] = argv0
+        # argv[1] = argv1
+        # argv[2] = argv2
+        # lib.ospInit(auto.ctypes.byref(argc), argv)
+
         lib.ospInit(None, None)
 
         auto.atexit.register(lib.ospShutdown)
@@ -57,14 +68,22 @@ async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
         )
         what.make()
 
-        for _ in range(6):
+        for _ in range(1):
             scene_ = scene.Scene(
                 what=what,
             )
             scene_.make()
 
             scenes.put_nowait(scene_)
-    
+
+    return scenes
+_ = get_scenes()
+
+
+# @auto.functools.cache
+async def get_scene() -> auto.typing.Generator[scene.Scene, None, None]:
+    scenes = get_scenes()
+
     scene_ = None
     try:
         scene_ = await scenes.get()
@@ -92,56 +111,56 @@ async def index(
 async def view(
     *,
 
-    scene: auto.typing.Annotated[
-        scene.Scene,
+    scene: 
+        scene.Scene
+        =
         auto.fastapi.Depends(get_scene),
-    ],
 
-    tile: auto.typing.Annotated[
-        str,
+    tile: 
+        str
+        =
         auto.fastapi.Query(
             alias='tile',
         ),
-    ],
 
-    position: auto.typing.Annotated[
-        str,
+    position: 
+        str
+        =
         auto.fastapi.Query(
             alias='position',
         ),
-    ],
-    direction: auto.typing.Annotated[
-        str,
+    direction: 
+        str
+        =
         auto.fastapi.Query(
             alias='direction',
         ),
-    ],
-    up: auto.typing.Annotated[
-        str,
+    up: 
+        str
+        =
         auto.fastapi.Query(
             alias='up',
         ),
-    ],
 
-    width: auto.typing.Annotated[
-        int,
+    width: 
+        int
+        =
         auto.fastapi.Query(
             alias='width',
         ),
-    ],
-    height: auto.typing.Annotated[
-        int | None,
+    height: 
+        int
+        =
         auto.fastapi.Query(
             alias='height',
         ),
-    ],
 
-    samples: auto.typing.Annotated[
-        int,
+    samples: 
+        int
+        =
         auto.fastapi.Query(
             alias='samples',
         ),
-    ],
 ):
     tile = tuple(map(float, tile.split(',')))
     position = tuple(map(float, position.split(',')))

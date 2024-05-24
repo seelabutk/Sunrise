@@ -62,8 +62,8 @@ def Read(
         N ,= Read('I')
         shape = Read(f'{N}I')
         # print(f'Reading {shape=!r} from {path=!r}')
-        # data = np.fromfile(f, dtype=dtype)
-        data = np.memmap(f, dtype=dtype, shape=shape, mode='r', offset=f.tell())
+        data = np.fromfile(f, dtype=dtype)
+        # data = np.memmap(f, dtype=dtype, shape=shape, mode='r', offset=f.tell())
 
     data = data.reshape(shape)
     print('success')
@@ -117,21 +117,33 @@ def Data(
         raise NotImplementedError()
     # print("DATA 3")
 
+    print(f'ospNewSharedData({array.ctypes.data} ({array.ravel()}), {type},  {array.shape[0]}, {array.strides[0]},  {array.shape[1]}, {array.strides[1]},  {array.shape[2]}, {array.strides[2]},  {None}, {None})')
+    print('1')
     src = lib.ospNewSharedData(
         array.ctypes.data, type,
-        array.shape[0], array.strides[0],
-        array.shape[1], array.strides[1],
-        array.shape[2], array.strides[2],
+        array.shape[0], 0,  # array.strides[0],
+        array.shape[1], 0,  # array.strides[1],
+        array.shape[2], 0,  # array.strides[2],
         None, None
     )
+    print('2')
     lib.ospCommit(src)
+    print('3')
     # print(f"DATA 4: type: {type}")
     if share:
         return src
 
+    print('4')
     dst = lib.ospNewData(type, *array.shape)
-    lib.ospCopyData(src, dst, 0, 0, 0)
+    print('5')
     lib.ospCommit(dst)
+
+    print('6')
+    
+    lib.ospCopyData(src, dst, 0, 0, 0)
+    print('7')
+    lib.ospCommit(dst)
+    print('8')
     # print("DATA 5")
 
     lib.ospRelease(src)
@@ -203,7 +215,7 @@ class Building(WithExitStackMixin):
             ('xhi', 'f4'), ('yhi', 'f4'), ('zhi', 'f4'),
         ])
         self.hold(box)
-        box = Data(box, type=10_000+2, share=True)
+        box = Data(box, type=10_000+2, share=False)
         self.defer(lib.ospRelease, box)
         print('loaded box')
 
@@ -239,7 +251,7 @@ class Building(WithExitStackMixin):
             ('i', 'u1'),
         ])
         self.hold(index)
-        index = Data(index, type=lib.OSP_UCHAR, share=True)
+        index = Data(index, type=lib.OSP_UCHAR, share=False)
         self.defer(lib.ospRelease, index)
         print('loaded index')
 
@@ -290,7 +302,7 @@ class Background(WithExitStackMixin):
             ('x', 'f4'), ('y', 'f4'), ('z', 'f4'),
         ])
         self.hold(vertex__position)
-        vertex__position = Data(vertex__position, type=lib.OSP_VEC3F, share=True)
+        vertex__position = Data(vertex__position, type=lib.OSP_VEC3F, share=False)
         self.defer(lib.ospRelease, vertex__position)
         print('loaded vertex.position')
         
@@ -300,7 +312,7 @@ class Background(WithExitStackMixin):
             ('r', 'f4'), ('g', 'f4'), ('b', 'f4'),
         ])
         self.hold(vertex__color)
-        vertex__color = Data(vertex__color, type=lib.OSP_VEC3F, share=True)
+        vertex__color = Data(vertex__color, type=lib.OSP_VEC3F, share=False)
         self.defer(lib.ospRelease, vertex__color)
         print('loaded vertex.color')
         
@@ -310,7 +322,7 @@ class Background(WithExitStackMixin):
             ('i', 'u4'), ('j', 'u4'), ('k', 'u4'),
         ])
         self.hold(index)
-        index = Data(index, type=lib.OSP_VEC4UI-1, share=True)
+        index = Data(index, type=lib.OSP_VEC4UI-1, share=False)
         self.defer(lib.ospRelease, index)
         print('loaded index')
 
@@ -445,25 +457,42 @@ class Terrain(WithExitStackMixin):
         print(f'[ {zlo:.1f} ]-[ {zmi:.1f} ]-[ {zhi:.1f} ] ({position["z"][0]:.1f})')
 
         self.hold(position)
-        position = Data(position, type=lib.OSP_VEC3F, share=True)
+        position = Data(position, type=lib.OSP_VEC3F, share=False)
         self.defer(lib.ospRelease, position)
 
         texcoord = self.path / 'OSPGeometry.mesh.vertex.texcoord.vec2f.bin'
         texcoord = Read(texcoord, dtype=[ ('u', 'f4'), ('v', 'f4') ])
         self.hold(texcoord)
-        texcoord = Data(texcoord, type=lib.OSP_VEC2F, share=True)
+        texcoord = Data(texcoord, type=lib.OSP_VEC2F, share=False)
         self.defer(lib.ospRelease, texcoord)
 
         normal = self.path / 'OSPGeometry.mesh.vertex.normal.vec3f.bin'
         normal = Read(normal, dtype=[ ('x', 'f4'), ('y', 'f4'), ('z', 'f4') ])
         self.hold(normal)
-        normal = Data(normal, type=lib.OSP_VEC3F, share=True)
+        normal = Data(normal, type=lib.OSP_VEC3F, share=False)
         self.defer(lib.ospRelease, normal)
 
         index = self.path / 'OSPGeometry.mesh.index.vec4ui.bin'
         index = Read(index, dtype=[ ('a', 'u4'), ('b', 'u4'), ('c', 'u4'), ('d', 'u4') ])
+
+        # index_ = index
+        # print(f'converting index (dtype={index_.dtype}')
+        # index = auto.np.empty(
+        #     shape=(2*len(index_),),
+        #     dtype=[
+        #         ('a', 'u4'), ('b', 'u4'), ('c', 'u4'),
+        #     ],
+        # )
+        # index['a'][0::2] = index_['a']
+        # index['b'][0::2] = index_['b']
+        # index['c'][0::2] = index_['c']
+        # index['a'][1::2] = index_['a']
+        # index['a'][1::2] = index_['c']
+        # index['a'][1::2] = index_['d']
+        # print(f'done converting index (dtype={index.dtype})')
+
         self.hold(index)
-        index = Data(index, type=lib.OSP_VEC4UI, share=True)
+        index = Data(index, type=lib.OSP_VEC4UI, share=False)
         self.defer(lib.ospRelease, index)
 
         geometry = lib.ospNewGeometry(b'mesh')
@@ -478,37 +507,49 @@ class Terrain(WithExitStackMixin):
 
 
 class Colormap(WithExitStackMixin):
-    def __init__(self, path: auto.pathlib.Path):
+    def __init__(self, path: auto.pathlib.Path, base):
         super().__init__()
 
         self.path = path
+        self.base = base
     
     def make(self):
-        data = self.path / 'OSPTexture.texture2d.data.vec3f.bin'
-        data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
-        self.hold(data)
-        data = Data(data, type=lib.OSP_VEC3F, share=True)
-        self.defer(lib.ospRelease, data)
+        print(f'loading colormap')
 
+        print(f'loading colormap data')
+        print('a')
+        data = self.path / 'OSPTexture.texture2d.data.vec3f.bin'
+        print('b')
+        data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
+        print('c')
+        self.hold(data)
+        print('d')
+        data = Data(data, type=lib.OSP_VEC3F, share=False)
+        print('e')
+        self.defer(lib.ospRelease, data)
+        print('f')
+        print(f'done loading colormap data')
+
+        print(f'loading colormap texture')
         texture = lib.ospNewTexture(b'texture2d')
         self.defer(lib.ospRelease, texture)
         lib.ospSetObject(texture, b'data', data)
         lib.ospSetUInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
         lib.ospCommit(texture)
+        print(f'done loading colormap texture')
 
+        print(f'loading colormap material')
         material = lib.ospNewMaterial(b'obj')
         self.defer(lib.ospRelease, material)
+        # lib.ospSetVec3f(material, b'kd', *self.base)
         lib.ospSetObject(material, b'map_kd', texture)
         lib.ospSetFloat(material, b'ns', 1.0)
         lib.ospCommit(material)
+        print(f'done loading colormap material')
 
         self.material = material
-        self.defer(lib.ospRelease, material)
-        lib.ospSetObject(material, b'map_kd', texture)
-        lib.ospSetFloat(material, b'ns', 1.0)
-        lib.ospCommit(material)
 
-        self.material = material
+        print(f'done loading colormap')
 
 
 class Observation(WithExitStackMixin):
@@ -521,7 +562,7 @@ class Observation(WithExitStackMixin):
         index = self.path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
         self.hold(index)
-        index = Data(index, type=lib.OSP_UCHAR, share=True)
+        index = Data(index, type=lib.OSP_UCHAR, share=False)
         self.defer(lib.ospRelease, index)
 
         self.index = index
@@ -592,15 +633,19 @@ class Park(WithExitStackMixin):
             colormaps=[
                 self.enter(Colormap(
                     path=self.path / 'pink0',
+                    base=(0.8, 0.2, 0.8),
                 )),
                 self.enter(Colormap(
                     path=self.path / 'pink1',
+                    base=(0.8, 0.8, 0.2),
                 )),
                 self.enter(Colormap(
                     path=self.path / 'pink2',
+                    base=(0.2, 0.8, 0.8),
                 )),
                 self.enter(Colormap(
                     path=self.path / 'pink3',
+                    base=(0.2, 0.2, 0.8),
                 )),
             ],
             observation=self.enter(Observation(
@@ -615,6 +660,7 @@ class Park(WithExitStackMixin):
             colormaps=[
                 self.enter(Colormap(
                     path=self.path / 'earth',
+                    base=(0.2, 0.8, 0.2),
                 )),
             ],
             observation=None,

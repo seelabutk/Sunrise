@@ -123,7 +123,12 @@ def load_library(name: str) -> ctypes.CDLL:
         OSP_VEC3UC = 2502,
         OSP_VEC4UC = 2503,
 
+        OSP_UINT = 4500 + 0,
+        OSP_VEC2UI = 4500 + 1,
+        OSP_VEC3UI = 4500 + 2,
         OSP_VEC4UI = 4500 + 3,
+
+        OSP_FLOAT = 6000 + 0,
         OSP_VEC2F = 6000 + 1,
         OSP_VEC3F = 6000 + 2,
         OSP_VEC4F = 6000 + 3,
