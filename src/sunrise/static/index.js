@@ -30,6 +30,7 @@ class Sunrise {
         lowRes = (highRes / 4) |0,
     }={}) {
         // this.map = new Map();
+        this.light = 'distant';
         this.position = null;
         this.canvasSize = canvasSize;
         this.tileSize = tileSize;
@@ -160,6 +161,7 @@ class Sunrise {
         */
     goto_point(index, mission) {
         let render_data = mission.goto_point(index);
+        this.light = 'sunSky';
 
         this.use_trackball = false;
         this.trackball_controls.enabled = false;
@@ -174,7 +176,7 @@ class Sunrise {
         );
 
         // Uncomment this to play the sunrise animation when going to a point
-        // this.play_sunrise(); 
+        this.play_sunrise(); 
     }
 
     /**
@@ -371,7 +373,7 @@ class Sunrise {
             ].join(','));
             url.searchParams.append('samples', this.samples);
             url.searchParams.append('hour', render_data.hour);
-            url.searchParams.append('light', 'distant');
+            url.searchParams.append('light', this.light);
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -496,7 +498,7 @@ class Sunrise {
         */
     async play_sunrise() {
         this.camera_enabled = false;
-        let step = 1;
+        let step = 0.25;
         let start = new Date().getHours() -5;
         let end = start + 24;
 

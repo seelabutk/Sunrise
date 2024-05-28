@@ -717,11 +717,13 @@ class Distant(WithExitStackMixin):
 
 
 class Sunlight(WithExitStackMixin):
-    def __init__(self, now: datetime.datetime, light_type):
+    def __init__(self, now: datetime.datetime, light_type: str, intensity: float, sky=(0,0,0)):
         super().__init__()
 
         self.light_type = light_type
         self.now = now
+        self.intensity = intensity
+        self.sky = sky
 
     def make(self):
         # Get the position of the Sun in the sky based on the date & time
@@ -732,10 +734,21 @@ class Sunlight(WithExitStackMixin):
         self.defer(lib.ospRelease, light)
         lib.ospSetInt(light, b'intensityQuantity', 1)
         lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
-        lib.ospSetFloat(light, b'intensity', 10)
         
+        if self.light_type == 'distant':
+            lib.ospSetFloat(light, b'intensity', 3)
+        elif self.light_type == 'sunSky':
+            # lib.ospSetFloat(light, b'intensity', 0.02)
+            lib.ospSetFloat(light, b'horizonExtension', 0.2)
+            lib.ospSetFloat(light, b'turbidity', 8)
+            lib.ospSetFloat(light, b'albedo', 0.15)
+            lib.ospSetVec3f(light, b'up', *(self.sky))
+            # lib.ospSetVec3f(light, b'up', position.x, position.y, position.z)
+
         lib.ospSetVec3f(light, b'position', position.x, position.y, position.z)
         lib.ospSetVec3f(light, b'direction', -position.x, -position.y, -position.z) 
+        lib.ospSetFloat(light, b'intensity', self.intensity)
+        
         lib.ospCommit(light)
 
         self.light = light
@@ -852,6 +865,7 @@ class Scene(WithExitStackMixin):
                 # datetime.timedelta(hours=request.hour)
             ),
             light_type='distant',
+            intensity=3.0,
         ))
 
 
@@ -921,12 +935,30 @@ class Scene(WithExitStackMixin):
                 # datetime.timedelta(hours=request.hour)
             ),
             light_type=self.request.light,
+            intensity=0.014,
+            sky=self.request.position
+        ))
+
+        
+        self.distant = self.enter(Sunlight(
+            now=(
+                datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=0),  # Eastern Time
+                    # offset=datetime.timedelta(hours=-5),  # Eastern Time
+                    name='EST'
+                ))
+                + 
+                datetime.timedelta(hours=hour)
+                # datetime.timedelta(hours=request.hour)
+            ),
+            light_type='distant',
+            intensity=3.0,
             # light_type='distant',
         ))
 
         lights = Data([
-            self.ambient.light,
-            # distant.light,
+            # self.ambient.light,
+            self.distant.light,
             # point.light,
             self.sunlight.light,
             self.hdri.light,
