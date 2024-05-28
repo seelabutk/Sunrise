@@ -151,6 +151,7 @@ class RenderingRequest:
     ]
     samples: int
     hour: float
+    light: str
 
 
 @dataclasses.dataclass

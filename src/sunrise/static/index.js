@@ -3,7 +3,7 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Mission } from 'missions';
 import { Map } from 'map';
-import { RenderData, latlng_to_cartesian, latlng_to_cartesian_vec3 } from "utils";
+import { RenderData, latlng_to_cartesian, linear_interp, latlng_to_cartesian_vec3 } from "utils";
 
 /* Holds information for a tile within the Sunrise application */
 class Tile {
@@ -47,8 +47,8 @@ class Sunrise {
             ...latlng_to_cartesian(
                 35.562744,
                 -83.5 - 13,
-                100,
-                // 10000,
+                // 100,
+                10000,
             ),
         });
 
@@ -67,7 +67,7 @@ class Sunrise {
         this.secondary.height = this.canvasSize;
 
         this.highres = 512;
-        this.lowres = 64;
+        this.lowres = 128;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
@@ -174,7 +174,7 @@ class Sunrise {
         );
 
         // Uncomment this to play the sunrise animation when going to a point
-        this.play_sunrise(); 
+        // this.play_sunrise(); 
     }
 
     /**
@@ -199,7 +199,7 @@ class Sunrise {
         this.trackball_controls.noZoom = false;
         this.trackball_controls.noPan = true; // we do not want pannning
         this.trackball_controls.staticMoving = true;
-        this.trackball_controls.maxDistance = (6371 + 5000) / this.cameraScalingFactor;
+        this.trackball_controls.maxDistance = (6371 + 10000) / this.cameraScalingFactor;
         this.trackball_controls.minDistance = (6371 + 10) / this.cameraScalingFactor;
         this.trackball_controls.dynamicDampingFactor = 0.3;
         this.trackball_controls.update();
@@ -315,6 +315,12 @@ class Sunrise {
         ]);
 
         ctx = this.primary.getContext('2d');
+        if (render_data.blur === true) {
+            ctx.filter = 'blur(7px)';
+        } else {
+            ctx.filter = 'blur(0px)';
+        }
+
         ctx.drawImage(this.secondary, 0, 0, this.canvasSize, this.canvasSize);
         
 
@@ -365,6 +371,7 @@ class Sunrise {
             ].join(','));
             url.searchParams.append('samples', this.samples);
             url.searchParams.append('hour', render_data.hour);
+            url.searchParams.append('light', 'distant');
 
             return new Promise((resolve, reject) => {
                 let image = new Image(this.dimension, this.dimension);
@@ -434,10 +441,11 @@ class Sunrise {
         let mission = new Mission(name);
 
         let data = [];
-        const num_steps = 30;
+        const num_steps = 50;
         let point_index = 1;
-        for (let i = 1; i < path.length; i++) {
-            let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, 7);
+        for (let i = 1 + Math.floor(path.length * 0.35); i < path.length; i++) {
+            console.log(path[i-1].alt)
+            let prev = latlng_to_cartesian(path[i-1].lat, path[i-1].lng - 13, (path[i-1].alt / 1000) + 0.7);
             this.selection_map.add_marker(path[i-1].lat, path[i-1].lng, () => {
                 this.goto_point(i, mission);
             });
@@ -447,27 +455,27 @@ class Sunrise {
                 prev.z / this.cameraScalingFactor,
             );
             
-//            let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, 7);
-//            let currpoint = new THREE.Vector3(
-//                curr.x / this.cameraScalingFactor,
-//                curr.y / this.cameraScalingFactor,
-//                curr.z / this.cameraScalingFactor,
-//            );
+           let curr = latlng_to_cartesian(path[i].lat, path[i].lng - 13, (path[i].alt / 1000) + 0.7);
+           let currpoint = new THREE.Vector3(
+               curr.x / this.cameraScalingFactor,
+               curr.y / this.cameraScalingFactor,
+               curr.z / this.cameraScalingFactor,
+           );
 
             mission.add_point(prevpoint);
 
-//            // Use the linear interpolator to fill in and
-//            // smooth the distance between points
-//            for (let j = 0; j < num_steps; j++) {
-//                data.push(
-//                    new THREE.Vector3(
-//                        linear_interp(prevpoint.x, currpoint.x, j / num_steps),
-//                        linear_interp(prevpoint.y, currpoint.y, j / num_steps),
-//                        linear_interp(prevpoint.z, currpoint.z, j / num_steps),
-//                    )
-//                );
-//                point_index++;
-//            }
+           // Use the linear interpolator to fill in and
+           // smooth the distance between points
+           for (let j = 0; j < num_steps; j++) {
+               mission.add_point(
+                   new THREE.Vector3(
+                       linear_interp(prevpoint.x, currpoint.x, j / num_steps),
+                       linear_interp(prevpoint.y, currpoint.y, j / num_steps),
+                       linear_interp(prevpoint.z, currpoint.z, j / num_steps),
+                   )
+               );
+               point_index++;
+           }
 
             point_index++;
         }
@@ -507,12 +515,14 @@ class Sunrise {
             return;
         }
         this.camera_enabled = false;
+        this.use_trackball = false;
+        this.trackball_controls.enabled = false;
         mission.unpause();
         
         let selector = document.getElementById("path_speed_selector");
         let display = document.getElementById("ips_display");
         this.current_mission = mission;
-        let ips = 40;
+        let ips = 10;
         // let total_remaining_seconds = mission.length() / ips;
         let total_remaining_seconds = mission.remaining_length() / ips;
         let start_time = +new Date() / 1000;
@@ -534,9 +544,9 @@ class Sunrise {
 
             // console.log(`ips: ${ips}. total_remaining_seconds: ${total_remaining_seconds}. Start: ${start_time}. Elapsed: ${elapsed_seconds}. Target: ${target_index}. Current: ${mission.current_index()}`);
             this.trackball_controls.update();
-            this.threecam.position.copy(render_data.current);
+            this.threecam.position.copy(render_data.target);
             this.threecam.up.copy(render_data.up);
-            this.threecam.lookAt(render_data.target);
+            this.threecam.lookAt(render_data.current);
 
             await this.updateTiles(
                 new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
@@ -589,7 +599,7 @@ class Sunrise {
                         if (this.use_trackball) {
                             this.trackball_controls.update();
                             this.updateTiles(
-                                new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.dimension, this.dimension,)
+                                new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.dimension, this.dimension, true)
                             );
                         } else {
                             const deltaMouse = {
@@ -597,6 +607,8 @@ class Sunrise {
                                 y: event.offsetY - this.prev_mouse_pos.y,
                             };
                             console.log(deltaMouse);
+
+
 
                             this.threecam.rotateX(-deltaMouse.y * this.mouse_sensitivity);
                             this.threecam.rotateY(deltaMouse.x * this.mouse_sensitivity);

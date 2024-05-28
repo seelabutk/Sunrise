@@ -84,6 +84,7 @@ export class RenderData {
 
     width = 0;
     height = 0;
+    blur = false;
 
     /**
     *   @param {number} hour The hour query parameter for the request
@@ -92,6 +93,7 @@ export class RenderData {
     *   @param {number} row_count The number of rows we are requesting from the server
     *   @param {number} width The width of the image
     *   @param {number} height The height of the image
+    *   @param {boolean} blur Whether to blur the image or not
     */
     constructor(
         direction, 
@@ -99,7 +101,8 @@ export class RenderData {
         col_count, 
         row_count,
         width,
-        height
+        height,
+        blur,
     ) {
         this.direction = direction;
         this.hour = hour;
@@ -107,6 +110,7 @@ export class RenderData {
         this.num_rows = row_count;
         this.width = width;
         this.height = height;
+        this.blur = blur;
     }
 }
 
