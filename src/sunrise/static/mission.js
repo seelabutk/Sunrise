@@ -121,8 +121,8 @@ export class Mission {
             this.index = this.point_list.length-1;
         }
 
-        this.current_point = this.#mean_position(this.index, 9);
-        let target = this.#mean_position(this.index+1, 9);
+        this.current_point = this.#mean_position(this.index, 15);
+        let target = this.#mean_position(this.index+1, 15);
         let up = this.current_point;
 
         this.index += offset;

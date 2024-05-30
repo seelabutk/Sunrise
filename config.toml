@@ -5,11 +5,11 @@ host="0.0.0.0"
 port=5000
 
 [renderer]
-type="scivis"
+type="pathtracer"
 modules=[
     # "denoiser"
 ]
-samples=6
+samples=3
 
 [client]
 [client.map]

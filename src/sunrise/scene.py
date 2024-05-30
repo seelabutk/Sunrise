@@ -52,7 +52,7 @@ def Read(
     dtype: np.DType,
 ) -> np.NDArray:
     print(f'trying to open {path}: ', end='')
-    with open(path, 'rb') as f:
+    with open(path, 'r+b') as f:
         def Read(fmt: str, /) -> tuple:
             size = struct.calcsize(fmt)
             data = f.read(size)
@@ -641,6 +641,7 @@ class Ambient(WithExitStackMixin):
         self.defer(lib.ospRelease, light)
         lib.ospSetFloat(light, b'intensity', 0.15)
         lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
         lib.ospCommit(light)
 
         self.light = light
@@ -716,26 +717,38 @@ class Distant(WithExitStackMixin):
 
 
 class Sunlight(WithExitStackMixin):
-    def __init__(self, now: datetime.datetime):
+    def __init__(self, now: datetime.datetime, light_type: str, intensity: float, sky=(0,0,0)):
         super().__init__()
 
+        self.light_type = light_type
         self.now = now
+        self.intensity = intensity
+        self.sky = sky
 
     def make(self):
         # Get the position of the Sun in the sky based on the date & time
         location = self.location_from_datetime(self.now, alt=10_000.0)
         position = sunrise.model.position_from_location(location)
 
-        light = lib.ospNewLight(b'sunSky')
+        light = lib.ospNewLight(self.light_type.encode())
         self.defer(lib.ospRelease, light)
         lib.ospSetInt(light, b'intensityQuantity', 1)
         lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
-        # lib.ospSetVec3f(light, b'color', 1.0, 1.0, 1.0)
-        lib.ospSetFloat(light, b'intensity', 0.2)
+        
+        if self.light_type == 'distant':
+            lib.ospSetFloat(light, b'intensity', 3)
+        elif self.light_type == 'sunSky':
+            # lib.ospSetFloat(light, b'intensity', 0.02)
+            lib.ospSetFloat(light, b'horizonExtension', 0.2)
+            lib.ospSetFloat(light, b'turbidity', 8)
+            lib.ospSetFloat(light, b'albedo', 0.15)
+            lib.ospSetVec3f(light, b'up', *(self.sky))
+            # lib.ospSetVec3f(light, b'up', position.x, position.y, position.z)
+
         lib.ospSetVec3f(light, b'position', position.x, position.y, position.z)
-        lib.ospSetVec3f(light, b'direction', -position.x, -position.y, -position.z)
-        # lib.ospSetVec3f(light, b'direction', 0.0, 0.0, -1.0)
-        lib.ospSetFloat(light, b'albedo', 0.5)
+        lib.ospSetVec3f(light, b'direction', -position.x, -position.y, -position.z) 
+        lib.ospSetFloat(light, b'intensity', self.intensity)
+        
         lib.ospCommit(light)
 
         self.light = light
@@ -778,6 +791,43 @@ class Sunlight(WithExitStackMixin):
             alt=alt,
         )
 
+class HDRI(WithExitStackMixin):
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
+
+    def make(self):
+        data = self.data()
+        
+        texture = lib.ospNewTexture(b'texture2d')
+        self.defer(lib.ospRelease, texture)
+        lib.ospSetObject(texture, b'data', data)
+        lib.ospSetUInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
+        lib.ospCommit(texture)
+
+        light = lib.ospNewLight(b'hdri')
+        self.defer(lib.ospRelease, light)
+        # lib.ospSetInt(light, b'intensityQuantity', 1)
+        # lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
+        # lib.ospSetVec3f(light, b'color', 1.0, 1.0, 1.0)
+        lib.ospSetFloat(light, b'intensity', 7)
+        lib.ospSetObject(light, b'map', texture)
+        # lib.ospSetVec3f(light, b'up', 0.0, 1.0, 0.0)
+        # lib.ospSetVec3f(light, b'direction', 0.0, 1.0, 1.0)
+        lib.ospCommit(light)
+
+        self.texture = texture
+        self.light = light
+
+    def data(self):
+        data = self.path
+        data = Read(data, dtype=[ ('r', 'f4'), ('g', 'f4'), ('b', 'f4') ])
+        self.hold(data)
+        data = Data(data, type=lib.OSP_VEC3F, share=True)
+        self.defer(lib.ospRelease, data)
+        return data
+
+
 
 class Scene(WithExitStackMixin):
     def __init__(self, what: City | Park,):
@@ -800,6 +850,10 @@ class Scene(WithExitStackMixin):
         point = self.enter(Point(
         ))
 
+        hdri = self.enter(HDRI(
+            path=auto.pathlib.Path('data/space/OSPTexture.texture2d.data.vec3f.bin')
+        ))
+
         sunlight = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=15, tzinfo=datetime.timezone(
@@ -809,15 +863,18 @@ class Scene(WithExitStackMixin):
                 + 
                 datetime.timedelta(hours=5)
                 # datetime.timedelta(hours=request.hour)
-            )
+            ),
+            light_type='distant',
+            intensity=3.0,
         ))
 
 
         lights = Data([
-            ambient.light,
+            # ambient.light,
             # distant.light,
             # point.light,
-            sunlight.light,
+            # sunlight.light,
+            hdri.light,
         ], type=lib.OSP_LIGHT)
         # self.defer(lib.ospRelease, lights)
 
@@ -825,7 +882,9 @@ class Scene(WithExitStackMixin):
         self.defer(lib.ospRelease, world)
         lib.ospSetObject(world, b'instance', self.what.instances)
         lib.ospSetObject(world, b'light', lights)
-        lib.ospSetBool(world, b'dynamicScene', True)
+        lib.ospSetBool(world, b'dynamicScene', False)
+        lib.ospSetBool(world, b'compactMode', True)
+        # lib.ospSetBool(world, b'dynamicScene', True)
         lib.ospCommit(world)
 
         renderer = (
@@ -858,8 +917,13 @@ class Scene(WithExitStackMixin):
         self.camera = camera
         self.lights = lights
 
+        self.ambient = ambient
+        self.distant = distant
+        self.hdri = hdri
+        self.sunlight = sunlight
+
     def update_lights(self, hour: int):
-        sunlight = self.enter(Sunlight(
+        self.sunlight = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
                     offset=datetime.timedelta(hours=0),  # Eastern Time
@@ -869,21 +933,40 @@ class Scene(WithExitStackMixin):
                 + 
                 datetime.timedelta(hours=hour)
                 # datetime.timedelta(hours=request.hour)
-            )
+            ),
+            light_type=self.request.light,
+            intensity=0.014,
+            sky=self.request.position
         ))
+
         
-        ambient = self.enter(Ambient(
+        self.distant = self.enter(Sunlight(
+            now=(
+                datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
+                    offset=datetime.timedelta(hours=0),  # Eastern Time
+                    # offset=datetime.timedelta(hours=-5),  # Eastern Time
+                    name='EST'
+                ))
+                + 
+                datetime.timedelta(hours=hour)
+                # datetime.timedelta(hours=request.hour)
+            ),
+            light_type='distant',
+            intensity=3.0,
+            # light_type='distant',
         ))
 
         lights = Data([
-            ambient.light,
-            # distant.light,
+            # self.ambient.light,
+            self.distant.light,
             # point.light,
-            sunlight.light,
+            self.sunlight.light,
+            self.hdri.light,
         ], type=lib.OSP_LIGHT)
         return lights
-    
+
     def render(self, request: model.RenderingRequest):
+        self.request = request
         world = self.world
         renderer = self.renderer
         camera = self.camera
@@ -1018,13 +1101,13 @@ class Scene(WithExitStackMixin):
         thread.start()
 
         return future
-    
+
 
 def Render(
     *,
     path: pathlib.Path,
     stack: contextlib.ExitStack=None,
-) -> typing.Generator[
+    ) -> typing.Generator[
     sunrise.model.RenderingResponse,
     sunrise.model.RenderingRequest,
     None,
@@ -1035,9 +1118,9 @@ def Render(
                 path=path,
                 stack=stack,
             )
-        return
+    return
 
-    # print("2")
+# print("2")
     close = contextlib.closing
     enter = stack.enter_context
     defer = stack.callback

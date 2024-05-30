@@ -188,6 +188,13 @@ async def view(
             alias='hour',
         ),
     ],
+    
+    light: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(
+            alias='light',
+        ),
+    ],
 ):
     tile = tuple(map(str, tile.split(',')))
     position = tuple(map(float, position.split(',')))
@@ -203,6 +210,7 @@ async def view(
         up=up,
         samples=samples,
         hour=hour,
+        light=light
     ))
     
     with auto.io.BytesIO() as f:
