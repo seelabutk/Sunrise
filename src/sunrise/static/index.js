@@ -113,11 +113,13 @@ class Sunrise {
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
         
-        this.num_tiles = [1, 1]; // rows X cols
-	this.highResWidth = (this.canvasWidth / this.num_tiles[0]) |0;
-	this.highResHeight = (this.canvasHeight / this.num_tiles[1]) |0;
-	this.lowResWidth = (this.highResWidth / 4) |0;
-	this.lowResHeight = (this.highResHeight / 4) |0;
+	this.aspectRatio = this.canvasWidth / this.canvasHeight;
+        this.num_tiles = [2, 6]; // rows X cols
+	this.highResWidth = ((this.canvasWidth / this.num_tiles[1]) * 1.5) |0;
+	this.highResHeight = (this.highResWidth / this.aspectRatio) |0;
+	console.log("HWidth " + this.highResWidth);
+	this.lowResWidth = (this.highResWidth / 2) |0;
+	this.lowResHeight = (this.highResHeight / 2) |0;
         this.samples = 1;
         this.is_dragging = false;
 
