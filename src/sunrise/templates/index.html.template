@@ -1,107 +1,43 @@
 <!DOCTYPE html>
 <meta charset="UTF-8">
 <title>Sunrise Dev</title>
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    background-color: black;
-    width: 100%;
-    height: 100%;
-}
-
-.App {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-areas:
-        "a a a"
-        "b c d"
-    ;
-    grid-template-rows:
-        8vh
-        1fr
-    ;
-    grid-template-columns:
-        20vw 1fr
-    ;
-}
-
-/* This rule belongs to the Leaflet tile container */
-.leaflet-container {
-    background: none !important;
-}
-
-.Map {
-    width: 512px;
-    height: 512px;
-    border: 1px solid green;
-}
-
-.App__map {
-    background-color: blue;
-    grid-area: "map";
-}
-
-.a { grid-area: a; width: 100%; height: 100%; align-self: start; justify-self: start; }
-.b { grid-area: b; width: 100%; height: 100%; align-self: start; justify-self: start; }
-.c { grid-area: c; width: 100%; height: 100%; align-self: start; justify-self: start; }
-.d { grid-area: d; width: 100%; height: 100%; align-self: center; justify-self: stretch; }
-
-.missions {
-    border-right: 1px solid darkgray;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: black;
-}
-
-input {
-    margin: 10px 0 0 0;
-}
-
-#navbar {
-    background: black;
-    border-bottom: 1px solid darkgray;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 34px;
-}
-
-.missionButton {
-    border: 1px solid gray;
-    background: gray;
-    border-radius: 5px;
-    margin: 10px;
-    font-size: 20px;
-    height: 40px;
-    padding: 4px;
-}
-</style>
+<link href="https://www.nps.gov/lib/assets/img/favicon.ico" rel="shortcut icon">
 <link
     rel=stylesheet
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 >
-<div class="App" style="display: grid; align-content: center; align-items: center; justify-content: center; justify-items: center;">
-    <nav class="a" id="navbar">
-        Sunrise Demo
+<link
+    rel=stylesheet
+    href="static/app.css"
+>
+    <nav id="navbar">
+	    <div class="left">
+		<p class="title">Great Smoky Mountains National Park</p>
+		<p class="sub-title">Atlas of the Smokies</p>
+
+		<div class="header-data">
+        		<div class="selector-container">
+				<label name="species">Species:
+                			<select name="species">
+                				<option value="Species 1">Species 1</option>
+                				<option value="Species 2">Species 2</option>
+                			</select>
+				</label>
+        		</div>
+        		<div>
+        			<label name="map-tiles">
+        				Map Style:
+        				<select id="map-url-selector">
+        				</select>
+        			</label>
+        		</div>
+		</div>
+	    </div>
     </nav>
-    <div class="b missions" id="mission_list">
-        <button class="missionButton" id="path-pause">Pause</button>
-        <h3 id="ips_display" style="color: white; margin: 10px 0 0 0;">0</h3>
-        <input id="path_speed_selector" type="range" min="10" max="60">
-    </div>
-    <div class="c"
-        id="hyperimage"
-        style="width: 512px; height: 512px; border: 2px solid red;"
+<div class="App">
+    <div class="b" id="hyperimage"
         ></div>
-    <div class="d Map js--map" style="width: 800px; height: 512px"></div>
+    <div class="c Map js--map"></div>
 </div>
 
 <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>

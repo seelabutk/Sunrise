@@ -984,8 +984,8 @@ class Scene(WithExitStackMixin):
         # 2of2
         row, col = request.tile
         
-        row_id, num_x_bins = map(int, row.split('of'))
-        col_id, num_y_bins = map(int, col.split('of'))
+        col_id, num_x_bins = map(int, col.split('of'))
+        row_id, num_y_bins = map(int, row.split('of'))
         # num_x_bins = 2
         # num_y_bins = 2
 
