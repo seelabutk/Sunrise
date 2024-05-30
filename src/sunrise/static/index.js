@@ -25,7 +25,7 @@ class Sunrise {
     constructor($el, {
         what,
         canvasSize = 650,
-	canvasWidth = 800,
+	canvasWidth = 1200,
 	canvasHeight = 650,
         tileSize = (canvasSize / 2) |0,
         highRes = tileSize,
@@ -75,10 +75,14 @@ class Sunrise {
         //this.primary.width = this.canvasSize;
         //this.primary.height = this.canvasSize;
         this.hyperimage.appendChild(this.primary);
+	console.log(`Pwidth: ${this.primary.offsetWidth}`);
+	console.log(`Pheight: ${this.primary.offsetHeight}`);
 
         this.secondary = document.createElement('canvas');
         this.secondary.width = this.canvasWidth;
         this.secondary.height = this.canvasHeight;
+	console.log(`Swidth: ${this.secondary.offsetWidth}`);
+	console.log(`Sheight: ${this.secondary.offsetHeight}`);
         //this.secondary.width = this.canvasSize;
         //this.secondary.height = this.canvasSize;
 
@@ -109,11 +113,11 @@ class Sunrise {
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
         
-        this.num_tiles = [2, 4]; // rows X cols
-	this.highResWidth = (this.canvasWidth / this.num_tiles[1]) | 0;
-	this.highResHeight = (this.canvasHeight / this.num_tiles[0]) | 0;
-	this.lowResWidth = (this.highResWidth / 4) | 0;
-	this.lowResHeight = (this.highResHeight / 4) | 0;
+        this.num_tiles = [1, 1]; // rows X cols
+	this.highResWidth = (this.canvasWidth / this.num_tiles[0]) |0;
+	this.highResHeight = (this.canvasHeight / this.num_tiles[1]) |0;
+	this.lowResWidth = (this.highResWidth / 4) |0;
+	this.lowResHeight = (this.highResHeight / 4) |0;
         this.samples = 1;
         this.is_dragging = false;
 

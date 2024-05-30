@@ -922,6 +922,12 @@ class Scene(WithExitStackMixin):
         self.hdri = hdri
         self.sunlight = sunlight
 
+    # Update the aspect ratio of the camera dynamically
+    def update_camera(self, width, height):
+        lib.ospSetFloat(self.camera, b'aspect', width / height)
+        lib.ospCommit(self.camera)
+
+
     def update_lights(self, hour: int):
         self.sunlight = self.enter(Sunlight(
             now=(
@@ -969,6 +975,7 @@ class Scene(WithExitStackMixin):
         self.request = request
         world = self.world
         renderer = self.renderer
+        self.update_camera(request.width, request.height)
         camera = self.camera
 
         
