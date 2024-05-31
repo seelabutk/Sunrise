@@ -413,6 +413,10 @@ export default class Renderer {
                 await this.#create_image();
             }
         });
+        
+        this.should_render = true;
+        this.#render_dispatch();
+        this.should_render = false;
     }
 
     /**
