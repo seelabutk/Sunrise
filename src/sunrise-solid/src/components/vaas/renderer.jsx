@@ -24,10 +24,12 @@ export default class Renderer {
     /** @type {HTMLElement} */
     secondary = null;
 
-    /** @type {Number} */
+    /** @type {Dimension} */
     highRes = null;
-    /** @type {Number} */
+    /** @type {Dimension} */
     lowRes = null;
+    /** @type {Dimension} */
+    current_resolution = null;
 
     /** @type {Number} */
     rowCount = -1;
@@ -66,6 +68,9 @@ export default class Renderer {
     /** @type {THREE.Vector3} */
     current_direction = null;
 
+    /** @type {String} */
+    current_light = "distant";
+
     /**
         * @param {HTML.Element} primary The primary canvas to render the final image to
         * @param {Number} width The total width of the canvas
@@ -80,6 +85,7 @@ export default class Renderer {
         num_rows,
         num_cols,
     ) {
+        console.log(`Creating renderer with dimensions: ${width} by ${height} and ${num_rows} by ${num_cols}`);
         // Primary is the main canvas we render to
         // Make sure to set the width and height of this
         this.primary = primary;
@@ -130,6 +136,7 @@ export default class Renderer {
 
         // General Setup
         this.#get_current_date();
+        this.#set_resolution(this.highRes);
 
         // Create our array of tiles
         this.#create_tiles(this.rowCount, this.colCount);
@@ -137,12 +144,19 @@ export default class Renderer {
         // Setup the camera and trackball controls
         this.#setup_camera(this.original_position);
         this.#setup_trackball();
-        this.#set_current_direction(this.#world_dir());
+        this.#set_current_direction(this.#trackball_dir());
 
         // Setup the event listeners for the camera and controls
         this.#setup_event_listeners();
+    }
 
-        this.#tile_request(this.tile_definitions[0]);
+    /**
+        * @description Set the current resolution that we want to render at
+        * @param {Dimension} res The resolution to render at
+    */
+    #set_resolution(res) {
+        console.log(`Setting resolution to ${res.width}, ${res.height}`);
+        this.current_resolution = res;
     }
 
     #get_current_date() {
@@ -168,7 +182,7 @@ export default class Renderer {
         * @description Make a rendering request for a tile
         * @param {Tile} tile The tile we are trying to render
     */
-    #tile_request(tile) {
+    async #tile_request(tile) {
         const px = this.camera.position.x * this.camera_scaling_factor;
         const py = this.camera.position.y * this.camera_scaling_factor;
         const pz = this.camera.position.z * this.camera_scaling_factor;
@@ -180,15 +194,39 @@ export default class Renderer {
 
         let url = new URL('api/v1/view/', this.server_url);
         console.log(url);
-        url.searchParams.append('width', tile.width);
-        url.searchParams.append('height', tile.height);
+        url.searchParams.append('width', this.current_resolution.width);
+        url.searchParams.append('height', this.current_resolution.height);
         url.searchParams.append('tile', `${tile.row}of${this.rowCountCurrent},${tile.col}of${this.colCountCurrent}`);
         url.searchParams.append('position', [
             -px,
             -py,
             -pz,
         ].join(','));
+        url.searchParams.append('direction', [
+            this.current_direction.x,
+            this.current_direction.y,
+            this.current_direction.z,
+        ].join(','));
+        url.searchParams.append('up', [
+            ux.toFixed(3),
+            uy.toFixed(3),
+            uz.toFixed(3),
+        ].join(','));
+        url.searchParams.append('samples', 4);
+        url.searchParams.append('hour', this.current_time);
+        url.searchParams.append('light', this.current_light);
 
+        // Make the request
+        return new Promise((res, rej) => {
+            let image = new Image(tile.width, tile.height);
+            image.onload = () => {
+                res(image);
+            }
+            image.onerror = () => {
+                rej();
+            }
+            image.src = url;
+        });
 
         //console.log(`${tile.row}of${this.rowCountCurrent},${tile.col}of${this.colCountCurrent}`);
     }
@@ -221,6 +259,8 @@ export default class Renderer {
     */
     #create_tiles(numr, numc) {
         this.tile_definitions = [];
+        this.rowCountCurrent = numr;
+        this.colCountCurrent = numc;
 
         // Calculate the tile width and height based on the number of rows and columns
         const tile_width = this.width / numc;
@@ -247,9 +287,9 @@ export default class Renderer {
             10000,
         );
         this.camera.position.set(
-            position.x,
-            position.y,
-            position.z,
+            position.x / this.camera_scaling_factor,
+            position.y / this.camera_scaling_factor,
+            position.z / this.camera_scaling_factor,
         );
         this.camera.up.set(0, 1, 0);
     }
@@ -310,22 +350,35 @@ export default class Renderer {
         });
     }
 
-    drawImage() {
+    /**
+        * @description Render the image to the screen from the server
+    */
+    async drawImage() {
         let ctx = this.secondary.getContext('2d');
         const tile_width = this.width / this.colCount;
         const tile_height = this.height / this.rowCount;
+        let promises = [];
 
         for (let i = 0; i < this.tile_definitions.length; i++) {
-            let row = this.tile_definitions[i].row;
-            let col = this.tile_definitions[i].col;
+            promises.push((() => {
+                let row = this.tile_definitions[i].row;
+                let col = this.tile_definitions[i].col;
 
-            let y = (row / this.rowCount) * this.height;
-            let x = (col / this.colCount) * this.width;
+                let y = (row / this.rowCountCurrent) * this.height;
+                let x = (col / this.colCountCurrent) * this.width;
 
-            ctx.fillStyle = `rgb(${(x*256/this.width) |0},${(y*256/this.height) |0}, 0)`;
-		    ctx.fillRect(x, y, tile_width, tile_height);
+                return this.#tile_request(this.tile_definitions[i]).then((image) => {
+                    ctx.drawImage(image, x, y, tile_width, tile_height);
+                });
+            })());
+            //ctx.fillStyle = `rgb(${(x*256/this.width) |0},${(y*256/this.height) |0}, 0)`;
+		    //ctx.fillRect(x, y, tile_width, tile_height);
         }
-        
+
+        await Promise.all([...promises,]);
+       
+        // Once the tiles are done drawing
+        // we can render them to the main display
         ctx = this.primary.getContext('2d');
         ctx.drawImage(this.secondary, 0, 0, this.width, this.height);
     }
