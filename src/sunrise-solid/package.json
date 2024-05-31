@@ -20,6 +20,9 @@
     "gridjs": "^6.2.0",
     "leaflet": "^1.9.4",
     "solid-js": "^1.8.11",
-    "solid-transition-group": "^0.0.10"
+    "solid-three": "^0.2.0",
+    "solid-transition-group": "^0.0.10",
+    "three": "^0.165.0",
+    "three-addons": "^1.2.0"
   }
 }
