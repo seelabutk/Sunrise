@@ -1,0 +1,8 @@
+.service {
+    width: 100%;
+    height: calc(100vh - 10vh);
+    background: blue;
+
+    display: flex;
+    flex-direction: row;
+}

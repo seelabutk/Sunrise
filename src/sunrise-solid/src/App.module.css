@@ -1,0 +1,36 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+
+}
+
+.App {
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* The header bar at the top of the Home page */
+.header {
+    height: 10vh;
+    background-color: #000;
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* The title text for the Home page */
+.title {
+    font-weight: 400;
+    font-family: "Source Sans Pro", Arial, sans-serif;
+    margin: 0 0 0 1vw;
+    font-size: 4vh;
+    color: #fff;
+}

@@ -25,8 +25,8 @@ class Sunrise {
     constructor($el, {
         what,
         canvasSize = 650,
-	canvasWidth = 1200,
-	canvasHeight = 650,
+	    canvasWidth = 1200,
+	    canvasHeight = 650,
         tileSize = (canvasSize / 2) |0,
         highRes = tileSize,
         lowRes = (highRes / 4) |0,
@@ -35,8 +35,11 @@ class Sunrise {
         this.light = 'distant';
         this.position = null;
         this.canvasSize = canvasSize;
-        this.canvasHeight = canvasHeight;
-        this.canvasWidth = canvasWidth;
+        this.canvasWidth = (window.innerWidth * 0.7) |0;
+        this.canvasHeight = (window.innerHeight - document.getElementById("navbar").offsetHeight - 5) |0;
+        console.log("Canvas height " + this.canvasHeight);
+        // this.canvasHeight = canvasHeight;
+        //this.canvasWidth = canvasWidth;
         this.tileSize = tileSize;
         this.highRes = highRes;
         this.lowRes = lowRes;
@@ -49,6 +52,7 @@ class Sunrise {
 	});
 
         this.hyperimage = $el;
+
         this.cameraScalingFactor = 5;
        
         this.camera_enabled = true;
@@ -75,14 +79,14 @@ class Sunrise {
         //this.primary.width = this.canvasSize;
         //this.primary.height = this.canvasSize;
         this.hyperimage.appendChild(this.primary);
-	console.log(`Pwidth: ${this.primary.offsetWidth}`);
-	console.log(`Pheight: ${this.primary.offsetHeight}`);
+	    console.log(`Pwidth: ${this.primary.offsetWidth}`);
+	    console.log(`Pheight: ${this.primary.offsetHeight}`);
 
         this.secondary = document.createElement('canvas');
         this.secondary.width = this.canvasWidth;
         this.secondary.height = this.canvasHeight;
-	console.log(`Swidth: ${this.secondary.offsetWidth}`);
-	console.log(`Sheight: ${this.secondary.offsetHeight}`);
+	    console.log(`Swidth: ${this.secondary.offsetWidth}`);
+	    console.log(`Sheight: ${this.secondary.offsetHeight}`);
         //this.secondary.width = this.canvasSize;
         //this.secondary.height = this.canvasSize;
 
