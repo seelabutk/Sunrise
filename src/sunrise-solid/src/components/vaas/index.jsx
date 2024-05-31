@@ -24,7 +24,7 @@ export function Vaas(props) {
             $num_cols,
         );
 
-        renderer.drawImage();
+        renderer.render();
     });
   
     return (

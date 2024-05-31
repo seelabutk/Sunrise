@@ -70,6 +70,15 @@ export default class Renderer {
 
     /** @type {String} */
     current_light = "distant";
+    
+    /** @type {Boolean} */
+    should_render = false;
+
+    /** @type {Event} */
+    render_event;
+
+    /** @type {Boolean} */
+    throttle_pause = false;
 
     /**
         * @param {HTML.Element} primary The primary canvas to render the final image to
@@ -172,13 +181,6 @@ export default class Renderer {
     }
 
     /**
-        * @description Update the tiles with new data and render them
-    */
-    async #update_tiles() {
-            
-    }
-
-    /**
         * @description Make a rendering request for a tile
         * @param {Tile} tile The tile we are trying to render
     */
@@ -193,7 +195,6 @@ export default class Renderer {
         const uz = this.camera.up.z;
 
         let url = new URL('api/v1/view/', this.server_url);
-        console.log(url);
         url.searchParams.append('width', this.current_resolution.width);
         url.searchParams.append('height', this.current_resolution.height);
         url.searchParams.append('tile', `${tile.row}of${this.rowCountCurrent},${tile.col}of${this.colCountCurrent}`);
@@ -218,7 +219,7 @@ export default class Renderer {
 
         // Make the request
         return new Promise((res, rej) => {
-            let image = new Image(tile.width, tile.height);
+            let image = new Image(this.current_resolution.width, this.current_resolution.height);
             image.onload = () => {
                 res(image);
             }
@@ -227,8 +228,6 @@ export default class Renderer {
             }
             image.src = url;
         });
-
-        //console.log(`${tile.row}of${this.rowCountCurrent},${tile.col}of${this.colCountCurrent}`);
     }
 
     /**
@@ -295,21 +294,31 @@ export default class Renderer {
     }
 
     /**
+        * @description Update the camera controls and perform necessary actions
+    */
+    #update_controls() {
+        // TODO: handle different types of controls
+        this.trackball.update();
+        this.#set_current_direction(this.#trackball_dir());
+    }
+
+    /**
         * @description Setup the configuration for the THREE.js trackball controls for the camera
     */
     #setup_trackball() {
         let scene = new THREE.Scene();
         this.trackball = new TrackballControls(this.camera, this.primary, scene);
-        this.trackball.addEventListener('change', () => { passive: true });
         this.trackball.rotateSpeed = 30.0;
         this.trackball.zoomSpeed = 1.2;
         this.trackball.noZoom = false;
         this.trackball.noPan = true; // we do not want pannning
         this.trackball.staticMoving = true;
-        this.trackball.maxDistance = (6371 + 10000) / this.cameraScalingFactor;
-        this.trackball.minDistance = (6371 + 10) / this.cameraScalingFactor;
+        this.trackball.maxDistance = (6371 + 10000) / this.camera_scaling_factor;
+        this.trackball.minDistance = (6371 + 10) / this.camera_scaling_factor;
         this.trackball.dynamicDampingFactor = 0.3;
         this.trackball.update();
+
+        this.#update_rotation_speed();
     }
 
     /**
@@ -333,30 +342,86 @@ export default class Renderer {
     }
 
     /**
+        * @description Throttle the `callback` action
+        * @param {CallableFunction} callback The callback function for the desired action
+        * @param {Number} time_ms The amounf of milliseconds we want to happend between each action
+    */
+    #throttle(callback, time_ms) {
+        if (this.throttle_pause) {
+            return;
+        }
+
+        this.throttle_pause = true;
+        setTimeout(() => {
+            callback();
+            this.throttle_pause = false;
+        }, time_ms);
+    }
+
+    /**
+        * @description Fire a rendering event
+    */
+    #render_dispatch() {
+        window.dispatchEvent(this.render_event);
+    }
+
+    /**
         * @description Create the event listeners for controlling the camera
     */
     #setup_event_listeners() {
+        this.render_event = new Event("render");
+
         this.primary.addEventListener('mousedown', () => {
+            this.#set_resolution(this.lowRes);
             this.is_dragging = true;
+            this.should_render = true;
+            this.#update_controls();
+            
+            this.#render_dispatch();
         });
 
         this.primary.addEventListener('mousemove', () => {
-            if (this.is_dragging) {
-            }
+            this.#throttle(() => {
+                if (this.is_dragging) {
+                    console.log("moving");
+                    this.should_render = true;
+                    this.#create_tiles(1, 1);
+                    this.#update_controls();
+                    this.#render_dispatch();
+                }
+            }, 200);
         });
         
         this.primary.addEventListener('mouseup', () => {
+            this.#set_resolution(this.highRes);
+            this.#create_tiles(this.rowCount, this.colCount);
+            this.#update_controls();
+            this.#render_dispatch();
+            this.should_render = false;
             this.is_dragging = false;
+
         });
     }
 
     /**
-        * @description Render the image to the screen from the server
+        * @description The render loop that decides when we need to request another image
     */
-    async drawImage() {
+    async render() {
+        // Create event listener to see if we need to rerender
+        window.addEventListener('render', async () => {
+            if (this.should_render) {
+                await this.#create_image();
+            }
+        });
+    }
+
+    /**
+        * @description Create the image to the screen from the server
+    */
+    async #create_image() {
         let ctx = this.secondary.getContext('2d');
-        const tile_width = this.width / this.colCount;
-        const tile_height = this.height / this.rowCount;
+        const tile_width = this.width / this.colCountCurrent;
+        const tile_height = this.height / this.rowCountCurrent;
         let promises = [];
 
         for (let i = 0; i < this.tile_definitions.length; i++) {
