@@ -1,22 +1,34 @@
 import { createSignal, onMount } from 'solid-js';
-import styles from './vaas.module.css';
-import { useRef } from 'gridjs';
+import Renderer from './renderer';
 
-export const Vaas = (props) => {
+export function Vaas(props) {
     const getWidth = (props) => props.width;
+    const getRows = (props) => props.rows || 2;
+    const getCols = (props) => props.cols || 2;
+
     const [ref, setRef] = createSignal();
-    let height;
 
     onMount(() => {
-        const width = getWidth(props);
-        height = ref().offsetHeight;
-        const aspect_ratio = width / height;
-        console.log(`VaaS: Width: ${width}. Height: ${height}. Ratio: ${aspect_ratio}`);
+        const $hyperimage = ref();
+        const $width = getWidth(props);
+        const $height = $hyperimage.offsetHeight;
+
+        const $num_rows = getRows(props);
+        const $num_cols = getCols(props);
+
+        const renderer = new Renderer(
+            $hyperimage,
+            $width,
+            $height,
+            $num_rows,
+            $num_cols,
+        );
+
+        renderer.drawImage();
     });
   
     return (
-        <div ref={setRef} class={styles.hyperimage} style={{ width: getWidth(props) + "px" }}>
-            <h1>VAAS</h1>
-        </div>
+        <canvas ref={setRef} style={{ width: getWidth(props) + "px" }}/>
     );
 }
+
