@@ -108,11 +108,11 @@ export default class Renderer {
         // low and high quality images
         this.highRes = new Dimension(
             (this.width / this.colCount) |0,
-            (this.height / this.rowCount) |0
+            ((this.width / this.colCountCurrent) / this.aspect_ratio) |0
         );
         this.lowRes = new Dimension(
-            (this.highRes.width / 4) |0,
-            (this.highRes.height / 4) |0,
+            (this.highRes.width / 3) |0,
+            ((this.highRes.width / 3) / this.aspect_ratio) |0,
         );
 
         // Create the secondary canvas for double buffering
@@ -360,7 +360,7 @@ export default class Renderer {
         let promises = [];
 
         for (let i = 0; i < this.tile_definitions.length; i++) {
-            promises.push((() => {
+            promises.push((async () => {
                 let row = this.tile_definitions[i].row;
                 let col = this.tile_definitions[i].col;
 
@@ -371,8 +371,6 @@ export default class Renderer {
                     ctx.drawImage(image, x, y, tile_width, tile_height);
                 });
             })());
-            //ctx.fillStyle = `rgb(${(x*256/this.width) |0},${(y*256/this.height) |0}, 0)`;
-		    //ctx.fillRect(x, y, tile_width, tile_height);
         }
 
         await Promise.all([...promises,]);
