@@ -385,7 +385,7 @@ export default class Renderer {
                 if (this.is_dragging) {
                     console.log("moving");
                     this.should_render = true;
-                    this.#create_tiles(1, 1);
+                    this.#create_tiles(2, 1);
                     this.#update_controls();
                     this.#render_dispatch();
                 }

@@ -13,11 +13,14 @@ body {
     padding: 0;
     width: 100vw;
     height: 100vh;
+    font-family: "Source Sans Pro", Arial, sans-serif;
 }
 
 /* The header bar at the top of the Home page */
 .header {
-    height: 10vh;
+    height: 17vh; /* this height impacts fitting everything on one screen.
+                     this is because the <Service/> component calculates 
+                     based on the assumtion of this value */
     background-color: #000;
     
     display: flex;
@@ -28,9 +31,50 @@ body {
 
 /* The title text for the Home page */
 .title {
-    font-weight: 400;
-    font-family: "Source Sans Pro", Arial, sans-serif;
+    font-weight: 300;
     margin: 0 0 0 1vw;
     font-size: 4vh;
     color: #fff;
+}
+
+.subtitle {
+    margin: 0 0 0 1vw;
+    font-weight: 200;
+    font-size: 3vh;
+    color: gray;
+}
+
+/* The main container for the meat of the header */
+.headerbody {
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+}
+
+/* The NPS watermark in the top right */
+.watermark {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1vw;
+    margin: 0 1vw 0 0;
+}
+
+.watermark h4 {
+    font-size: 2.3vh;
+    font-weight: 200;
+    color: #fff;
+}
+
+.usa {
+    font-family: 'Times New Roman';
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+    height: 100%;
+}
+
+.arrowhead {
+    width: 4vw;
 }
