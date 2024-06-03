@@ -168,6 +168,12 @@ export default class Renderer {
         this.current_resolution = res;
     }
 
+    /** 
+        * @description Get the current time using calculations we need to offset timeZone.
+        * Since the Park is always in Est we only need to account for that.
+        * NOTE: Eventually we can change this to be the whole date, but for now it 
+        * should remain just returning the hour 
+    */
     #get_current_date() {
         this.current_time = new Date().getHours() - 5;
     }
@@ -181,6 +187,7 @@ export default class Renderer {
     }
 
     /**
+        * @async
         * @description Make a rendering request for a tile
         * @param {Tile} tile The tile we are trying to render
     */
@@ -359,6 +366,20 @@ export default class Renderer {
     }
 
     /**
+        * @description Reset the tileset to the original one specified
+    */
+    #reset_tiles() {
+        this.#create_tiles(this.rowCount, this.colCount);
+    }
+
+    /**
+        * @description Set the tiles to the ones we want for low quality rendering
+    */
+    #lowq_tiles() {
+        this.#create_tiles(1, 1);
+    }
+
+    /**
         * @description Fire a rendering event
     */
     #render_dispatch() {
@@ -385,7 +406,7 @@ export default class Renderer {
                 if (this.is_dragging) {
                     console.log("moving");
                     this.should_render = true;
-                    this.#create_tiles(2, 1);
+                    this.#lowq_tiles();
                     this.#update_controls();
                     this.#render_dispatch();
                 }
@@ -394,7 +415,7 @@ export default class Renderer {
         
         this.primary.addEventListener('mouseup', () => {
             this.#set_resolution(this.highRes);
-            this.#create_tiles(this.rowCount, this.colCount);
+            this.#reset_tiles();
             this.#update_controls();
             this.#render_dispatch();
             this.should_render = false;
@@ -404,6 +425,7 @@ export default class Renderer {
     }
 
     /**
+        * @async
         * @description The render loop that decides when we need to request another image
     */
     async render() {
@@ -420,6 +442,7 @@ export default class Renderer {
     }
 
     /**
+        * @async
         * @description Create the image to the screen from the server
     */
     async #create_image() {

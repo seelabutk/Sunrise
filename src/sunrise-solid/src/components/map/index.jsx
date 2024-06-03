@@ -3,7 +3,6 @@ import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
 
 import {
-    createSignal,
     onMount
 } from 'solid-js'
 
@@ -12,14 +11,10 @@ export const Map = (props) => {
     const pathData = (props) => props.pathData;
     onMount(() => {
         let url = urlCallback(props);
-        console.log(url());
-        // const map = L.map('selection-map')
         const map = L.map(styles.selection_map)
             .fitBounds([
-                //[35.747116, -83.949626],  // Maryville, TN
-                //[35.483526, -82.987458], // Waynesville, NC
-                [35.58730848427449, -83.57321222420362], // Waynesville, NC
-                [35.40251013833028, -84.0265365333673],  // Maryville, TN
+                [35.58730848427449, -83.57321222420362],
+                [35.40251013833028, -84.0265365333673], 
             ], {
                 maxZoom: 13,
                 minZoom: 9,

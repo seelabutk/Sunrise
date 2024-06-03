@@ -1,6 +1,8 @@
 export const EARTH_AVG_ALTITUDE = 6_371_000;
 
-/// Convert latitude and longitude coordinates to spherical coordinates
+/**
+    * @description Convert lat, long, alt into spherical coordinates
+*/
 export const convert_location_to_spatial = (
     latitude,
     longitude,
@@ -31,18 +33,29 @@ export const convert_location_to_spatial = (
     };
 }
 
-/// Convert `num` degrees to radians
+/**
+    * @description Convert degrees to radians
+    * @param {Number} num The angle in degrees to convert
+*/
 export const to_radians = (num) => {
     return (num * Math.PI) / 180.0;
 }
 
 /// Linear interpolate between two values with 
 /// `num_steps` number of intervals
+/**
+    * @description Use a linear interpolater to interpolate between two values
+    * @param {Number} start The value of the first point
+    * @param {Number} end The ending value
+    * @param {Number} step The amount that we want to interpolate into
+*/
 export const linear_interp = (start, end, step) => {
     return start * (1-step) + end * step;
 }
 
-/// Convert lat, lng, alt coordinates to cartesian
+/**
+    * @description Convert lat, lng, alt coordinates to cartesian
+*/
 export const latlng_to_cartesian = (latitude, longitude, altitude) => {
     const rho = 6371 + altitude;
     const phi = (latitude) * Math.PI / 180;
@@ -55,8 +68,9 @@ export const latlng_to_cartesian = (latitude, longitude, altitude) => {
     return { x, y, z };
 }
 
-/// Same conversion as above, but returns the values in a THREE.js
-/// Vector3 class
+/** 
+    * @description Same conversion as above, but returns the values in a THREE.js Vector3 class
+*/
 export const latlng_to_cartesian_vec3 = (latitude, longitude, altitude) => {
     const rho = 6371 + altitude;
     const phi = (latitude) * Math.PI / 180;
