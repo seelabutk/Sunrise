@@ -97,7 +97,7 @@ export function Selection() {
 
                     <Button variant="outlined" onClick={openMap} sx={{color: 'white', border: '1px solid white'}}>Open Map</Button>
                     <Dialog
-                        maxWidth='sm'
+                        maxWidth='md'
                         open={mapIsOpen()}
                         onClose={openMap}
                     >
@@ -110,7 +110,7 @@ export function Selection() {
                                 backgroundColor: '#1e1e1e',
                             }}
                         >
-                            <div style="height: 65vh; width: 65vw;">
+                            <div style="height: 80vh; width: 80vw;">
                                 <Map />
                             </div>
                         </Box>
