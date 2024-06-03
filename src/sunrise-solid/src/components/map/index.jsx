@@ -9,6 +9,7 @@ import {
 
 export const Map = (props) => {
     const urlCallback = (props) => props.urlCallback;
+    const pathData = (props) => props.pathData;
     onMount(() => {
         let url = urlCallback(props);
         console.log(url());
@@ -26,6 +27,14 @@ export const Map = (props) => {
             url(),
             {}
         ).addTo(map);
+        console.log(pathData(props));
+        L.geoJSON(pathData(props), {
+            style: {
+                "color": "blue",
+                "weight": 10,
+                "opacity": 1,
+            }
+        }).addTo(map);
     });
 
     return (

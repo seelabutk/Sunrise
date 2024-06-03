@@ -8,8 +8,9 @@ import {
     DialogTitle,
     DialogContent,
 } from '@suid/material';
-import { createSignal } from 'solid-js';
+import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
+import park from '../../assets/park.json';
 
 export function Selection() {
     // TODO: Read the config from the server to get the available urls
@@ -19,11 +20,12 @@ export function Selection() {
         "Streets": 
             "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
         "Outdoors": 
-            "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
+            "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
     };
     const [species, setSpecies] = createSignal('');
     const [mapUrl, setMapUrl] = createSignal('Satellite');
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
+    const [pathJson, setPathJson] = createSignal({});
 
     // Event handler function to switch the values of the selection
     const speciesHandler = (event) => {
@@ -44,6 +46,26 @@ export function Selection() {
         return backgroundUrls[mapUrl()];
     }
 
+    onMount(() => {
+        // Create the GeoJSON from the path data json file
+        let coordinates = [];
+        for (let i = 0; i < park.length; i++) {
+            coordinates.push([park[i]["lng"], park[i]["lat"]]);
+        }
+	    let geoData = {
+		    "type": "FeatureCollection",
+		    "features": [
+		        {
+		            "type": "Feature",
+		            "geometry": {
+		                "type": "LineString",
+		                "coordinates": coordinates
+		            }
+		        }
+		    ]
+		};
+        setPathJson(geoData);
+    });
 
     return (
         <div class={styles.container}>
@@ -112,7 +134,7 @@ export function Selection() {
                             }}
                         >
                             <div style="height: 80vh; width: 80vw;">
-                                <Map urlCallback={urlCallback}/>
+                                <Map urlCallback={urlCallback} pathData={pathJson()}/>
                             </div>
                         </Box>
                         </DialogContent>
