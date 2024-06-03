@@ -18,7 +18,7 @@ body {
 
 /* The header bar at the top of the Home page */
 .header {
-    height: 17vh; /* this height impacts fitting everything on one screen.
+    height: 13vh; /* this height impacts fitting everything on one screen.
                      this is because the <Service/> component calculates 
                      based on the assumtion of this value */
     background-color: #000;
@@ -62,7 +62,7 @@ body {
 }
 
 .watermark h4 {
-    font-size: 2.3vh;
+    font-size: 2vh;
     font-weight: 200;
     color: #fff;
 }
@@ -71,10 +71,17 @@ body {
     font-family: 'Times New Roman';
     display: flex;
     flex-direction: column;
-    gap: 1vh;
+    gap: 0.1vh;
     height: 100%;
 }
 
 .arrowhead {
-    width: 4vw;
+    width: 3.5vw;
+}
+
+.selection {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    border: 1px solid red;
 }

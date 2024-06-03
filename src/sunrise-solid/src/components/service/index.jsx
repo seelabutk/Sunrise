@@ -9,7 +9,7 @@ export function Service(props) {
     return (
         <div class={styles.service}>
             <Vaas width={vaas_width} rows={2} cols={3}/>
-            <Map width={window.innerWidth-vaas_width}/>
+            {/*<Map width={window.innerWidth-vaas_width}/>*/}
         </div>
     );
 }

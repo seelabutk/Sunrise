@@ -1,0 +1,67 @@
+.container {
+    height: 10vh;
+    width: 100vw;
+
+    background: #000;
+    border-top: 1px solid #1e1e1e;
+    border-bottom: 1px solid green;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2vw;
+}
+
+
+.species {
+    height: 80%;
+    width: 40%;
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1vw;
+
+    border: 1px solid yellow;
+}
+
+.mapcontrols {
+    height: 80%;
+    width: 40%;
+
+    border: 1px solid blue;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10%;
+}
+
+/* Vertical line barrier to separate sections */
+.verticalMarker {
+    height: 80%;
+    width: 2px;
+    background-color: #1e1e1e;
+}
+
+.controlsHeader {
+    color: white;
+    font-size: 1rem;
+    font-family: "Source Sans Pro", Arial, sans-serif;
+}
+
+.mapSelections {
+    width: 100%;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 3%;
+}
+
+.urlLabel {
+    color: white;
+}

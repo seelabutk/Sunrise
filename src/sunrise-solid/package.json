@@ -11,18 +11,22 @@
   "license": "MIT",
   "devDependencies": {
     "solid-devtools": "^0.29.2",
-    "vite": "^5.0.11",
-    "vite-plugin-solid": "^2.8.2"
+    "vite": "^5.2.12",
+    "vite-plugin-solid": "^2.10.2"
   },
   "dependencies": {
     "@hope-ui/solid": "^0.6.7",
     "@stitches/core": "^1.2.8",
+    "@suid/icons-material": "^0.7.0",
+    "@suid/material": "^0.16.0",
+    "@suid/vite-plugin": "^0.2.0",
     "gridjs": "^6.2.0",
     "leaflet": "^1.9.4",
     "solid-js": "^1.8.11",
     "solid-three": "^0.2.0",
     "solid-transition-group": "^0.0.10",
     "three": "^0.165.0",
-    "three-addons": "^1.2.0"
+    "three-addons": "^1.2.0",
+    "typescript": "^5.4.5"
   }
 }

@@ -1,6 +1,6 @@
 .service {
     width: 100%;
-    height: calc(100vh - 17vh); /* this is based on the height of the 
+    height: calc(100vh - 25vh); /* this is based on the height of the 
                                    header bar in the App.jsx file */
     background: #010101;
 

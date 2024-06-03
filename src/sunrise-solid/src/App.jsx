@@ -1,5 +1,10 @@
 import styles from './App.module.css';
 import { Service } from './components/service';
+import { Selection } from './components/selection';
+import { 
+    Select
+    , MenuItem
+} from '@suid/material';
 
 function App() {
     return (
@@ -7,7 +12,7 @@ function App() {
             <header class={styles.header}>
                 <div class={styles.headerbody}>
                     <h1 class={styles.title}>Great Smoky Mountains National Park</h1> 
-                    <h2 class={styles.subtitle}>Atlas of the Smokies</h2>
+                    <h2 class={styles.subtitle}>Atlas of the Smokies: </h2>
                 </div>
                 <div class={styles.watermark}>
                     <div class={styles.usa}>
@@ -20,7 +25,11 @@ function App() {
                     />
                 </div>
             </header>
-            <Service vaas_portion="70" />
+
+            <Selection />
+
+            {/*The VAAS Service with the Globe and Map selection tool*/}
+            <Service vaas_portion="100" />
         </div>
     );
 }
