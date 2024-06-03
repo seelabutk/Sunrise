@@ -4,7 +4,6 @@
 
     background: #000;
     border-top: 1px solid #1e1e1e;
-    border-bottom: 1px solid green;
 
     display: flex;
     flex-direction: row;
@@ -22,15 +21,11 @@
     flex-direction: row;
     align-items: center;
     gap: 1vw;
-
-    border: 1px solid yellow;
 }
 
 .mapcontrols {
     height: 80%;
     width: 40%;
-
-    border: 1px solid blue;
 
     display: flex;
     flex-direction: column;

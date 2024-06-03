@@ -8,8 +8,10 @@ import {
 } from 'solid-js'
 
 export const Map = (props) => {
-    const width = (props) => props.width;
+    const urlCallback = (props) => props.urlCallback;
     onMount(() => {
+        let url = urlCallback(props);
+        console.log(url());
         // const map = L.map('selection-map')
         const map = L.map(styles.selection_map)
             .fitBounds([
@@ -21,7 +23,7 @@ export const Map = (props) => {
             });
            
         L.tileLayer(
-            "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA", 
+            url(),
             {}
         ).addTo(map);
     });
@@ -29,9 +31,6 @@ export const Map = (props) => {
     return (
         <div 
             id={styles.selection_map}
-            style={
-                { width: width(props)+"px" }
-            }
         ></div>
     );
 }

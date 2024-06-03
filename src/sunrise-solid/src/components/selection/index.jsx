@@ -13,20 +13,14 @@ import { Map } from '../map';
 
 export function Selection() {
     // TODO: Read the config from the server to get the available urls
-    const backgroundUrls = [
-        {
-            "Satellite": 
-            "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
-        },
-        {
-            "Streets": 
-            "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
-        },
-        {
-            "Outdoors": 
-            "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
-        },
-    ];
+    const backgroundUrls = {
+        "Satellite": 
+            "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
+        "Streets": 
+            "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
+        "Outdoors": 
+            "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
+    };
     const [species, setSpecies] = createSignal('');
     const [mapUrl, setMapUrl] = createSignal('Satellite');
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
@@ -37,12 +31,17 @@ export function Selection() {
     }
 
     const mapUrlHandler = (event) => {
-        setMapUrl(backgroundUrls[event.target.value.toString()]);
+        setMapUrl(event.target.value.toString());
+        // TODO: Change the URL of the tile layer
     }
 
     // Open the leaflet map component
     const openMap = () => {
         setMapIsOpen(!mapIsOpen());
+    }
+
+    const urlCallback = () => {
+        return backgroundUrls[mapUrl()];
     }
 
 
@@ -68,6 +67,8 @@ export function Selection() {
                         <em>Choose a species</em>
                     </MenuItem>
 		            <MenuItem value="Oak">Oak</MenuItem>
+		            <MenuItem value="Sycamore">Sycamore</MenuItem>
+		            <MenuItem value="Rowan">Rowan</MenuItem>
 		        </Select>
             </div>
 
@@ -111,7 +112,7 @@ export function Selection() {
                             }}
                         >
                             <div style="height: 80vh; width: 80vw;">
-                                <Map />
+                                <Map urlCallback={urlCallback}/>
                             </div>
                         </Box>
                         </DialogContent>

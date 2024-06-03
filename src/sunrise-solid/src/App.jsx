@@ -1,7 +1,5 @@
 import styles from './App.module.css';
 import { Service } from './components/service';
-import { Selection } from './components/selection';
-import { createSignal, onMount } from 'solid-js';
 
 function App() {
     return (
@@ -23,10 +21,7 @@ function App() {
                 </div>
             </header>
 
-            {/*Selection section with options for the user*/}
-            <Selection />
-
-            {/*The VAAS Service with the Globe and Map selection tool*/}
+            {/*The VAAS Service with the Globe and Map selection tool -- 100 -> 100% width of the screen*/}
             <Service vaas_portion="100"/>
         </div>
     );
