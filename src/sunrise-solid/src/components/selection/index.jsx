@@ -34,7 +34,6 @@ export function Selection() {
 
     const mapUrlHandler = (event) => {
         setMapUrl(event.target.value.toString());
-        // TODO: Change the URL of the tile layer
     }
 
     // Open the leaflet map component

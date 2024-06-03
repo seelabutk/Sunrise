@@ -16,23 +16,27 @@ export const Map = (props) => {
         // const map = L.map('selection-map')
         const map = L.map(styles.selection_map)
             .fitBounds([
-                [35.747116, -83.949626],  // Maryville, TN
-                [35.483526, -82.987458], // Waynesville, NC
+                //[35.747116, -83.949626],  // Maryville, TN
+                //[35.483526, -82.987458], // Waynesville, NC
+                [35.58730848427449, -83.57321222420362], // Waynesville, NC
+                [35.40251013833028, -84.0265365333673],  // Maryville, TN
             ], {
                 maxZoom: 13,
                 minZoom: 9,
             });
-           
+          
+        // Create the layer of tiles using the URL specified from the parent component
         L.tileLayer(
             url(),
             {}
         ).addTo(map);
-        console.log(pathData(props));
+
+        // Create the layer of the line across the path that we want to follow
         L.geoJSON(pathData(props), {
             style: {
-                "color": "blue",
+                "color": "black",
                 "weight": 10,
-                "opacity": 1,
+                "opacity": 0.7,
             }
         }).addTo(map);
     });
