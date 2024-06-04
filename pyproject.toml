@@ -19,6 +19,7 @@ dependencies = [
     "matplotlib",
     "uvicorn",
     "tomli",
+    "opencv-python",
 ]
 
 [tool.setuptools.package-data]

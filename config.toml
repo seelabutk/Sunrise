@@ -7,9 +7,9 @@ port=5000
 [renderer]
 type="pathtracer"
 modules=[
-    # "denoiser"
+    "denoiser"
 ]
-samples=3
+samples=2
 
 [client]
 [client.map]

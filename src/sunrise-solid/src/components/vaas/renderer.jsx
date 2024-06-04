@@ -120,8 +120,8 @@ export default class Renderer {
             ((this.width / this.colCountCurrent) / this.aspect_ratio) |0
         );
         this.lowRes = new Dimension(
-            (this.highRes.width / 3) |0,
-            ((this.highRes.width / 3) / this.aspect_ratio) |0,
+            (this.highRes.width / 4) |0,
+            ((this.highRes.width / 4) / this.aspect_ratio) |0,
         );
 
         // Create the secondary canvas for double buffering
@@ -242,7 +242,7 @@ export default class Renderer {
         * depending on how much we are zoomed in
     */
     #update_rotation_speed() {
-        const maxSpeed = 3.0;
+        const maxSpeed = 8.0;
         const minSpeed = 0.01;
         const maxZoomDist = this.trackball.maxDistance;
         const minZoomDist = this.trackball.minDistance;
@@ -421,6 +421,16 @@ export default class Renderer {
             this.should_render = false;
             this.is_dragging = false;
 
+        });
+
+        this.primary.addEventListener('wheel', (e) => {
+            this.#throttle(() => {
+                this.trackball.update();
+                this.#update_rotation_speed();
+                this.#lowq_tiles();
+                this.should_render = true;
+                this.#render_dispatch();
+            }, 100);
         });
     }
 

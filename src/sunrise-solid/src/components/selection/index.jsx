@@ -45,13 +45,13 @@ export function Selection() {
         return backgroundUrls[mapUrl()];
     }
 
-    onMount(() => {
-        // Create the GeoJSON from the path data json file
+    // Create the GeoJSON from the path data json file
+    const coordsToPath = (data) => {
         let coordinates = [];
-        for (let i = 0; i < park.length; i++) {
-            coordinates.push([park[i]["lng"], park[i]["lat"]]);
+        for (let i = 0; i < data.length; i++) {
+            coordinates.push([data[i]["lng"], data[i]["lat"]]);
         }
-	    let geoData = {
+	    return {
 		    "type": "FeatureCollection",
 		    "features": [
 		        {
@@ -63,7 +63,12 @@ export function Selection() {
 		        }
 		    ]
 		};
-        setPathJson(geoData);
+    }
+
+    onMount(() => {
+        setPathJson(
+            coordsToPath(park)
+        );
     });
 
     return (

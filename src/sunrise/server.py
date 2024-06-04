@@ -65,9 +65,9 @@ async def get_scene(
         lib = scene.load_library(SUNRISE_LIBOSPRAY_PATH)
         lib.ospInit(None, None)
 
-#        if len(config.renderer.modules) != 0:
-#            for module in config.renderer.modules:
-#                lib.ospLoadModule(module.encode())
+        if len(config.renderer.modules) != 0:
+            for module in config.renderer.modules:
+                lib.ospLoadModule(module.encode())
 
 
         auto.atexit.register(lib.ospShutdown)

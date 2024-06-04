@@ -20,6 +20,8 @@ import typing
 import time
 
 import numpy as np
+from matplotlib import pyplot as plt
+import cv2 as cv
 import ospray
 import PIL.Image
 import skyfield, skyfield.api, skyfield.toposlib
@@ -1048,15 +1050,15 @@ class Scene(WithExitStackMixin):
         ))
         lib.ospCommit(camera)
         
-#        denoiser = lib.ospNewImageOperation(b'denoiser')
-#        self.defer(lib.ospRelease, denoiser)
-#        lib.ospCommit(denoiser)
-#
-#        imageops = Data([
-#            denoiser
-#        ], type=lib.OSP_IMAGE_OPERATION)
-#        self.defer(lib.ospRelease, imageops)
-#        lib.ospCommit(imageops)
+        denoiser = lib.ospNewImageOperation(b'denoiser')
+        self.defer(lib.ospRelease, denoiser)
+        lib.ospCommit(denoiser)
+
+        imageops = Data([
+            denoiser
+        ], type=lib.OSP_IMAGE_OPERATION)
+        self.defer(lib.ospRelease, imageops)
+        lib.ospCommit(imageops)
 
         framebuffer = lib.ospNewFrameBuffer(
             request.width,
@@ -1068,7 +1070,7 @@ class Scene(WithExitStackMixin):
             lib.OSP_FB_COLOR,
         )
 
-#        lib.ospSetObject(framebuffer, b'imageOperation', imageops)
+        lib.ospSetObject(framebuffer, b'imageOperation', imageops)
         lib.ospCommit(framebuffer)
 
         _variance: float = lib.ospRenderFrameBlocking(
@@ -1089,7 +1091,9 @@ class Scene(WithExitStackMixin):
             1,
         )
         image.load()
-
+#        cv_img = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
+#        denoised = cv.fastNlMeansDenoisingColored(cv_img, None, 10, 10, 7, 21)
+#        image = PIL.Image.fromarray(denoised)
 
         lib.ospUnmapFrameBuffer(rgba, framebuffer)
 
