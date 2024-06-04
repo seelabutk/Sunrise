@@ -10,8 +10,9 @@ import {
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
-import { gotoPoint } from '../vaas';
+import { gotoPoint, renderer } from '../vaas';
 import park from '../../assets/park.json';
+import { Point } from '../../utils';
 
 export function Selection() {
     // TODO: Read the config from the server to get the available urls
@@ -68,6 +69,7 @@ export function Selection() {
                     "type": "Feature",
                     "properties": {
                         "type": "Point",
+                        callback: () => {renderer().goto_point(new Point(data[i]["lat"], data[i]["lng"], data[i]["alt"]));}
                     },
                     "geometry": {
                         "type": "Point",
@@ -189,7 +191,9 @@ export function Selection() {
                                 color: 'green',
                             }
                     }}
-                    onClick={() => {gotoPoint("POINT")}}
+                    onClick={() => {
+                        renderer().goto_point(new Point(35.4082, -84.01449-13, 999));
+                    }}
                     >Go to Park</Button>
                 <Button 
                     variant="contained" 

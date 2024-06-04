@@ -1,9 +1,15 @@
 import { createSignal, onMount } from 'solid-js';
 import Renderer from './renderer';
+import { Point } from '../../utils';
 
+/** @description Place the renderer at a specific point
+    * @param {Point} point The point that we want to go to
+*/
 export function gotoPoint(point) {
     console.log(`Goto: ${point}`);
 }
+
+export const [renderer, setRenderer] = createSignal();
 
 export function Vaas(props) {
     const getWidth = (props) => props.width;
@@ -20,15 +26,16 @@ export function Vaas(props) {
         const $num_rows = getRows(props);
         const $num_cols = getCols(props);
 
-        const renderer = new Renderer(
+        //renderer = new Renderer(
+        setRenderer(new Renderer(
             $hyperimage,
             $width,
             $height,
             $num_rows,
             $num_cols,
-        );
+        ));
 
-        renderer.render();
+        renderer().render();
     });
   
     return (

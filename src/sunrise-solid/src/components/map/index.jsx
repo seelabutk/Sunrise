@@ -18,6 +18,7 @@ export const Map = (props) => {
             ], {
                 maxZoom: 13,
                 minZoom: 9,
+                renderer: L.canvas({ tolerance: 30 }),
             });
           
         // Create the layer of tiles using the URL specified from the parent component
@@ -37,14 +38,18 @@ export const Map = (props) => {
             },
             pointToLayer: (feature, latlng) => {
                 if (feature.properties.type === "Point") {
-                    return new L.circleMarker(latlng, {
-                        radius: 2,
+                    let circle = L.circleMarker(latlng, {
+                        radius: 5,
+                        tolerance: 10,
                         color: 'blue',
                     });
+                    circle.on('click', () => {
+                        feature.properties.callback()
+                    });
+                    return circle;
                 } 
             },
-            onEachFeature: () => {
-            },
+            onEachFeature: () => {},
         }).addTo(map);
     });
 

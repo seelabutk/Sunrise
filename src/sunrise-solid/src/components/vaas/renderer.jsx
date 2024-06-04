@@ -2,10 +2,10 @@ import * as THREE from 'three'
 import {
     TrackballControls
 } from 'three/addons/controls/TrackballControls.js';
-
-import {
-    latlng_to_cartesian
-} from './utils';
+import { 
+    latlng_to_cartesian,
+    Point 
+} from '../../utils';
 
 export default class Renderer {
     /** @type {HTMLElement} */
@@ -80,6 +80,9 @@ export default class Renderer {
     /** @type {Boolean} */
     throttle_pause = false;
 
+    /** @type {Point} */
+    central_point = null;
+
     /**
         * @param {HTML.Element} primary The primary canvas to render the final image to
         * @param {Number} width The total width of the canvas
@@ -137,6 +140,11 @@ export default class Renderer {
             // 100,
             10000,
         );
+        this.central_point = new Point(
+            35.562744,
+            -83.5 - 13,
+            477,
+        )
         this.original_position = new Position(
             pos.x,
             pos.y,
@@ -235,6 +243,35 @@ export default class Renderer {
             }
             image.src = url;
         });
+    }
+
+    /**
+        * @description Place the camera at a position according to lat, long, alt points
+        * @param {Point} point The point to render at
+    */
+    goto_point(point) {
+        this.current_light = 'sunSky';
+        this.should_render = true;
+        console.log(`Going to: ${point.lat}, ${point.lng}, ${point.alt}`);
+        const spatial = latlng_to_cartesian(point.lat, point.lng, (point.alt / 1000) + 0.7);
+        const target = latlng_to_cartesian(this.central_point.lat, this.central_point.lng, (this.central_point.alt / 1000) + 0.7)
+        this.camera.position.copy(new THREE.Vector3(
+            spatial.x / this.camera_scaling_factor, 
+            spatial.y / this.camera_scaling_factor, 
+            spatial.z / this.camera_scaling_factor)
+        );
+        this.camera.up.copy(new THREE.Vector3(
+            spatial.x / this.camera_scaling_factor, 
+            spatial.y / this.camera_scaling_factor, 
+            spatial.z / this.camera_scaling_factor)
+        );
+        this.camera.lookAt(new THREE.Vector3(
+            target.x / this.camera_scaling_factor, 
+            target.y / this.camera_scaling_factor, 
+            target.z / this.camera_scaling_factor)
+        );
+        this.#set_current_direction(this.#world_dir());
+        this.#render_dispatch();
     }
 
     /**
@@ -467,6 +504,7 @@ export default class Renderer {
     */
     async #create_image() {
         let ctx = this.secondary.getContext('2d');
+        ctx.reset();
         const tile_width = this.width / this.colCountCurrent;
         const tile_height = this.height / this.rowCountCurrent;
         let promises = [];
@@ -490,6 +528,7 @@ export default class Renderer {
         // Once the tiles are done drawing
         // we can render them to the main display
         ctx = this.primary.getContext('2d');
+        ctx.reset();
         ctx.drawImage(this.secondary, 0, 0, this.width, this.height);
     }
 
