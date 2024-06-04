@@ -10,6 +10,7 @@ import {
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
+import { gotoPoint } from '../vaas';
 import park from '../../assets/park.json';
 
 export function Selection() {
@@ -22,6 +23,8 @@ export function Selection() {
         "Outdoors": 
             "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
     };
+
+    // Signals for keeping track of relevant information
     const [species, setSpecies] = createSignal('');
     const [mapUrl, setMapUrl] = createSignal('Satellite');
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
@@ -32,6 +35,7 @@ export function Selection() {
         setSpecies(event.target.value.toString());
     }
 
+    // Callback function that sets the current choice of the url we want to use
     const mapUrlHandler = (event) => {
         setMapUrl(event.target.value.toString());
     }
@@ -41,28 +45,53 @@ export function Selection() {
         setMapIsOpen(!mapIsOpen());
     }
 
+    // Callback function that gets the url we want for the styling of the leaflet tiles
     const urlCallback = () => {
         return backgroundUrls[mapUrl()];
     }
 
-    // Create the GeoJSON from the path data json file
+    // Create the GeoJSON from a list of coordinates
     const coordsToPath = (data) => {
         let coordinates = [];
-        for (let i = 0; i < data.length; i++) {
-            coordinates.push([data[i]["lng"], data[i]["lat"]]);
-        }
-	    return {
+        let skeleton = {
 		    "type": "FeatureCollection",
 		    "features": [
-		        {
-		            "type": "Feature",
-		            "geometry": {
-		                "type": "LineString",
-		                "coordinates": coordinates
-		            }
-		        }
+
 		    ]
-		};
+        }
+        for (let i = 0; i < data.length; i++) {
+            coordinates.push([data[i]["lng"], data[i]["lat"]]);
+
+            // Add the points that we want to diplay
+            skeleton["features"].push(
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "type": "Point",
+                    },
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [data[i]["lng"], data[i]["lat"]]
+                    }
+                }
+            );
+        }
+
+        // Add the path of points for the line
+        skeleton["features"].push(
+            {
+                "type": "Feature",
+                    "properties": {
+                        "type": "LineString",
+                    },
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": coordinates
+                }
+            }
+        );
+	    
+        return skeleton;
     }
 
     onMount(() => {
@@ -144,6 +173,35 @@ export function Selection() {
                         </DialogContent>
                     </Dialog>
                 </div>
+
+            </div>
+            
+            <div class={styles.verticalMarker}></div>
+
+            {/**/}
+            <div class={styles.rendererSelections}>
+                <Button 
+                    variant="contained" 
+                    sx={{ 
+                            backgroundColor: 'green', 
+                            '&:hover': {
+                                backgroundColor: 'lightgreen',
+                                color: 'green',
+                            }
+                    }}
+                    onClick={() => {gotoPoint("POINT")}}
+                    >Go to Park</Button>
+                <Button 
+                    variant="contained" 
+                    sx={{ 
+                            backgroundColor: '#CC5500', 
+                            '&:hover': {
+                                backgroundColor: '#FFD254',
+                                color: '#CC5500',
+                            }
+                    }}
+                    
+                    >Play Sunrise</Button>
             </div>
         </div>
     );

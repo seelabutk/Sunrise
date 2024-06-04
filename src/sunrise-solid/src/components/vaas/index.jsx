@@ -1,6 +1,10 @@
 import { createSignal, onMount } from 'solid-js';
 import Renderer from './renderer';
 
+export function gotoPoint(point) {
+    console.log(`Goto: ${point}`);
+}
+
 export function Vaas(props) {
     const getWidth = (props) => props.width;
     const getRows = (props) => props.rows || 2;

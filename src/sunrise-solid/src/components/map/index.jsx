@@ -28,11 +28,23 @@ export const Map = (props) => {
 
         // Create the layer of the line across the path that we want to follow
         L.geoJSON(pathData(props), {
-            style: {
-                "color": "black",
-                "weight": 10,
-                "opacity": 0.7,
-            }
+            style: (feature) => {
+                return {
+                    color: "green",
+                    weight: 10,
+                    opacity: 1.0,
+                }
+            },
+            pointToLayer: (feature, latlng) => {
+                if (feature.properties.type === "Point") {
+                    return new L.circleMarker(latlng, {
+                        radius: 2,
+                        color: 'blue',
+                    });
+                } 
+            },
+            onEachFeature: () => {
+            },
         }).addTo(map);
     });
 

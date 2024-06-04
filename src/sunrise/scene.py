@@ -1092,8 +1092,9 @@ class Scene(WithExitStackMixin):
         )
         image.load()
 #        cv_img = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
-#        denoised = cv.fastNlMeansDenoisingColored(cv_img, None, 10, 10, 7, 21)
-#        image = PIL.Image.fromarray(denoised)
+#        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+#        sharpened = cv.filter2D(cv_img, -1, kernel)
+#        image = PIL.Image.fromarray(sharpened)
 
         lib.ospUnmapFrameBuffer(rgba, framebuffer)
 

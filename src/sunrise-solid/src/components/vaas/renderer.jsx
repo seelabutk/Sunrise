@@ -244,6 +244,8 @@ export default class Renderer {
     #update_rotation_speed() {
         const maxSpeed = 8.0;
         const minSpeed = 0.01;
+        const maxZoomSpeed = 1.5;
+        const minZoomSpeed = 0.4;
         const maxZoomDist = this.trackball.maxDistance;
         const minZoomDist = this.trackball.minDistance;
 
@@ -255,7 +257,15 @@ export default class Renderer {
             minSpeed,
             maxSpeed,
         );
+        const zoomSpeed = THREE.MathUtils.mapLinear(
+            dist,
+            minZoomDist,
+            maxZoomDist,
+            minZoomSpeed,
+            maxZoomSpeed,
+        );
         this.trackball.rotateSpeed = rotateSpeed;
+        this.trackball.zoomSpeed = zoomSpeed;
     }
 
     /**
@@ -316,7 +326,7 @@ export default class Renderer {
         let scene = new THREE.Scene();
         this.trackball = new TrackballControls(this.camera, this.primary, scene);
         this.trackball.rotateSpeed = 30.0;
-        this.trackball.zoomSpeed = 1.2;
+        this.trackball.zoomSpeed = 1.5;
         this.trackball.noZoom = false;
         this.trackball.noPan = true; // we do not want pannning
         this.trackball.staticMoving = true;
