@@ -1,11 +1,9 @@
 import * as THREE from 'three'
-import {
-    TrackballControls
-} from 'three/addons/controls/TrackballControls.js';
 import { 
     latlng_to_cartesian,
     Point 
 } from '../../utils';
+import { CameraControls, TrackballCameraControls, PanningCameraControls } from './controls';
 
 export default class Renderer {
     /** @type {HTMLElement} */
@@ -47,11 +45,17 @@ export default class Renderer {
     /** @type {Boolean} **/
     is_dragging = false;
 
-    /** @type {TrackballControls} **/
+    /** @type {TrackballCameraControls} **/
     trackball = null;
+
+    /** @type {PanningCamControls} **/
+    panning = null;
 
     /** @type {THREE.PerspectiveCamera} **/
     camera = null;
+
+    /** @type {TrackballCameraControls | PanningCamControls} */
+    controls = null;
     
     /** @type {Position} **/
     original_position = null;
@@ -160,7 +164,7 @@ export default class Renderer {
 
         // Setup the camera and trackball controls
         this.#setup_camera(this.original_position);
-        this.#setup_trackball();
+        this.#setup_controls();
         this.#set_current_direction(this.#trackball_dir());
 
         // Setup the event listeners for the camera and controls
@@ -200,6 +204,7 @@ export default class Renderer {
         * @param {Tile} tile The tile we are trying to render
     */
     async #tile_request(tile) {
+        this.current_direction = this.controls.dir();
         const px = this.camera.position.x * this.camera_scaling_factor;
         const py = this.camera.position.y * this.camera_scaling_factor;
         const pz = this.camera.position.z * this.camera_scaling_factor;
@@ -250,6 +255,7 @@ export default class Renderer {
         * @param {Point} point The point to render at
     */
     goto_point(point) {
+        this.controls = this.panning;
         this.current_light = 'sunSky';
         this.should_render = true;
         console.log(`Going to: ${point.lat}, ${point.lng}, ${point.alt}`);
@@ -272,37 +278,6 @@ export default class Renderer {
         );
         this.#set_current_direction(this.#world_dir());
         this.#render_dispatch();
-    }
-
-    /**
-        * @description Change the amount that the camera can be rotated
-        * depending on how much we are zoomed in
-    */
-    #update_rotation_speed() {
-        const maxSpeed = 8.0;
-        const minSpeed = 0.01;
-        const maxZoomSpeed = 1.5;
-        const minZoomSpeed = 0.4;
-        const maxZoomDist = this.trackball.maxDistance;
-        const minZoomDist = this.trackball.minDistance;
-
-        const dist = this.camera.position.distanceTo(this.trackball.target);
-        const rotateSpeed = THREE.MathUtils.mapLinear(
-            dist,
-            minZoomDist,
-            maxZoomDist,
-            minSpeed,
-            maxSpeed,
-        );
-        const zoomSpeed = THREE.MathUtils.mapLinear(
-            dist,
-            minZoomDist,
-            maxZoomDist,
-            minZoomSpeed,
-            maxZoomSpeed,
-        );
-        this.trackball.rotateSpeed = rotateSpeed;
-        this.trackball.zoomSpeed = zoomSpeed;
     }
 
     /**
@@ -348,31 +323,19 @@ export default class Renderer {
     }
 
     /**
-        * @description Update the camera controls and perform necessary actions
-    */
-    #update_controls() {
-        // TODO: handle different types of controls
-        this.trackball.update();
-        this.#set_current_direction(this.#trackball_dir());
-    }
-
-    /**
         * @description Setup the configuration for the THREE.js trackball controls for the camera
     */
-    #setup_trackball() {
-        let scene = new THREE.Scene();
-        this.trackball = new TrackballControls(this.camera, this.primary, scene);
-        this.trackball.rotateSpeed = 30.0;
-        this.trackball.zoomSpeed = 1.5;
-        this.trackball.noZoom = false;
-        this.trackball.noPan = true; // we do not want pannning
-        this.trackball.staticMoving = true;
-        this.trackball.maxDistance = (6371 + 10000) / this.camera_scaling_factor;
-        this.trackball.minDistance = (6371 + 10) / this.camera_scaling_factor;
-        this.trackball.dynamicDampingFactor = 0.3;
-        this.trackball.update();
+    #setup_controls() {
+        this.trackball = new TrackballCameraControls(this.camera, this.primary)
+            .set_bounds(
+                (6371 + 10_000) / this.camera_scaling_factor, 
+                (6371 + 10) / this.camera_scaling_factor
+            )
+            .enable();
+        
+        this.panning = new PanningCameraControls(this.camera, this.primary, 0.002);
 
-        this.#update_rotation_speed();
+        this.controls = this.trackball;
     }
 
     /**
@@ -388,11 +351,12 @@ export default class Renderer {
         * @description Get the direction the controls are pointing
     */
     #trackball_dir() {
-        return new THREE.Vector3(
-            this.camera.position.x,
-            this.camera.position.y,
-            this.camera.position.z,
-        );
+        //return this.controls.dir();
+//        return new THREE.Vector3(
+//            this.camera.position.x,
+//            this.camera.position.y,
+//            this.camera.position.z,
+//        );
     }
 
     /**
@@ -443,7 +407,7 @@ export default class Renderer {
             this.#set_resolution(this.lowRes);
             this.is_dragging = true;
             this.should_render = true;
-            this.#update_controls();
+            this.controls.update();
             
             this.#render_dispatch();
         });
@@ -453,8 +417,8 @@ export default class Renderer {
                 if (this.is_dragging) {
                     console.log("moving");
                     this.should_render = true;
+                    this.controls.update();
                     this.#lowq_tiles();
-                    this.#update_controls();
                     this.#render_dispatch();
                 }
             }, 200);
@@ -463,21 +427,19 @@ export default class Renderer {
         this.primary.addEventListener('mouseup', () => {
             this.#set_resolution(this.highRes);
             this.#reset_tiles();
-            this.#update_controls();
+            this.controls.update();
             this.#render_dispatch();
             this.should_render = false;
             this.is_dragging = false;
-
         });
 
         this.primary.addEventListener('wheel', (e) => {
             this.#throttle(() => {
-                this.trackball.update();
-                this.#update_rotation_speed();
+                this.controls.update();
                 this.#lowq_tiles();
                 this.should_render = true;
                 this.#render_dispatch();
-            }, 100);
+            }, 20);
         });
     }
 
@@ -595,4 +557,43 @@ class Dimension {
         this.width = width;
         this.height = height;
     }
+}
+
+class PanningCamControls {
+    /** @type {Boolean} */
+    #enabled = false;
+
+    /** @type {Element} */
+    #element = null;
+
+    /** @type {THREE.Camera} */
+    #camera = null;
+
+    /** @type {Number} */
+    #panSpeed = 0.002;
+    
+    constructor (
+        camera,
+        element,
+    ) {
+        this.#camera = camera;
+        this.#element = element;
+    }
+
+    /**
+        * @description Set the panning speed of these controls
+    */
+    setPanSpeed(speed) {
+        this.#panSpeed = speed;
+        return this;
+    }
+
+    /**
+        * @description Setup the event handlers these controls will use to rotate the camera
+    */
+    setup() {
+
+    }
+
+
 }

@@ -69,7 +69,7 @@ export function Selection() {
                     "type": "Feature",
                     "properties": {
                         "type": "Point",
-                        callback: () => {renderer().goto_point(new Point(data[i]["lat"], data[i]["lng"], data[i]["alt"]));}
+                        callback: () => {renderer().goto_point(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]));}
                     },
                     "geometry": {
                         "type": "Point",
