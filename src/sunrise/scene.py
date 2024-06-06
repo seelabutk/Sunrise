@@ -940,7 +940,7 @@ class Scene(WithExitStackMixin):
                 ))
                 + 
                 datetime.timedelta(hours=hour)
-                # datetime.timedelta(hours=request.hour)
+                # datetime.timedelta(hours=self.request.hour)
             ),
             light_type=self.request.light,
             intensity=0.014,

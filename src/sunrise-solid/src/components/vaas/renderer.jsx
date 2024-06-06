@@ -251,6 +251,22 @@ export default class Renderer {
     }
 
     /**
+        * @description Play the sunrise animation by iterating through all hours of the day
+    */
+    play_sunrise() {
+        console.log("SUNRISE");
+        const step = 2;
+        const start = this.current_time;
+        const end = this.current_time + 24;
+
+        this.should_render = true;
+        for (let i = start; i <= end; i += step) {
+            this.current_time = i;
+            setTimeout(this.#render_dispatch(), 300);
+        }
+    }
+
+    /**
         * @description Place the camera at a position according to lat, long, alt points
         * @param {Point} point The point to render at
     */

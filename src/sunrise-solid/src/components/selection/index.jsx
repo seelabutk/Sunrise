@@ -204,6 +204,9 @@ export function Selection() {
                                 color: '#CC5500',
                             }
                     }}
+                    onClick={() => {
+                        renderer().play_sunrise();
+                    }}
                     
                     >Play Sunrise</Button>
             </div>
