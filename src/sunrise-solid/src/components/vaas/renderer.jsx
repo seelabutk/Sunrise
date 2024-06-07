@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { 
     latlng_to_cartesian,
-    Point 
+    Point,
 } from '../../utils';
 import { CameraControls, TrackballCameraControls, PanningCameraControls } from './controls';
 
@@ -28,6 +28,11 @@ export default class Renderer {
     lowRes = null;
     /** @type {Dimension} */
     current_resolution = null;
+
+    /** @type {Boolean} */
+    is_rendering = false;
+
+    timeout = null;
 
     /** @type {Number} */
     rowCount = -1;
@@ -74,9 +79,6 @@ export default class Renderer {
 
     /** @type {String} */
     current_light = "distant";
-    
-    /** @type {Boolean} */
-    should_render = false;
 
     /** @type {Event} */
     render_event;
@@ -86,6 +88,11 @@ export default class Renderer {
 
     /** @type {Point} */
     central_point = null;
+
+    /** @type {[]Object} */
+    render_dependencies = [];
+
+    render_trigger = null;
 
     /**
         * @param {HTML.Element} primary The primary canvas to render the final image to
@@ -148,7 +155,7 @@ export default class Renderer {
             35.562744,
             -83.5 - 13,
             477,
-        )
+        );
         this.original_position = new Position(
             pos.x,
             pos.y,
@@ -199,11 +206,10 @@ export default class Renderer {
     }
 
     /**
-        * @async
         * @description Make a rendering request for a tile
         * @param {Tile} tile The tile we are trying to render
     */
-    async #tile_request(tile) {
+    #tile_request(tile) {
         this.current_direction = this.controls.dir();
         const px = this.camera.position.x * this.camera_scaling_factor;
         const py = this.camera.position.y * this.camera_scaling_factor;
@@ -253,17 +259,21 @@ export default class Renderer {
     /**
         * @description Play the sunrise animation by iterating through all hours of the day
     */
-    play_sunrise() {
+    async play_sunrise() {
         console.log("SUNRISE");
-        const step = 2;
+        const step = 0.1;
         const start = this.current_time;
         const end = this.current_time + 24;
 
-        this.should_render = true;
-        for (let i = start; i <= end; i += step) {
-            this.current_time = i;
-            setTimeout(this.#render_dispatch(), 300);
+        while (this.current_time <= end) {
+            await new Promise((res) => {
+                this.current_time += step;
+                console.log(`Setting current time to ${this.current_time}`);
+                this.#render_dispatch();
+                setTimeout(res, 50)
+            });
         }
+        this.current_time = start;
     }
 
     /**
@@ -273,7 +283,6 @@ export default class Renderer {
     goto_point(point) {
         this.controls = this.panning;
         this.current_light = 'sunSky';
-        this.should_render = true;
         console.log(`Going to: ${point.lat}, ${point.lng}, ${point.alt}`);
         const spatial = latlng_to_cartesian(point.lat, point.lng, (point.alt / 1000) + 0.7);
         const target = latlng_to_cartesian(this.central_point.lat, this.central_point.lng, (this.central_point.alt / 1000) + 0.7)
@@ -410,6 +419,10 @@ export default class Renderer {
         * @description Fire a rendering event
     */
     #render_dispatch() {
+//        clearTimeout(this.timeout);
+//        this.timeout = setTimeout(async () => {
+//            this.#create_image();
+//        }, 0);
         window.dispatchEvent(this.render_event);
     }
 
@@ -422,8 +435,8 @@ export default class Renderer {
         this.primary.addEventListener('mousedown', () => {
             this.#set_resolution(this.lowRes);
             this.is_dragging = true;
-            this.should_render = true;
             this.controls.update();
+            this.#lowq_tiles();
             
             this.#render_dispatch();
         });
@@ -431,10 +444,8 @@ export default class Renderer {
         this.primary.addEventListener('mousemove', () => {
             this.#throttle(() => {
                 if (this.is_dragging) {
-                    console.log("moving");
-                    this.should_render = true;
+                    //console.log("moving");
                     this.controls.update();
-                    this.#lowq_tiles();
                     this.#render_dispatch();
                 }
             }, 200);
@@ -443,37 +454,37 @@ export default class Renderer {
         this.primary.addEventListener('mouseup', () => {
             this.#set_resolution(this.highRes);
             this.#reset_tiles();
-            this.controls.update();
+            //this.controls.update();
             this.#render_dispatch();
-            this.should_render = false;
             this.is_dragging = false;
         });
 
         this.primary.addEventListener('wheel', (e) => {
             this.#throttle(() => {
-                this.controls.update();
+                //this.controls.update();
                 this.#lowq_tiles();
-                this.should_render = true;
                 this.#render_dispatch();
             }, 20);
         });
     }
 
     /**
-        * @async
         * @description The render loop that decides when we need to request another image
     */
-    async render() {
-        // Create event listener to see if we need to rerender
-        window.addEventListener('render', async () => {
-            if (this.should_render) {
-                await this.#create_image();
+    render() {
+        window.addEventListener('render', () => {
+            if (this.is_rendering) {
+                console.log('is rendering');
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(() => {
+                    this.#create_image();
+                }, 100);
+            } else {
+                this.#create_image();
             }
         });
         
-        this.should_render = true;
         this.#render_dispatch();
-        this.should_render = false;
     }
 
     /**
@@ -481,6 +492,8 @@ export default class Renderer {
         * @description Create the image to the screen from the server
     */
     async #create_image() {
+        this.is_rendering = true;
+        //this.controls.update();
         let ctx = this.secondary.getContext('2d');
         ctx.reset();
         const tile_width = this.width / this.colCountCurrent;
@@ -488,7 +501,7 @@ export default class Renderer {
         let promises = [];
 
         for (let i = 0; i < this.tile_definitions.length; i++) {
-            promises.push((async () => {
+            promises.push((() => {
                 let row = this.tile_definitions[i].row;
                 let col = this.tile_definitions[i].col;
 
@@ -506,9 +519,11 @@ export default class Renderer {
         // Once the tiles are done drawing
         // we can render them to the main display
         ctx = this.primary.getContext('2d');
-        ctx.reset();
+        //ctx.reset();
         ctx.drawImage(this.secondary, 0, 0, this.width, this.height);
+        this.is_rendering = false;
     }
+
 
 }
 

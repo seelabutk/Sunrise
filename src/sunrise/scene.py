@@ -88,11 +88,14 @@ def Data(
 ) -> lib.OSPData:
     # print("DATA 1")
     if isinstance(array, list):
+        all_object = True
         for i, x in enumerate(array):
+            if x is None:
+                raise ValueError("Nullptr not expected")
             if not isinstance(x, lib.OSPObject):
-                break
-            
-        else:
+                all_object = False
+
+        if all_object:
             array = (ctypes.cast(x, ctypes.c_void_p).value for x in array)
             assert(array != None)
             array = np.fromiter(array, dtype=np.uintp)
@@ -870,6 +873,16 @@ class Scene(WithExitStackMixin):
             intensity=3.0,
         ))
 
+        
+        denoiser = lib.ospNewImageOperation(b'denoiser')
+        lib.ospCommit(denoiser)
+        self.defer(lib.ospRelease, denoiser)
+
+        self.imageops = Data([
+            denoiser
+        ], type=lib.OSP_IMAGE_OPERATION)
+        lib.ospCommit(self.imageops)
+        self.defer(lib.ospRelease, self.imageops)
 
         lights = Data([
             # ambient.light,
@@ -1049,16 +1062,6 @@ class Scene(WithExitStackMixin):
             # -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
-        
-        denoiser = lib.ospNewImageOperation(b'denoiser')
-        self.defer(lib.ospRelease, denoiser)
-        lib.ospCommit(denoiser)
-
-        imageops = Data([
-            denoiser
-        ], type=lib.OSP_IMAGE_OPERATION)
-        self.defer(lib.ospRelease, imageops)
-        lib.ospCommit(imageops)
 
         framebuffer = lib.ospNewFrameBuffer(
             request.width,
@@ -1070,7 +1073,7 @@ class Scene(WithExitStackMixin):
             lib.OSP_FB_COLOR,
         )
 
-        lib.ospSetObject(framebuffer, b'imageOperation', imageops)
+        lib.ospSetObject(framebuffer, b'imageOperation', self.imageops)
         lib.ospCommit(framebuffer)
 
         _variance: float = lib.ospRenderFrameBlocking(

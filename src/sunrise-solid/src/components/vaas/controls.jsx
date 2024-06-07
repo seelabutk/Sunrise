@@ -196,14 +196,19 @@ export class PanningCameraControls extends CameraControls {
 
     #setup_listeners() {
         this.element.addEventListener('mousedown', (e) => {
+            this.#is_dragging = true;
             this.#prev_mouse_position = {
                 x: e.offsetX,
                 y: e.offsetY,
             };
         });
+        
+        this.element.addEventListener('mouseup', (e) => {
+            this.#is_dragging = false;
+        });
 
         this.element.addEventListener('mousemove', (e) => {
-            if (this.#should_update) {
+            if (this.#should_update && this.#is_dragging) {
                 const delta = {
                     x: e.offsetX - this.#prev_mouse_position.x,
                     y: e.offsetY - this.#prev_mouse_position.y,

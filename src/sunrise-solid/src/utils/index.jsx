@@ -1,3 +1,5 @@
+import { createSignal, onCleanup } from 'solid-js';
+
 /**
     * @description Represents a point in lat, lng and alt
 */
@@ -15,6 +17,16 @@ export class Point {
         this.lng = lng;
         this.alt = alt;
     }
+}
+
+export function debounce(signalSetter, delay) {
+    let timerHandle;
+    function debounceSignalSetter(value) {
+        clearTimeout(timerHandle);
+        timerHandle = setTimeout(() => signalSetter(value), delay);
+    }
+    onCleanup(() => clearInterval(timerHandle));
+    return debounceSignalSetter;
 }
 
 export const EARTH_AVG_ALTITUDE = 6_371_000;
