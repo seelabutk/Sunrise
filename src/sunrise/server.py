@@ -66,7 +66,7 @@ def configure_logger(enable_json_logs: bool = False):
         + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         logger_factory=structlog.stdlib.LoggerFactory(),
         # call log with await syntax in thread pool executor
-        wrapper_class=structlog.stdlib.AsyncBoundLogger,
+        # wrapper_class=structlog.stdlib.AsyncBoundLogger,
         cache_logger_on_first_use=True,
     )
 
@@ -133,7 +133,7 @@ def get_config():
 
 # Run the fastapi server
 async def run_server():
-    await custom_logger.debug('Server Started', whom='world')
+    custom_logger.debug('Server Started', whom='world')
     config_info = get_config()
     config = auto.uvicorn.Config("sunrise.server:app", port=config_info.server.port(), host=config_info.server.host())
     server = auto.uvicorn.Server(config)
@@ -299,7 +299,7 @@ async def view(
         ),
     ],
 ):
-    await custom_logger.info("API ENDPOINT")
+    custom_logger.info("API ENDPOINT")
     tile = tuple(map(str, tile.split(',')))
     position = tuple(map(float, position.split(',')))
     direction = tuple(map(float, direction.split(',')))
