@@ -21,6 +21,7 @@ import skyfield, skyfield.api, skyfield.toposlib
 import numpy as np
 import ospray
 import PIL.Image
+import structlog
 
 
 

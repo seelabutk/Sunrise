@@ -936,6 +936,7 @@ class Scene(WithExitStackMixin):
         self.distant = distant
         self.hdri = hdri
         self.sunlight = sunlight
+        self.logger = None
 
     # Update the aspect ratio of the camera dynamically
     def update_camera(self, width, height):
@@ -987,11 +988,15 @@ class Scene(WithExitStackMixin):
         return lights
 
     def render(self, request: model.RenderingRequest):
+        render_start = time.time_ns()
+        self.logger.info("RENDERING");
         self.request = request
         world = self.world
         renderer = self.renderer
         self.update_camera(request.width, request.height)
         camera = self.camera
+
+
 
         
         lib.ospRelease(self.lights)
@@ -1103,11 +1108,15 @@ class Scene(WithExitStackMixin):
 
         lib.ospRelease(framebuffer)
 
+        time_rendering = time.time_ns() - render_start
+        self.logger.info(f'Total Time Rendering (Ns): {time_rendering}')
+
         return sunrise.model.RenderingResponse(
             image=image,
         )
 
-    def arender(self, request: RenderingRequest) -> auto.asyncio.Future[RenderingResponse]:
+    def arender(self, request: RenderingRequest, logger) -> auto.asyncio.Future[RenderingResponse]:
+        self.logger = logger
         future = auto.asyncio.Future()
 
         thread = auto.threading.Thread(

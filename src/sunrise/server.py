@@ -299,7 +299,6 @@ async def view(
         ),
     ],
 ):
-    custom_logger.info("API ENDPOINT")
     tile = tuple(map(str, tile.split(',')))
     position = tuple(map(float, position.split(',')))
     direction = tuple(map(float, direction.split(',')))
@@ -315,7 +314,7 @@ async def view(
         samples=samples,
         hour=hour,
         light=light
-    ))
+    ), custom_logger)
     
     with auto.io.BytesIO() as f:
         response.image.save(f, 'PNG')
