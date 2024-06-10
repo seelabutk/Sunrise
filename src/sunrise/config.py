@@ -77,7 +77,7 @@ class ClientConfig:
     def __init__(self, client_data):
         self.data = client_data
         
-        print(self.data)
+        # print(self.data)
         self._map_data = self.data["map"]
 
     def validate(self):
@@ -115,7 +115,7 @@ class Config:
             "map-data": self._client.map_data,
         })
 
-        print(config_obj)
+        # print(config_obj)
         return config_obj
 
 

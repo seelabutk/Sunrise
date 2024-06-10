@@ -74,6 +74,11 @@ class AutoImport:
         import fastapi.staticfiles
         import fastapi.middleware.cors
         return fastapi
+
+    @cached_property
+    def structlog(self):
+        import structlog
+        return structlog
  
 
     def __getattr__(auto, name: str):

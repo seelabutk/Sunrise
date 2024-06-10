@@ -28,9 +28,6 @@ export class TrackballCameraControls extends CameraControls {
     /** @type {TrackballControls} */
     #controls = null;
 
-    /** @type {TrackballControls} */
-    #is_dragging = false;
-
     constructor(
         camera,
         element,
@@ -50,26 +47,6 @@ export class TrackballCameraControls extends CameraControls {
         this.#controls.maxDistance = (6371 + 10000);
         this.#controls.minDistance = (6371 + 10);
         this.#controls.dynamicDampingFactor = 0.3;
-        // this.#controls.enabled = false;
-        
-        this.#setup_listeners();
-    }
-
-    #setup_listeners() {
-//        this.element.addEventListener('mousedown', () => {
-//            this.#is_dragging = true;
-//            this.update();
-//        });
-//        this.element.addEventListener('mousemove', () => {
-//            this.update();
-//        });
-//        this.element.addEventListener('mouseup', () => {
-//            this.#is_dragging = false;
-//            this.update();
-//        });
-//        this.element.addEventListener('wheel', () => {
-//            this.update();
-//        });
     }
     
     /**
@@ -130,6 +107,9 @@ export class TrackballCameraControls extends CameraControls {
         );
     }
 
+    /**
+        * @description Update how quickly we should rotate based on how close we are to the target
+    */
     #update_rotation_speed() {
         const maxSpeed = 30.0;
         const minSpeed = 0.01;
@@ -171,6 +151,12 @@ export class PanningCameraControls extends CameraControls {
     /** @type {Boolean} */
     #should_update = false;
 
+    /**
+        * @description Create a new PanningCameraControls 
+        * @param {THREE.Camera} camera The camera for these controls to manipulate
+        * @param {Element} element HTML DOM Element for these controls to attach event listeners to
+        * @param {Number} sensitivity How sensitive we want the mouse to affect the camera operations
+    */
     constructor (
         camera,
         element,
@@ -184,16 +170,27 @@ export class PanningCameraControls extends CameraControls {
         this.#setup_listeners();
     }
 
+    /**
+        * @description Signal that it is ok to begin updating the information
+        * for panning the camera
+    */
     update() {
         this.#should_update = true;
     }
 
+    /**
+        * @description Get the direction that these controls are facing
+    */
     dir() {
         let dir = new THREE.Vector3();
         this.camera.getWorldDirection(dir);
         return dir;
     }
 
+    /**
+        * @description Setup the event listeners that these controls use to get 
+        * information about mouse movement and presses
+    */
     #setup_listeners() {
         this.element.addEventListener('mousedown', (e) => {
             this.#is_dragging = true;
