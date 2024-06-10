@@ -945,6 +945,7 @@ class Scene(WithExitStackMixin):
 
 
     def update_lights(self, hour: int):
+        light_start = time.time_ns()
         self.sunlight = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
@@ -985,11 +986,12 @@ class Scene(WithExitStackMixin):
             self.sunlight.light,
             self.hdri.light,
         ], type=lib.OSP_LIGHT)
+        light_time = time.time_ns() - light_start
+        self.logger.info(event='light_recreation_ns', time=light_time)
         return lights
 
     def render(self, request: model.RenderingRequest):
         render_start = time.time_ns()
-        self.logger.info("RENDERING");
         self.request = request
         world = self.world
         renderer = self.renderer
@@ -1089,6 +1091,7 @@ class Scene(WithExitStackMixin):
         )
 
         rgba = lib.ospMapFrameBuffer(framebuffer, lib.OSP_FB_COLOR)
+        encoding_start = time.time_ns()
         image = PIL.Image.frombytes(
             'RGBA',
             (request.width, request.height),
@@ -1099,6 +1102,8 @@ class Scene(WithExitStackMixin):
             1,
         )
         image.load()
+        encoding_time = time.time_ns() - encoding_start
+        self.logger.info(event='encoding_time_ns', time=encoding_time, dimension=[request.width, request.height])
 #        cv_img = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
 #        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
 #        sharpened = cv.filter2D(cv_img, -1, kernel)
@@ -1109,7 +1114,7 @@ class Scene(WithExitStackMixin):
         lib.ospRelease(framebuffer)
 
         time_rendering = time.time_ns() - render_start
-        self.logger.info(f'Total Time Rendering (Ns): {time_rendering}')
+        self.logger.info(event='rendering_time_ns', time=time_rendering, dimension=[request.width, request.height])
 
         return sunrise.model.RenderingResponse(
             image=image,
