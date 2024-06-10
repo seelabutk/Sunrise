@@ -12,9 +12,9 @@ import structlog
 import logging
 import logging.config
 
-def configure_logger(enable_json_logs: bool = False):
+def configure_logger(logfile: str, enable_json_logs: bool = False):
     # Log to just a file
-    logging.basicConfig(filename="test.log", encoding="utf-8", level=logging.DEBUG)
+    logging.basicConfig(filename=logfile, encoding="utf-8", level=logging.DEBUG)
 
     # Uncomment below for logging to both file and stdout at runtime
 #    logging.config.dictConfig({
@@ -104,7 +104,7 @@ def _extract_from_record(_, __, event_dict):
     event_dict["process_name"] = record.processName
     return event_dict
 
-configure_logger()
+# configure_logger()
 
 custom_logger = structlog.get_logger("custom_logger")
 
@@ -133,8 +133,9 @@ def get_config():
 
 # Run the fastapi server
 async def run_server():
-    custom_logger.debug('Server Started', whom='world')
     config_info = get_config()
+    configure_logger(config_info.server.logfile())
+    custom_logger.debug('Server Started', whom='world')
     config = auto.uvicorn.Config("sunrise.server:app", port=config_info.server.port(), host=config_info.server.host())
     server = auto.uvicorn.Server(config)
     await server.serve()

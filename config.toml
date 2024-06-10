@@ -3,6 +3,7 @@ name="sunrise"
 version=1
 host="0.0.0.0"
 port=5000
+logfile="server.log"
 
 [renderer]
 type="pathtracer"

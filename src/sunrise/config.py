@@ -52,6 +52,7 @@ class ServerConfig:
         self._version = self.data['version']
         self._host = self.data['host']
         self._port = self.data['port']
+        self._logfile = self.data['logfile']
 
     def validate(self):
         print("Validating server...", end=" ")
@@ -72,6 +73,10 @@ class ServerConfig:
     # Get the version of the server
     def version(self):
         return self._version
+
+    # Get the file to senf logs to
+    def logfile(self):
+        return self._logfile
 
 class ClientConfig:
     def __init__(self, client_data):
