@@ -181,7 +181,6 @@ async def get_scene(
         scenes
     except NameError:
         scenes = auto.asyncio.Queue()
-
         what = scene.Park(
             path=auto.pathlib.Path('data'),
         )

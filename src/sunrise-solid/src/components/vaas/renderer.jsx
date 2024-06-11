@@ -69,7 +69,7 @@ export default class Renderer {
     config = null;
 
     /** @type {String} */
-    server_url = "http://160.36.58.111:5000";
+    server_url = "http://sahara.eecs.utk.edu:5000";
 
     /** @type {Date} */
     current_time = null;

@@ -264,6 +264,7 @@ go-docker-start() {
         --rm \
         --init \
         --detach \
+        --ulimit=core=0 \
         --name "${docker_name:?}" \
         "${docker_start[@]}" \
         "${docker_tag:?}" \

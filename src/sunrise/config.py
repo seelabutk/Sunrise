@@ -53,10 +53,16 @@ class ServerConfig:
         self._host = self.data['host']
         self._port = self.data['port']
         self._logfile = self.data['logfile']
+        self._observations = self.data['observations']
 
     def validate(self):
         print("Validating server...", end=" ")
+        if len(self._observations) < 1:
+            print(f"[ERROR]: Length of observations needs to be at least 1 but got {len(self._observations)}")
         print("success")
+
+    def observations(self):
+        return self._observations
 
     # Get the port the server should run on
     def port(self):
