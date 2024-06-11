@@ -1,0 +1,22 @@
+Important Things to Cover
+Purpose for this in particular:
+    - Biodiversity is an important thing people are interested in
+    - Allow people to view this from anywhere in the world
+Purpose of Service as a whole:
+    - Data can be sensitive to send to a client to render
+    - High-detail geometry can be difficult for low-power computers to render
+    - Server-Side rendering allows for both data & geometry to be rendered on powerful machinery and client can view it
+
+
+
+[Start] -Site begins at fresh page load showing the Globe-
+Talk about importance of biodiversity
+Mention the to-scale earth model
+Introduce the serverice as a a whole and that it is server-side rendered
+Move around the globe with the controls
+Use the map to go to the Park
+~30 seconds
+
+[At the Park]
+Talk about how the user can see the spread of the species from the first-person pov
+

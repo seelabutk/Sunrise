@@ -10,7 +10,7 @@ import {
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
-import { gotoPoint, renderer } from '../vaas';
+import { gotoPoint, gotoPark, playSunrise } from '../vaas';
 import park from '../../assets/park.json';
 import { Point } from '../../utils';
 
@@ -69,7 +69,7 @@ export function Selection() {
                     "type": "Feature",
                     "properties": {
                         "type": "Point",
-                        callback: () => {renderer().goto_point(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]));}
+                        callback: () => {gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]));}
                     },
                     "geometry": {
                         "type": "Point",
@@ -192,7 +192,7 @@ export function Selection() {
                             }
                     }}
                     onClick={() => {
-                        renderer().goto_point(new Point(35.4082, -84.01449-13, 999));
+                        gotoPark();
                     }}
                     >Go to Park</Button>
                 <Button 
@@ -205,7 +205,7 @@ export function Selection() {
                             }
                     }}
                     onClick={() => {
-                        renderer().play_sunrise();
+                        playSunrise();
                     }}
                     
                     >Play Sunrise</Button>

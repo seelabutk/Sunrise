@@ -179,6 +179,22 @@ export default class Renderer {
     }
 
     /**
+        * @description Set the camera position to the desired spot
+        * @param {Point} The position to place the camera
+    */
+    set_camera_pos(point) {
+        const position = latlng_to_cartesian(point.lat, point.lng, point.alt);
+        this.camera.position.set(
+            position.x / this.camera_scaling_factor,
+            position.y / this.camera_scaling_factor,
+            position.z / this.camera_scaling_factor,
+        );
+        this.camera.up.set(0, 1, 0);
+        this.controls.update();
+        this.#render_dispatch();
+    }
+
+    /**
         * @description Set the current resolution that we want to render at
         * @param {Dimension} res The resolution to render at
     */
