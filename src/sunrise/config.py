@@ -52,10 +52,17 @@ class ServerConfig:
         self._version = self.data['version']
         self._host = self.data['host']
         self._port = self.data['port']
+        self._logfile = self.data['logfile']
+        self._observations = self.data['observations']
 
     def validate(self):
         print("Validating server...", end=" ")
+        if len(self._observations) < 1:
+            print(f"[ERROR]: Length of observations needs to be at least 1 but got {len(self._observations)}")
         print("success")
+
+    def observations(self):
+        return self._observations
 
     # Get the port the server should run on
     def port(self):
@@ -73,11 +80,15 @@ class ServerConfig:
     def version(self):
         return self._version
 
+    # Get the file to senf logs to
+    def logfile(self):
+        return self._logfile
+
 class ClientConfig:
     def __init__(self, client_data):
         self.data = client_data
         
-        print(self.data)
+        # print(self.data)
         self._map_data = self.data["map"]
 
     def validate(self):
@@ -115,7 +126,7 @@ class Config:
             "map-data": self._client.map_data,
         })
 
-        print(config_obj)
+        # print(config_obj)
         return config_obj
 
 

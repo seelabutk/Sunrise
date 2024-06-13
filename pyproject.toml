@@ -19,6 +19,8 @@ dependencies = [
     "matplotlib",
     "uvicorn",
     "tomli",
+    "opencv-python",
+    "structlog",
 ]
 
 [tool.setuptools.package-data]

@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: black;
+    width: 100vw;
+    height: 100vh;
+    font-family: Verdana;
+}
+
+.App {
+    width: 100%;
+    /*height: 100%;*/
+    display: grid;
+    grid-template-areas:
+        /*"a a"*/
+        "b c"
+    ;
+    grid-template-rows:
+        auto
+        1fr
+    ;
+    grid-template-columns:
+        auto 1fr
+    ;
+}
+
+/* This rule belongs to the Leaflet tile container */
+.leaflet-container {
+    background: none !important;
+}
+
+.Map {
+    /*width: 512px;
+    height: 512px;*/
+}
+
+.App__map {
+    background-color: blue;
+    grid-area: "map";
+}
+
+/** The hyperimage that displays the globe */
+#hyperimage {
+    height: 100%;
+}
+
+/*.a { grid-area: a; width: 100%; height: 100%; align-self: start; justify-self: start; }*/
+.b { grid-area: b; width: 100%; height: 100%; align-self: start; justify-self: start; }
+.c { grid-area: c; width: 100%; height: 100%; align-self: start; justify-self: start; }
+.d { grid-area: d; width: 100%; height: 100%; align-self: center; justify-self: stretch; }
+
+.missions {
+    border-right: 1px solid darkgray;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: black;
+}
+
+input {
+    margin: 0.3rem 0 0 0;
+}
+
+
+#navbar {
+    background: black;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 34px;
+    width: 100%;
+    min-height: 6rem;
+    padding: 0;
+}
+
+.missionButton {
+    border: 1px solid gray;
+    background: gray;
+    border-radius: 5px;
+    margin: 10px;
+    font-size: 20px;
+    height: 40px;
+    padding: 4px;
+}
+
+nav .left {
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+}
+
+nav label {
+	font-size: 1.5rem;
+	color: darkgray;
+}
+
+nav .header-data {
+	display: flex;
+	flex-direction: row;
+	gap: 5rem;
+    justify-content: center;
+	align-items: center;
+	border-top: 1px solid #323232;
+	width: 100vw;
+	/* padding: 0 0 0 0.8rem; */
+	/*margin: 10px 0 0 0;*/
+    min-height: 5rem;
+}
+
+nav .selector-container {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+nav select {
+	border-radius: 0.5rem;
+	min-width: 8rem;
+	height: 2rem;
+}
+
+nav .title {
+	font-family: Verdana;
+	font-size: 2rem;
+	margin: 0.8rem 0 0 0.8rem;
+}
+
+nav .sub-title {
+	font-family: Verdana;
+	font-size: 1.6rem;
+	color: gray;
+	margin-left: 0.8rem;
+}

@@ -20,10 +20,15 @@ import typing
 import time
 
 import numpy as np
+from matplotlib import pyplot as plt
+import cv2 as cv
 import ospray
 import PIL.Image
 import skyfield, skyfield.api, skyfield.toposlib
+import threading
 
+obs_cond = threading.Condition()
+obs_lock = threading.Lock()
 
 __all__ = [
     'lib',
@@ -86,11 +91,14 @@ def Data(
 ) -> lib.OSPData:
     # print("DATA 1")
     if isinstance(array, list):
+        all_object = True
         for i, x in enumerate(array):
+            if x is None:
+                raise ValueError("Nullptr not expected")
             if not isinstance(x, lib.OSPObject):
-                break
-            
-        else:
+                all_object = False
+
+        if all_object:
             array = (ctypes.cast(x, ctypes.c_void_p).value for x in array)
             assert(array != None)
             array = np.fromiter(array, dtype=np.uintp)
@@ -481,6 +489,7 @@ class Colormap(WithExitStackMixin):
         super().__init__()
 
         self.path = path
+        self._is_made = False
     
     def make(self):
         data = self.path / 'OSPTexture.texture2d.data.vec3f.bin'
@@ -519,6 +528,7 @@ class Observation(WithExitStackMixin):
     def make(self):
         index = self.path / 'OSPGeometricModel.index.vec1uc.bin'
         index = Read(index, dtype='u1')
+        assert index is not None
         self.hold(index)
         index = Data(index, type=lib.OSP_UCHAR, share=True)
         self.defer(lib.ospRelease, index)
@@ -557,7 +567,7 @@ class Environment(WithExitStackMixin):
         geomodels = Data([
             geomodel,
         ], type=lib.OSP_GEOMETRIC_MODEL)
-        self.defer(lib.ospRelease, geomodels)
+        # self.defer(lib.ospRelease, geomodels)
 
         group = lib.ospNewGroup()
         self.defer(lib.ospRelease, group)
@@ -574,7 +584,32 @@ class Environment(WithExitStackMixin):
         ))
         lib.ospCommit(instance)
 
+        self.geomodel = geomodel
+        self.group = group
+        self.geomodels = geomodels
         self.instance = instance
+    
+    def update_index(self, index):
+        geomodel = self.geomodel
+        geomodels = self.geomodels
+        instance = self.instance
+        group = self.group
+
+        lib.ospSetObject(geomodel, b'index', index)
+        lib.ospCommit(geomodel)
+
+        lib.ospRelease(geomodels)
+        new_geomodels = Data([
+            geomodel,
+        ], type=lib.OSP_GEOMETRIC_MODEL)
+
+        lib.ospSetObject(group, b'geometry', new_geomodels)
+        lib.ospCommit(group)
+        
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+        
+        self.geomodels = new_geomodels
 
 
 class Park(WithExitStackMixin):
@@ -584,27 +619,43 @@ class Park(WithExitStackMixin):
         self.path = path
     
     def make(self):
+        self.observations = {
+                '0000341': self.enter(Observation(
+                    path=self.path / 'observation_0000341'
+                )),
+                '0000172': self.enter(Observation(
+                    path=self.path / 'observation_0000172'
+                )),
+                '0000223': self.enter(Observation(
+                    path=self.path / 'observation_0000223'
+                )),
+        }
+        # self.observation = self.observations['0000341']
+        # self.observation = self.observations['0000172']
+        self.observation_id = '0000223'
+        self.observation = self.observations['0000223']
         environment = self.enter(Environment(
-            terrain=self.enter(Terrain(
-                path=self.path / 'park',
-            )),
-            colormaps=[
-                self.enter(Colormap(
-                    path=self.path / 'pink0',
+                terrain=self.enter(Terrain(
+                    path=self.path / 'park',
                 )),
-                self.enter(Colormap(
-                    path=self.path / 'pink1',
-                )),
-                self.enter(Colormap(
-                    path=self.path / 'pink2',
-                )),
-                self.enter(Colormap(
-                    path=self.path / 'pink3',
-                )),
-            ],
-            observation=self.enter(Observation(
-                path=self.path / 'observation',
-            )),
+                colormaps=[
+                    self.enter(Colormap(
+                        path=self.path / 'pink0',
+                    )),
+                    self.enter(Colormap(
+                        path=self.path / 'pink1',
+                    )),
+                    self.enter(Colormap(
+                        path=self.path / 'pink2',
+                    )),
+                    self.enter(Colormap(
+                        path=self.path / 'pink3',
+                    )),
+                ],
+            observation=self.observation
+#            observation=self.enter(Observation(
+#                path=self.path / 'observation_0000341',
+#            )),
         ))
 
         earth = self.enter(Environment(
@@ -628,8 +679,24 @@ class Park(WithExitStackMixin):
         ], type=lib.OSP_INSTANCE)
         self.defer(lib.ospRelease, instances)
 
+        self.environment = environment
         self.instances_ = instances_
         self.instances = instances
+
+    def update_observation(self, obs_id: str):
+#        if self.observation is not None:
+#            self.observation.close()
+        
+#        self.observation=self.enter(Observation(
+#            path=self.path / 'observation_0000341'
+#        ))
+        if self.observation_id != obs_id:
+            print(f"{self.observation_id} != {obs_id}")
+            self.observation_id = obs_id
+            self.observation = self.observations[obs_id]
+            self.environment.update_index(self.observation.index)
+        else:
+            print("SAME ID")
 
 
 class Ambient(WithExitStackMixin):
@@ -868,6 +935,16 @@ class Scene(WithExitStackMixin):
             intensity=3.0,
         ))
 
+        
+        denoiser = lib.ospNewImageOperation(b'denoiser')
+        lib.ospCommit(denoiser)
+        self.defer(lib.ospRelease, denoiser)
+
+        self.imageops = Data([
+            denoiser
+        ], type=lib.OSP_IMAGE_OPERATION)
+        lib.ospCommit(self.imageops)
+        self.defer(lib.ospRelease, self.imageops)
 
         lights = Data([
             # ambient.light,
@@ -921,8 +998,25 @@ class Scene(WithExitStackMixin):
         self.distant = distant
         self.hdri = hdri
         self.sunlight = sunlight
+        self.logger = None
+        self.observation_id = ''
+
+    # Update the aspect ratio of the camera dynamically
+    def update_camera(self, width, height):
+        lib.ospSetFloat(self.camera, b'aspect', width / height)
+        lib.ospCommit(self.camera)
+
+    # Update the index material for the species that we want to view
+    def update_observation(self, observation_id: str):
+        index_start = time.time_ns()
+
+        self.what.update_observation(observation_id)
+        
+        index_time = time.time_ns() - index_start
+        self.logger.info(event='observation_recreation_ns', time=index_time)
 
     def update_lights(self, hour: int):
+        light_start = time.time_ns()
         self.sunlight = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
@@ -932,7 +1026,7 @@ class Scene(WithExitStackMixin):
                 ))
                 + 
                 datetime.timedelta(hours=hour)
-                # datetime.timedelta(hours=request.hour)
+                # datetime.timedelta(hours=-15)
             ),
             light_type=self.request.light,
             intensity=0.014,
@@ -943,13 +1037,13 @@ class Scene(WithExitStackMixin):
         self.distant = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
-                    offset=datetime.timedelta(hours=0),  # Eastern Time
+                    offset=datetime.timedelta(hours=6),  # Eastern Time
                     # offset=datetime.timedelta(hours=-5),  # Eastern Time
                     name='EST'
                 ))
                 + 
                 datetime.timedelta(hours=hour)
-                # datetime.timedelta(hours=request.hour)
+                # datetime.timedelta(hours=-15)
             ),
             light_type='distant',
             intensity=3.0,
@@ -963,14 +1057,20 @@ class Scene(WithExitStackMixin):
             self.sunlight.light,
             self.hdri.light,
         ], type=lib.OSP_LIGHT)
+        light_time = time.time_ns() - light_start
+        self.logger.info(event='light_recreation_ns', time=light_time)
         return lights
 
     def render(self, request: model.RenderingRequest):
+        render_start = time.time_ns()
         self.request = request
         world = self.world
         renderer = self.renderer
+        self.update_camera(request.width, request.height)
         camera = self.camera
 
+        id = self.request.observation 
+        self.update_observation(id)
         
         lib.ospRelease(self.lights)
         self.lights = self.update_lights(request.hour)
@@ -984,8 +1084,8 @@ class Scene(WithExitStackMixin):
         # 2of2
         row, col = request.tile
         
-        row_id, num_x_bins = map(int, row.split('of'))
-        col_id, num_y_bins = map(int, col.split('of'))
+        col_id, num_x_bins = map(int, col.split('of'))
+        row_id, num_y_bins = map(int, row.split('of'))
         # num_x_bins = 2
         # num_y_bins = 2
 
@@ -1040,16 +1140,6 @@ class Scene(WithExitStackMixin):
             # -camx, -camy, -camz,
         ))
         lib.ospCommit(camera)
-        
-#        denoiser = lib.ospNewImageOperation(b'denoiser')
-#        self.defer(lib.ospRelease, denoiser)
-#        lib.ospCommit(denoiser)
-#
-#        imageops = Data([
-#            denoiser
-#        ], type=lib.OSP_IMAGE_OPERATION)
-#        self.defer(lib.ospRelease, imageops)
-#        lib.ospCommit(imageops)
 
         framebuffer = lib.ospNewFrameBuffer(
             request.width,
@@ -1061,7 +1151,7 @@ class Scene(WithExitStackMixin):
             lib.OSP_FB_COLOR,
         )
 
-#        lib.ospSetObject(framebuffer, b'imageOperation', imageops)
+        lib.ospSetObject(framebuffer, b'imageOperation', self.imageops)
         lib.ospCommit(framebuffer)
 
         _variance: float = lib.ospRenderFrameBlocking(
@@ -1072,6 +1162,7 @@ class Scene(WithExitStackMixin):
         )
 
         rgba = lib.ospMapFrameBuffer(framebuffer, lib.OSP_FB_COLOR)
+        encoding_start = time.time_ns()
         image = PIL.Image.frombytes(
             'RGBA',
             (request.width, request.height),
@@ -1082,17 +1173,26 @@ class Scene(WithExitStackMixin):
             1,
         )
         image.load()
-
+        encoding_time = time.time_ns() - encoding_start
+        self.logger.info(event='encoding_time_ns', time=encoding_time, dimension=[request.width, request.height])
+#        cv_img = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
+#        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+#        sharpened = cv.filter2D(cv_img, -1, kernel)
+#        image = PIL.Image.fromarray(sharpened)
 
         lib.ospUnmapFrameBuffer(rgba, framebuffer)
 
         lib.ospRelease(framebuffer)
 
+        time_rendering = time.time_ns() - render_start
+        self.logger.info(event='rendering_time_ns', time=time_rendering, dimension=[request.width, request.height])
+
         return sunrise.model.RenderingResponse(
             image=image,
         )
 
-    def arender(self, request: RenderingRequest) -> auto.asyncio.Future[RenderingResponse]:
+    def arender(self, request: RenderingRequest, logger) -> auto.asyncio.Future[RenderingResponse]:
+        self.logger = logger
         future = auto.asyncio.Future()
 
         thread = auto.threading.Thread(
@@ -1125,12 +1225,14 @@ def Render(
     enter = stack.enter_context
     defer = stack.callback
     hold = id
+    request = yield response
 
     scene = enter(Scene(
         # what=enter(City(
         #     path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
         # )),
         what=enter(Park(
+            observation_id='0000341',
             path=auto.pathlib.Path('data'),
         )),
     ))
@@ -1144,10 +1246,8 @@ def Render(
     num_x_bins = 2
     num_y_bins = 2
     while True:
-        f = open('render-times.txt', "a")
-
         render_begin = time.process_time_ns()
-        request = yield response
+        # request = yield response
 
         width = request.width
         height = request.height
@@ -1194,9 +1294,3 @@ def Render(
         response = sunrise.model.RenderingResponse(
             image=image,
         )
-
-        # time_rendering = datetime.datetime.now().microsecond - render_begin.microsecond
-        time_rendering = time.process_time_ns() - render_begin
-        f.write(f'{request.width}:{time_rendering}\n')
-        # print(f'TIME RENDERING (McS): {time_rendering}')
-

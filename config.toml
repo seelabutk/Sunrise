@@ -3,13 +3,17 @@ name="sunrise"
 version=1
 host="0.0.0.0"
 port=5000
+logfile="server.log"
+observations=[
+    '0000341'
+]
 
 [renderer]
 type="pathtracer"
 modules=[
-    # "denoiser"
+    "denoiser"
 ]
-samples=3
+samples=2
 
 [client]
 [client.map]

@@ -98,8 +98,8 @@ export class RenderData {
     constructor(
         direction, 
         hour, 
-        col_count, 
         row_count,
+        col_count, 
         width,
         height,
         blur,

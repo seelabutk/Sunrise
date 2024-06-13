@@ -21,6 +21,7 @@ import skyfield, skyfield.api, skyfield.toposlib
 import numpy as np
 import ospray
 import PIL.Image
+import structlog
 
 
 
@@ -152,7 +153,7 @@ class RenderingRequest:
     samples: int
     hour: float
     light: str
-
+    observation: str
 
 @dataclasses.dataclass
 class RenderingResponse:

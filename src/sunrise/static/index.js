@@ -24,7 +24,9 @@ class Sunrise {
         */
     constructor($el, {
         what,
-        canvasSize = 512,
+        canvasSize = 650,
+	    canvasWidth = 1200,
+	    canvasHeight = 650,
         tileSize = (canvasSize / 2) |0,
         highRes = tileSize,
         lowRes = (highRes / 4) |0,
@@ -33,11 +35,24 @@ class Sunrise {
         this.light = 'distant';
         this.position = null;
         this.canvasSize = canvasSize;
+        this.canvasWidth = (window.innerWidth * 0.7) |0;
+        this.canvasHeight = (window.innerHeight - document.getElementById("navbar").offsetHeight - 5) |0;
+        console.log("Canvas height " + this.canvasHeight);
+        // this.canvasHeight = canvasHeight;
+        //this.canvasWidth = canvasWidth;
         this.tileSize = tileSize;
         this.highRes = highRes;
         this.lowRes = lowRes;
 
+	/// Change the tiles that the selection map uses from a dropdown menu
+	this.mapurl = "";
+	document.getElementById("map-url-selector").addEventListener('change', () => {
+		const key = document.getElementById("map-url-selector").value;
+		this.selection_map.set_url(this.config["map-data"]["routes"][key]);
+	});
+
         this.hyperimage = $el;
+
         this.cameraScalingFactor = 5;
        
         this.camera_enabled = true;
@@ -59,16 +74,26 @@ class Sunrise {
         this.park = null;
 
         this.primary = document.createElement('canvas');
-        this.primary.width = this.canvasSize;
-        this.primary.height = this.canvasSize;
+        this.primary.width = this.canvasWidth;
+        this.primary.height = this.canvasHeight;
+        //this.primary.width = this.canvasSize;
+        //this.primary.height = this.canvasSize;
         this.hyperimage.appendChild(this.primary);
+	    console.log(`Pwidth: ${this.primary.offsetWidth}`);
+	    console.log(`Pheight: ${this.primary.offsetHeight}`);
 
         this.secondary = document.createElement('canvas');
-        this.secondary.width = this.canvasSize;
-        this.secondary.height = this.canvasSize;
+        this.secondary.width = this.canvasWidth;
+        this.secondary.height = this.canvasHeight;
+	    console.log(`Swidth: ${this.secondary.offsetWidth}`);
+	    console.log(`Sheight: ${this.secondary.offsetHeight}`);
+        //this.secondary.width = this.canvasSize;
+        //this.secondary.height = this.canvasSize;
 
-        this.highres = 512;
-        this.lowres = 128;
+        this.highres = highRes;
+        this.lowres = lowRes;
+        //this.highres = 512;
+        //this.lowres = 128;
         this.zoom = 3000;
         this.scroll_counter = 0;
         this.scroll_cma = 0;
@@ -92,7 +117,13 @@ class Sunrise {
         // let original_position = $V([0, 0, this.zoom, 1]);
         this.#setup_camera(original_position);
         
-        this.num_tiles = [2, 2]; // 4 x 3 grid of tiles
+	this.aspectRatio = this.canvasWidth / this.canvasHeight;
+        this.num_tiles = [2, 6]; // rows X cols
+	this.highResWidth = ((this.canvasWidth / this.num_tiles[1]) * 1.5) |0;
+	this.highResHeight = (this.highResWidth / this.aspectRatio) |0;
+	console.log("HWidth " + this.highResWidth);
+	this.lowResWidth = (this.highResWidth / 2) |0;
+	this.lowResHeight = (this.highResHeight / 2) |0;
         this.samples = 1;
         this.is_dragging = false;
 
@@ -138,16 +169,17 @@ class Sunrise {
 
             console.log(this.config["map-data"]["routes"]);
             for (const key in this.config["map-data"]["routes"]) {
-            let btn = document.createElement("button");
-                btn.id = `map_type_${key.toLowerCase()}`;
-                btn.innerText = `${key}`;
-                btn.className = "missionButton";
-                btn.onclick = () => {
-                    this.selection_map.set_url(this.config["map-data"]["routes"][key]);
-                }
-                console.log(key);
+            let option = document.createElement("option");
+                option.id = `map_type_${key.toLowerCase()}`;
+                option.innerText = `${key}`;
+                // option.className = "missionButton";
+                // option.onclick = () => {
+                    // this.selection_map.set_url(this.config["map-data"]["routes"][key]);
+                // }
+                // console.log(key);
 
-                document.getElementById("mission_list").appendChild(btn);
+
+		document.getElementById("map-url-selector").appendChild(option);
             }
 
             console.log('map created');
@@ -172,7 +204,7 @@ class Sunrise {
         // this.trackball_controls.update();
 
         this.updateTiles(
-            new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
+            new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.highResWidth, this.highResHeight,)
         );
 
         // Uncomment this to play the sunrise animation when going to a point
@@ -271,7 +303,7 @@ class Sunrise {
         */
     renderTiles() {
         this.updateTiles(
-            new RenderData(this.#trackball_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
+            new RenderData(this.#trackball_direction(), new Date().getHours() -5, this.num_tiles[0], this.num_tiles[1], this.highResWidth, this.highResHeight,)
         );
     }
 
@@ -294,19 +326,27 @@ class Sunrise {
 
         let ctx = this.secondary.getContext('2d');
         let promises = [];
+        const tileWidth = this.canvasWidth / render_data.num_cols;
+        const tileHeight = this.canvasHeight / render_data.num_rows;
         for (let i = 0, n = this.definitions.length; i < n; i++) {
             promises.push(((i) => {
                 let defn = this.definitions[i];
                 let { row, col } = defn;
+		console.log(`Definition[${i}]: [${row}, ${col}]`);
 
-                const tileWidth = this.canvasSize / render_data.num_rows;
-                const tileHeight = this.canvasSize / render_data.num_cols;
 
-                let y = (row / render_data.num_rows) * this.canvasSize;
+                //const tileWidth = this.canvasSize / render_data.num_rows;
+                //const tileHeight = this.canvasSize / render_data.num_cols;
+
+                let y = (row / render_data.num_rows) * this.canvasHeight;
+                //let y = (row / render_data.num_rows) * this.canvasSize;
                 // * this.tileSize;
-                let x = (col / render_data.num_cols) * this.canvasSize; // * this.tileSize
+                let x = (col / render_data.num_cols) * this.canvasWidth; // * this.tileSize
+                //let x = (col / render_data.num_cols) * this.canvasSize; // * this.tileSize
 
                 return Tile(i).then((image) => {
+		    //ctx.fillStyle = `rgb(${(x*256/this.canvasWidth) |0},${(y*256/this.canvasHeight) |0}, 0)`;
+		    //ctx.fillRect(x, y, tileWidth, tileHeight);
                     ctx.drawImage(image, x, y, tileWidth, tileHeight);
                 });
             })(i));
@@ -323,7 +363,9 @@ class Sunrise {
             ctx.filter = 'blur(0px)';
         }
 
-        ctx.drawImage(this.secondary, 0, 0, this.canvasSize, this.canvasSize);
+        //ctx.drawImage(this.secondary, 0, 0, 512, 512);
+        ctx.drawImage(this.secondary, 0, 0, this.canvasWidth, this.canvasHeight);
+        //ctx.drawImage(this.secondary, 0, 0, this.canvasSize, this.canvasSize);
         
 
         function Tile(i) {
@@ -490,7 +532,7 @@ class Sunrise {
         });
         this.missions.push(mission);
         
-        document.getElementById("mission_list").appendChild(button);
+        // document.getElementById("mission_list").appendChild(button);
     }
 
     /**
@@ -503,7 +545,7 @@ class Sunrise {
         let end = start + 24;
 
         for (let i = start; i < end; i += step) {
-            await this.updateTiles(new RenderData(this.#world_direction(), i, 2, 2, this.dimension, this.dimension,));
+            await this.updateTiles(new RenderData(this.#world_direction(), i, 1, 1, this.highResWidth, this.highResHeight,));
         }
         this.camera_enabled = true;
     }
@@ -521,10 +563,10 @@ class Sunrise {
         this.trackball_controls.enabled = false;
         mission.unpause();
         
-        let selector = document.getElementById("path_speed_selector");
-        let display = document.getElementById("ips_display");
+        // let selector = document.getElementById("path_speed_selector");
+        // let display = document.getElementById("ips_display");
         this.current_mission = mission;
-        let ips = 10;
+        let ips = 30;
         // let total_remaining_seconds = mission.length() / ips;
         let total_remaining_seconds = mission.remaining_length() / ips;
         let start_time = +new Date() / 1000;
@@ -551,7 +593,7 @@ class Sunrise {
             this.threecam.lookAt(render_data.current);
 
             await this.updateTiles(
-                new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
+                new RenderData(this.#world_direction(), new Date().getHours() -5, this.num_tiles[0], this.num_tiles[1], this.highResWidth, this.highResHeight,)
             );
             render_data = mission.forward(offset);
         }
@@ -563,17 +605,6 @@ class Sunrise {
         * @description The run behavior of the application
         */
     async run() {
-        document.getElementById("path-pause").addEventListener('click', () => {
-            if (this.current_mission.is_paused()) {
-                this.play_mission(this.current_mission);
-                // console.log(`PATH INDEX: ${this.current_mission.
-            } else {
-                this.current_mission.pause();
-            }
-            
-            path_is_paused = !path_is_paused;
-        }, { passive: true });
-
         this.hyperimage.addEventListener('mousedown', (event) => {
             if (this.camera_enabled) {
                 this.dimension = this.lowres;
@@ -601,7 +632,7 @@ class Sunrise {
                         if (this.use_trackball) {
                             this.trackball_controls.update();
                             this.updateTiles(
-                                new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.dimension, this.dimension, true)
+                                new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.lowResWidth, this.lowResHeight, true)
                             );
                         } else {
                             const deltaMouse = {
@@ -623,7 +654,7 @@ class Sunrise {
                                 y: event.offsetY,
                             };
                             this.updateTiles(
-                                new RenderData(this.#world_direction(), new Date().getHours() -5, 1, 1, this.dimension, this.dimension,)
+                                new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.lowResWidth, this.lowResHeight, true)
                             );
                         }
                     } 
@@ -642,11 +673,11 @@ class Sunrise {
                 if (this.use_trackball) {
                     this.trackball_controls.update();
                     this.updateTiles(
-                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
+                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, this.num_tiles[0], this.num_tiles[1], this.highResWidth, this.highResHeight,)
                     );
                 } else {
                     this.updateTiles(
-                        new RenderData(this.#world_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
+                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, this.num_tiles[0], this.num_tiles[1], this.highResWidth, this.highResHeight,)
                     );
                 }
             } else {
@@ -660,7 +691,7 @@ class Sunrise {
                     this.trackball_controls.update();
                     this.updateRotateSpeed();
                     this.updateTiles(
-                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, 2, 2, this.dimension, this.dimension,)
+                        new RenderData(this.#trackball_direction(), new Date().getHours() -5, 1, 1, this.lowResWidth, this.lowResHeight,)
                     );
                 }, 100);
             } else {

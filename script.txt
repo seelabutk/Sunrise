@@ -1,0 +1,38 @@
+Important Things to Cover
+Purpose for this in particular:
+    - Visualizing and "physicalizing" the data makes it 'real' and understandable
+    - Biodiversity (& energy efficiency) are an important thing people are interested in
+    - Allow people to view this from anywhere in the world
+Purpose of Service as a whole:
+    - Data can be sensitive to send to a client to render
+    - High-detail geometry can be difficult for low-power computers to render
+        - People do not like ugly visuals and are not as engaging
+        - SSR allows for beautiful & stunning visuals
+    - Server-Side rendering allows for both data & geometry to be rendered on powerful machinery and client can view it
+
+
+
+[Start] -Site begins at fresh page load showing the Globe-
+Talk about importance of biodiversity
+Context matters for the globe (why we start at globe scale)
+Mention the to-scale earth model
+Introduce the service as a a whole and that it is server-side rendered
+Move around the globe with the controls
+Use the button to go to the Park for top-down
+~30 seconds
+
+[At the Park]
+* Move around the park still using the trackball controls to show *
+Talk about being able to see the overall distribution of the species
+Say you want more to "experience" it
+* Use the map to click a point to go into the 1st person *
+Talk about being able to look around from the perspective that you are in the park itself
+* Press button to move along the path of points. As we move along move the camera around to show we are able 
+  to look around while traveling along the path. *
+Talk about how we are on one of the most popular trails in the park, and we get to travel along it and see the biodiversity as the travelers would
+* Change the species we are looking at while traveling this path *
+Talk about being able to view multiple different species
+* Pause playing the path *
+Say that we are in an interesting spot and we want to look around
+* Switch between multiple different species before landing on one *
+Talk about being able to easily interact with the park and switch what we want to view
