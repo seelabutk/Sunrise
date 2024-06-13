@@ -153,7 +153,7 @@ class RenderingRequest:
     samples: int
     hour: float
     light: str
-
+    observation: str
 
 @dataclasses.dataclass
 class RenderingResponse:

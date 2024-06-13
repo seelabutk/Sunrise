@@ -25,7 +25,10 @@ import cv2 as cv
 import ospray
 import PIL.Image
 import skyfield, skyfield.api, skyfield.toposlib
+import threading
 
+obs_cond = threading.Condition()
+obs_lock = threading.Lock()
 
 __all__ = [
     'lib',
@@ -486,6 +489,7 @@ class Colormap(WithExitStackMixin):
         super().__init__()
 
         self.path = path
+        self._is_made = False
     
     def make(self):
         data = self.path / 'OSPTexture.texture2d.data.vec3f.bin'
@@ -628,25 +632,26 @@ class Park(WithExitStackMixin):
         }
         # self.observation = self.observations['0000341']
         # self.observation = self.observations['0000172']
+        self.observation_id = '0000223'
         self.observation = self.observations['0000223']
         environment = self.enter(Environment(
-            terrain=self.enter(Terrain(
-                path=self.path / 'park',
-            )),
-            colormaps=[
-                self.enter(Colormap(
-                    path=self.path / 'pink0',
+                terrain=self.enter(Terrain(
+                    path=self.path / 'park',
                 )),
-                self.enter(Colormap(
-                    path=self.path / 'pink1',
-                )),
-                self.enter(Colormap(
-                    path=self.path / 'pink2',
-                )),
-                self.enter(Colormap(
-                    path=self.path / 'pink3',
-                )),
-            ],
+                colormaps=[
+                    self.enter(Colormap(
+                        path=self.path / 'pink0',
+                    )),
+                    self.enter(Colormap(
+                        path=self.path / 'pink1',
+                    )),
+                    self.enter(Colormap(
+                        path=self.path / 'pink2',
+                    )),
+                    self.enter(Colormap(
+                        path=self.path / 'pink3',
+                    )),
+                ],
             observation=self.observation
 #            observation=self.enter(Observation(
 #                path=self.path / 'observation_0000341',
@@ -682,11 +687,16 @@ class Park(WithExitStackMixin):
 #        if self.observation is not None:
 #            self.observation.close()
         
-        self.observation = self.observations[obs_id]
 #        self.observation=self.enter(Observation(
 #            path=self.path / 'observation_0000341'
 #        ))
-        self.environment.update_index(self.observation.index)
+        if self.observation_id != obs_id:
+            print(f"{self.observation_id} != {obs_id}")
+            self.observation_id = obs_id
+            self.observation = self.observations[obs_id]
+            self.environment.update_index(self.observation.index)
+        else:
+            print("SAME ID")
 
 
 class Ambient(WithExitStackMixin):
@@ -989,7 +999,7 @@ class Scene(WithExitStackMixin):
         self.hdri = hdri
         self.sunlight = sunlight
         self.logger = None
-        self.observation = self.what.environment.observation
+        self.observation_id = ''
 
     # Update the aspect ratio of the camera dynamically
     def update_camera(self, width, height):
@@ -1059,8 +1069,8 @@ class Scene(WithExitStackMixin):
         self.update_camera(request.width, request.height)
         camera = self.camera
 
-        id = '0000341'
-        # self.update_observation(id)
+        id = self.request.observation 
+        self.update_observation(id)
         
         lib.ospRelease(self.lights)
         self.lights = self.update_lights(request.hour)

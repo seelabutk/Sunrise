@@ -4,6 +4,7 @@ import {
     Point,
 } from '../../utils';
 import { CameraControls, TrackballCameraControls, PanningCameraControls } from './controls';
+import { species } from '../selection'
 
 export default class Renderer {
     /** @type {HTMLElement} */
@@ -258,6 +259,7 @@ export default class Renderer {
         url.searchParams.append('samples', 4);
         url.searchParams.append('hour', this.current_time);
         url.searchParams.append('light', this.current_light);
+        url.searchParams.append('observation', species());
 
         // Make the request
         return new Promise((res, rej) => {

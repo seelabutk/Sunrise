@@ -181,12 +181,16 @@ async def get_scene(
         scenes
     except NameError:
         scenes = auto.asyncio.Queue()
-        what = scene.Park(
-            path=auto.pathlib.Path('data'),
-        )
-        what.make()
+#        what = scene.Park(
+#            path=auto.pathlib.Path('data'),
+#        )
+#        what.make()
 
         for _ in range(6):
+            what = scene.Park(
+                path=auto.pathlib.Path('data'),
+            )
+            what.make()
             scene_ = scene.Scene(
                 what=what,
             )
@@ -298,6 +302,13 @@ async def view(
             alias='light',
         ),
     ],
+    
+    observation: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(
+            alias='observation',
+        ),
+    ],
 ):
     tile = tuple(map(str, tile.split(',')))
     position = tuple(map(float, position.split(',')))
@@ -313,7 +324,8 @@ async def view(
         up=up,
         samples=samples,
         hour=hour,
-        light=light
+        light=light,
+        observation=observation
     ), custom_logger)
     
     with auto.io.BytesIO() as f:

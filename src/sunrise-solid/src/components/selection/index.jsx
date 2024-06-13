@@ -14,6 +14,19 @@ import { gotoPoint, gotoPark, playSunrise } from '../vaas';
 import park from '../../assets/park.json';
 import { Point } from '../../utils';
 
+// TODO: Remove this array and use data from the configuration instead
+const species_list = [
+    { 
+        name: "Malloch`S Non-Biting Midge", 
+        irma_id: "0000223" 
+    },
+    { 
+        name: "Sugar Maple", 
+        irma_id: "0000341" 
+    },
+];
+export const [species, setSpecies] = createSignal(species_list[0].irma_id);
+
 export function Selection() {
     // TODO: Read the config from the server to get the available urls
     const backgroundUrls = {
@@ -25,8 +38,8 @@ export function Selection() {
             "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
     };
 
+
     // Signals for keeping track of relevant information
-    const [species, setSpecies] = createSignal('');
     const [mapUrl, setMapUrl] = createSignal('Satellite');
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
     const [pathJson, setPathJson] = createSignal({});
@@ -105,28 +118,28 @@ export function Selection() {
     return (
         <div class={styles.container}>
             <div class={styles.species}>
-		        <Select 
-		            id='species-selector'
-                    displayEmpty
-                    defaultValue=""
-                    value={species()}
-		            sx={{
-		                width: '30%',
-		                height: '3vh',
-		                background: '#3e3e3e',
-                        color: 'white',
+                <div style="width: 70%; display: flex; flex-direction: row; gap: 1vw;">
+                    <label style="color: white">Species: </label>
+                    <Select 
+                        id='species-selector'
+                        displayEmpty
+                        defaultValue=""
+                        value={species()}
+                        sx={{
+                            width: '100%',
+                            height: '3vh',
+                            background: '#3e3e3e',
+                            color: 'white',
 
-                        '& > fieldset': { border: 'none'},
-		            }}
-                    onChange={speciesHandler}
-		        >
-                    <MenuItem value="" disabled>
-                        <em>Choose a species</em>
-                    </MenuItem>
-		            <MenuItem value="Oak">Oak</MenuItem>
-		            <MenuItem value="Sycamore">Sycamore</MenuItem>
-		            <MenuItem value="Rowan">Rowan</MenuItem>
-		        </Select>
+                            '& > fieldset': { border: 'none'},
+                        }}
+                        onChange={speciesHandler}
+                    >
+                        <For each={species_list}>{
+                            species => <MenuItem value={species.irma_id}>{species.name}</MenuItem>
+                        }</For>
+                    </Select>
+                </div>
             </div>
 
             <div class={styles.verticalMarker}></div>
