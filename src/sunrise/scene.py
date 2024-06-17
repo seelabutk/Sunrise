@@ -918,7 +918,7 @@ class Scene(WithExitStackMixin):
         ))
 
         hdri = self.enter(HDRI(
-            path=auto.pathlib.Path('data/space/OSPTexture.texture2d.data.vec3f.bin')
+            path=auto.pathlib.Path('data/space/OSPTexture.texture2d.data.vec2f.bin')
         ))
 
         sunlight = self.enter(Sunlight(

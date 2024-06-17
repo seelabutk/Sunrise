@@ -38,6 +38,36 @@ export function Selection() {
             "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
     };
 
+    const sunVegaSpec = {
+        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        description: 'A simple bar chart with embedded data.',
+        data: {
+            "sequence": {
+              "start": 0,
+              "stop": 12.7,
+              "step": 0.1,
+              "as": "x"
+            }
+        },
+        transform: [
+            {
+                calculate: "sin(datum.x)",
+                as: "sin(x)",
+            },
+            {
+                calculate: "cos(datum.x)",
+                as: "cos(x)",
+            },
+        ],
+        width: 'container',
+        height: 'container',
+        mark: 'line',
+        encoding: {
+            x: {field: 'x', type: 'quantitative', axis: null},
+          y: {field: 'sin(x)', type: 'quantitative', axis: null}
+        }
+    };
+
 
     // Signals for keeping track of relevant information
     const [mapUrl, setMapUrl] = createSignal('Satellite');
@@ -110,6 +140,7 @@ export function Selection() {
     }
 
     onMount(() => {
+        vegaEmbed("#sunPlot", sunVegaSpec);
         setPathJson(
             coordsToPath(park)
         );
@@ -222,6 +253,7 @@ export function Selection() {
                     }}
                     
                     >Play Sunrise</Button>
+                <div id="sunPlot" style="width: 30%; height: 90%;"></div>
             </div>
         </div>
     );
