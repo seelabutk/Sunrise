@@ -280,8 +280,8 @@ export default class Renderer {
         url.searchParams.append('samples', 4);
         url.searchParams.append('hour', this.current_time);
         url.searchParams.append('light', this.current_light);
-        url.searchParams.append('observation', species());
-        // url.searchParams.append('observation', this.current_species);
+        //url.searchParams.append('observation', species());
+        url.searchParams.append('observation', this.current_species);
 
         // Make the request
         return new Promise((res, rej) => {
@@ -531,8 +531,6 @@ export default class Renderer {
     */
     change_observation(obs_id) {
         this.current_species = obs_id;
-        console.log(`Renderer Observation: ${this.current_species}`);
-        this.#render_dispatch();
     }
 
     /**

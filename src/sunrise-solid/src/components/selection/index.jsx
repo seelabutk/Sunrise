@@ -80,6 +80,7 @@ export function Selection() {
     const speciesHandler = (event) => {
         setSpecies(event.target.value.toString());
         setObservation(event.target.value.toString());
+        renderFrame();
     }
 
     // Callback function that sets the current choice of the url we want to use
