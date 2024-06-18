@@ -10,7 +10,7 @@ import {
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
-import { gotoPoint, gotoPark, playSunrise, setObservation } from '../vaas';
+import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
 import { Point, linear_interp } from '../../utils';
 
@@ -191,6 +191,35 @@ export function Selection() {
         );
     });
 
+    const [currHour, setCurrHour] = createSignal(new Date().getHours() - 5);
+    const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
+    async function sunriseAnimation() {
+        if (sunriseIsPlaying()) {
+            setSunriseIsPlaying(false);
+            return;
+        } else {
+            setSunriseIsPlaying(true);
+        }
+        const STEP = 0.1;
+        const END = new Date().getHours() - 5 + 24;
+
+        while (currHour() < END && sunriseIsPlaying()) {
+            await new Promise((res) => {
+                console.log(`Hour: ${currHour()}`);
+                setRendererTime(currHour());
+                renderFrame();
+                
+                setCurrHour(currHour()+STEP);
+                setTimeout(res, 50)
+            });
+        }
+
+        if (sunriseIsPlaying()) {
+            setCurrHour(new Date().getHours() - 5);
+        }
+        setSunriseIsPlaying(false);
+    }
+
     return (
         <div class={styles.container}>
             <div class={styles.species}>
@@ -308,7 +337,8 @@ export function Selection() {
                             }
                     }}
                     onClick={() => {
-                        playSunrise();
+                        sunriseAnimation();
+                        // playSunrise();
                     }}
                     
                     >Play Sunrise</Button>

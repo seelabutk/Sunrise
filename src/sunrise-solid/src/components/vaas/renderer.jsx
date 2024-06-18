@@ -317,6 +317,21 @@ export default class Renderer {
     }
 
     /**
+        * @description API to send a rendering request to the server
+    */
+    render_frame() {
+        this.#render_dispatch();
+    }
+
+    /**
+        * @description Set the time of day that we want to render at
+        * @param {Number} hour The hour of the day we want to use
+    */
+    set_hour(hour) {
+        this.current_time = hour;
+    }
+
+    /**
         * @description Place the camera at a position according to lat, long, alt points
         * @param {Point} point The point to render at
         * @param {Point} target The point we want to look at

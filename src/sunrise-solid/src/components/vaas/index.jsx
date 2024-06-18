@@ -16,6 +16,13 @@ export const setObservation = (species_id) => {
     renderer().change_observation(species_id);
 }
 
+/** @description Set the time of day in hours that we want to render the scene at
+    * @param {Number} time The time we want to set it to
+*/
+export const setRendererTime = (time) => {
+    renderer().set_hour(time);
+}
+
 /**
     * @description Place the camera at the point where we are looking at the park from above
 */
@@ -35,6 +42,13 @@ export function gotoPark() {
 */
 export const playSunrise = () => {
     renderer().play_sunrise();
+}
+
+/**
+    * @description Tell the renderer to render a frame
+*/
+export const renderFrame = () => {
+    renderer().render_frame();
 }
 
 // The renderer API to the server that gets images
