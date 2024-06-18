@@ -9,6 +9,13 @@ export function gotoPoint(point) {
     renderer().goto_point(point);
 }
 
+/** @description Change which observation species we are looking at
+    * @param {String} species_id The species that we are setting the renderer to
+*/
+export const setObservation = (species_id) => {
+    renderer().change_observation(species_id);
+}
+
 /**
     * @description Place the camera at the point where we are looking at the park from above
 */

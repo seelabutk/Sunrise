@@ -45,7 +45,7 @@ go---archive() {
         "data/earth/OSPGeometry.mesh.vertex.normal.vec3f.bin" \
         "data/earth/OSPGeometry.mesh.vertex.position.vec3f.bin" \
         "data/earth/OSPGeometry.mesh.vertex.texcoord.vec2f.bin" \
-        "data/earth/osptexture.texture2d.data.vec3f.bin" \
+        "data/earth/OSPTexture.texture2d.data.vec3f.bin" \
         "data/space/OSPTexture.texture2d.data.vec2f.bin" \
         "data/observation/OSPGeometricModel.index.vec1uc.bin" \
         "data/observation_0000223/OSPGeometricModel.index.vec1uc.bin" \
