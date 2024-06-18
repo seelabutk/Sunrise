@@ -220,6 +220,10 @@ export function Selection() {
         setSunriseIsPlaying(false);
     }
 
+    function endSunriseAnimation() {
+        setSunriseIsPlaying(false);
+    }
+
     return (
         <div class={styles.container}>
             <div class={styles.species}>
@@ -336,9 +340,12 @@ export function Selection() {
                                 color: '#CC5500',
                             }
                     }}
-                    onClick={() => {
+                    onMouseDown={() => {
                         sunriseAnimation();
                         // playSunrise();
+                    }}
+                    onMouseUp={() => {
+                        endSunriseAnimation();
                     }}
                     
                     >Play Sunrise</Button>
