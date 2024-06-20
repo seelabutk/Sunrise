@@ -9,7 +9,7 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vite/client"],
-    "noEmit": true,
+    "noEmit": false,
     "isolatedModules": true,
   },
 }

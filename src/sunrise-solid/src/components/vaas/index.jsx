@@ -5,8 +5,22 @@ import { Point } from '../../utils';
 /** @description Place the renderer at a specific point
     * @param {Point} point The point that we want to go to
 */
-export function gotoPoint(point) {
-    renderer().goto_point(point);
+export function gotoPoint(point, target) {
+    renderer().goto_point(point, target);
+}
+
+/** @description Change which observation species we are looking at
+    * @param {String} species_id The species that we are setting the renderer to
+*/
+export const setObservation = (species_id) => {
+    renderer().change_observation(species_id);
+}
+
+/** @description Set the time of day in hours that we want to render the scene at
+    * @param {Number} time The time we want to set it to
+*/
+export const setRendererTime = (time) => {
+    renderer().set_hour(time);
 }
 
 /**
@@ -28,6 +42,14 @@ export function gotoPark() {
 */
 export const playSunrise = () => {
     renderer().play_sunrise();
+}
+
+/**
+    * @description Tell the renderer to render a frame
+    * @param {String} res The resolution we want to render at
+*/
+export const renderFrame = (res) => {
+    renderer().render_frame(res);
 }
 
 // The renderer API to the server that gets images

@@ -10,9 +10,9 @@ import {
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
-import { gotoPoint, gotoPark, playSunrise } from '../vaas';
+import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
-import { Point } from '../../utils';
+import { Point, linear_interp, mean_position } from '../../utils';
 
 // TODO: Remove this array and use data from the configuration instead
 const species_list = [
@@ -23,6 +23,10 @@ const species_list = [
     { 
         name: "Sugar Maple", 
         irma_id: "0000341" 
+    },
+    { 
+        name: "Greater Red Dart", 
+        irma_id: "0000172" 
     },
 ];
 export const [species, setSpecies] = createSignal(species_list[0].irma_id);
@@ -38,15 +42,49 @@ export function Selection() {
             "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
     };
 
+    const sunVegaSpec = {
+        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+        description: 'A simple bar chart with embedded data.',
+        data: {
+            "sequence": {
+              "start": 0,
+              "stop": 24,
+              "step": 0.25,
+              "as": "x"
+            }
+        },
+        transform: [
+            {
+                calculate: "sin(datum.x)",
+                as: "sin(x)",
+            },
+            {
+                calculate: "cos(datum.x)",
+                as: "cos(x)",
+            },
+        ],
+        width: 'container',
+        height: 'container',
+        mark: 'line',
+        encoding: {
+            x: {field: 'x', type: 'quantitative', axis: null},
+            y: {field: 'sin(x)', type: 'quantitative', axis: null}
+        }
+    };
+
 
     // Signals for keeping track of relevant information
     const [mapUrl, setMapUrl] = createSignal('Satellite');
+    const [pathIndex, setPathIndex] = createSignal(0);
+    const [pathIsPlaying, setPathIsPlaying] = createSignal(false);
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
     const [pathJson, setPathJson] = createSignal({});
 
     // Event handler function to switch the values of the selection
     const speciesHandler = (event) => {
         setSpecies(event.target.value.toString());
+        setObservation(event.target.value.toString());
+        renderFrame();
     }
 
     // Callback function that sets the current choice of the url we want to use
@@ -64,6 +102,60 @@ export function Selection() {
         return backgroundUrls[mapUrl()];
     }
 
+    let path = [];
+
+    /** @description Play the animation of moving through the appalachian trail */
+    async function pathAnimationCallback() {
+        if (pathIsPlaying()) {
+            setPathIsPlaying(false);
+            return;
+        } else {
+            setPathIsPlaying(true);
+        }
+
+        while (pathIsPlaying()) {
+            setPathIsPlaying(true);
+            for (let i = pathIndex(); i < path.length-1; i++) {
+                await new Promise((res) => {
+                    if (!pathIsPlaying()) {
+                        return;
+                    }
+                    gotoPoint(path[i], mean_path_position(i+1, 5));
+                    renderFrame("low");
+                    setTimeout(res, 50);
+                    setPathIndex(i+1);
+                });
+            }
+        }
+    }
+
+    function mean_path_position(index, range) {
+        let mean_lat = 0;
+        let mean_lng = 0;
+        let mean_alt = 0;
+
+        let begin = Math.max(index - range, 0);
+        let end = Math.min(index + range, path.length);
+       
+        // Loop <range> indices ahead and average the components of the positions
+        for (
+            let i = begin;
+            i < end;
+            i++
+        ) {
+            mean_lat += path[i].lat;
+            mean_lng += path[i].lng;
+            mean_alt += path[i].alt;
+        }
+
+        return new Point(Math.floor(mean_lat / (end-begin)), Math.floor(mean_lng / (end-begin)), Math.floor(mean_alt / (begin-end)));
+    }
+
+    function pausePath() {
+        setPathIsPlaying(false);
+        renderFrame("high");
+    }
+
     // Create the GeoJSON from a list of coordinates
     const coordsToPath = (data) => {
         let coordinates = [];
@@ -73,16 +165,33 @@ export function Selection() {
 
 		    ]
         }
-        for (let i = 0; i < data.length; i++) {
+        for (let i = 1; i < data.length; i++) {
             coordinates.push([data[i]["lng"], data[i]["lat"]]);
 
+            const INTERP_STEPS = 20;
+            const prev = new Point(data[i - 1]['lat'], data[i - 1]['lng']-13, data[i - 1]['alt']);
+            const curr = new Point(data[i]['lat'], data[i]['lng']-13, data[i]['alt']);
+            path.push(prev);
+            let j = 0;
+            for (j = 0; j < INTERP_STEPS; j++) {
+                path.push(new Point(
+                    linear_interp(prev.lat, curr.lat, j / INTERP_STEPS),
+                    linear_interp(prev.lng, curr.lng, j / INTERP_STEPS),
+                    linear_interp(prev.alt, curr.alt, j / INTERP_STEPS),
+                ));
+            }
             // Add the points that we want to diplay
             skeleton["features"].push(
                 {
                     "type": "Feature",
                     "properties": {
                         "type": "Point",
-                        callback: () => {gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]));}
+                        callback: () => {
+                            setPathIndex(i);
+                            gotoPoint(prev);
+                            renderFrame("high");
+                            // gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]), i);
+                        }
                     },
                     "geometry": {
                         "type": "Point",
@@ -110,10 +219,45 @@ export function Selection() {
     }
 
     onMount(() => {
+        vegaEmbed("#sunPlot", sunVegaSpec);
         setPathJson(
             coordsToPath(park)
         );
     });
+
+    const [currHour, setCurrHour] = createSignal(new Date().getHours() - 5);
+    const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
+    async function sunriseAnimation() {
+        if (sunriseIsPlaying()) {
+            setSunriseIsPlaying(false);
+            return;
+        } else {
+            setSunriseIsPlaying(true);
+        }
+        const STEP = 0.1;
+        const END = new Date().getHours() - 5 + 24;
+
+        while (currHour() < END && sunriseIsPlaying()) {
+            await new Promise((res) => {
+                console.log(`Hour: ${currHour()}`);
+                setRendererTime(currHour());
+                renderFrame("low");
+                
+                setCurrHour(currHour()+STEP);
+                setTimeout(res, 50)
+            });
+        }
+
+        if (sunriseIsPlaying()) {
+            setCurrHour(new Date().getHours() - 5);
+        }
+        setSunriseIsPlaying(false);
+    }
+
+    function endSunriseAnimation() {
+        renderFrame("high");
+        setSunriseIsPlaying(false);
+    }
 
     return (
         <div class={styles.container}>
@@ -211,17 +355,41 @@ export function Selection() {
                 <Button 
                     variant="contained" 
                     sx={{ 
+                            backgroundColor: '#eb9f34', 
+                            '&:hover': {
+                                backgroundColor: '#FFD254',
+                                color: '#CC5500',
+                            }
+                    }}
+                    onMouseDown={() => {
+                        pathAnimationCallback();
+                    }}
+                    onMouseUp={() => {
+                        pausePath();
+                    }}
+                    
+                    >Play Path</Button>
+                <Button 
+                    variant="contained" 
+                    sx={{ 
                             backgroundColor: '#CC5500', 
                             '&:hover': {
                                 backgroundColor: '#FFD254',
                                 color: '#CC5500',
                             }
                     }}
-                    onClick={() => {
-                        playSunrise();
+                    onMouseDown={() => {
+                        sunriseAnimation();
+                        // playSunrise();
+                    }}
+                    onMouseUp={() => {
+                        endSunriseAnimation();
                     }}
                     
                     >Play Sunrise</Button>
+                    
+                {/*<label style="color: white">Time:</label>
+                <div id="sunPlot" style="width: 30%; height: 90%;"></div>*/}
             </div>
         </div>
     );

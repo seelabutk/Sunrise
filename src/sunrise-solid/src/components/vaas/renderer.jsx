@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import park from '../../assets/park.json'
 import { 
     latlng_to_cartesian,
     Point,
@@ -81,6 +82,9 @@ export default class Renderer {
     /** @type {String} */
     current_light = "distant";
 
+    /** @type {String} */
+    current_species = species();
+
     /** @type {Event} */
     render_event;
 
@@ -94,6 +98,12 @@ export default class Renderer {
     render_dependencies = [];
 
     render_trigger = null;
+
+    /** @type {[]Point} */
+    path_data = [];
+
+    /** @type {Number} */
+    path_index = 0;
 
     /**
         * @param {HTML.Element} primary The primary canvas to render the final image to
@@ -172,6 +182,7 @@ export default class Renderer {
 
         // Setup the camera and trackball controls
         this.#setup_camera(this.original_position);
+        this.#setup_path();
         this.#setup_controls();
         this.#set_current_direction(this.#trackball_dir());
 
@@ -183,7 +194,8 @@ export default class Renderer {
         * @description Set the camera position to the desired spot
         * @param {Point} The position to place the camera
     */
-    set_camera_pos(point) {
+    set_camera_pos(point, controls = this.trackball) {
+        this.controls = controls;
         const position = latlng_to_cartesian(point.lat, point.lng, point.alt);
         this.camera.position.set(
             position.x / this.camera_scaling_factor,
@@ -193,6 +205,16 @@ export default class Renderer {
         this.camera.up.set(0, 1, 0);
         this.controls.update();
         this.#render_dispatch();
+    }
+
+    /**
+        * @description Setup the path data that the animation of following the path will follow
+    */
+    #setup_path() {
+        this.path_index = 0;
+        for (let i = 0; i < park.length; i++) {
+            this.path_data.push(park[i]);
+        }
     }
 
     /**
@@ -259,7 +281,8 @@ export default class Renderer {
         url.searchParams.append('samples', 4);
         url.searchParams.append('hour', this.current_time);
         url.searchParams.append('light', this.current_light);
-        url.searchParams.append('observation', species());
+        //url.searchParams.append('observation', species());
+        url.searchParams.append('observation', this.current_species);
 
         // Make the request
         return new Promise((res, rej) => {
@@ -295,15 +318,42 @@ export default class Renderer {
     }
 
     /**
+        * @description API to send a rendering request to the server
+    */
+    render_frame(resolution = "high") {
+        if (resolution === "high") {
+            this.current_resolution = this.highRes;
+            this.#reset_tiles();
+        } else if (resolution === "low") {
+            this.current_resolution = this.lowRes;
+            this.#lowq_tiles();
+        }
+        this.#render_dispatch();
+    }
+
+    /**
+        * @description Set the time of day that we want to render at
+        * @param {Number} hour The hour of the day we want to use
+    */
+    set_hour(hour) {
+        this.current_time = hour;
+    }
+
+
+
+    /**
         * @description Place the camera at a position according to lat, long, alt points
         * @param {Point} point The point to render at
+        * @param {Point} target The point we want to look at
     */
-    goto_point(point) {
+    goto_point(point, target = this.central_point) {
         this.controls = this.panning;
         this.current_light = 'sunSky';
         console.log(`Going to: ${point.lat}, ${point.lng}, ${point.alt}`);
+        console.log(`Target: ${target.lat}, ${target.lng}, ${target.alt}`);
         const spatial = latlng_to_cartesian(point.lat, point.lng, (point.alt / 1000) + 0.7);
-        const target = latlng_to_cartesian(this.central_point.lat, this.central_point.lng, (this.central_point.alt / 1000) + 0.7)
+        const lookat = latlng_to_cartesian(target.lat, target.lng, (target.alt / 1000) + 0.7);
+        // const target = latlng_to_cartesian(this.central_point.lat, this.central_point.lng, (this.central_point.alt / 1000) + 0.7)
         this.camera.position.copy(new THREE.Vector3(
             spatial.x / this.camera_scaling_factor, 
             spatial.y / this.camera_scaling_factor, 
@@ -315,12 +365,11 @@ export default class Renderer {
             spatial.z / this.camera_scaling_factor)
         );
         this.camera.lookAt(new THREE.Vector3(
-            target.x / this.camera_scaling_factor, 
-            target.y / this.camera_scaling_factor, 
-            target.z / this.camera_scaling_factor)
+            lookat.x / this.camera_scaling_factor, 
+            lookat.y / this.camera_scaling_factor, 
+            lookat.z / this.camera_scaling_factor)
         );
         this.#set_current_direction(this.#world_dir());
-        this.#render_dispatch();
     }
 
     /**
@@ -477,13 +526,21 @@ export default class Renderer {
             this.is_dragging = false;
         });
 
-        this.primary.addEventListener('wheel', (e) => {
+        this.primary.addEventListener('wheel', () => {
             this.#throttle(() => {
-                //this.controls.update();
+                this.controls.update();
                 this.#lowq_tiles();
                 this.#render_dispatch();
-            }, 20);
+            }, 75);
         });
+    }
+
+    /**
+        * @description Change which observation is being rendered
+        * @param {String} obs_id The irma_id number of the species we are rendering
+    */
+    change_observation(obs_id) {
+        this.current_species = obs_id;
     }
 
     /**

@@ -46,7 +46,11 @@ go---archive() {
         "data/earth/OSPGeometry.mesh.vertex.position.vec3f.bin" \
         "data/earth/OSPGeometry.mesh.vertex.texcoord.vec2f.bin" \
         "data/earth/OSPTexture.texture2d.data.vec3f.bin" \
+        "data/space/OSPTexture.texture2d.data.vec2f.bin" \
         "data/observation/OSPGeometricModel.index.vec1uc.bin" \
+        "data/observation_0000223/OSPGeometricModel.index.vec1uc.bin" \
+        "data/observation_0000172/OSPGeometricModel.index.vec1uc.bin" \
+        "data/observation_0000341/OSPGeometricModel.index.vec1uc.bin" \
         "data/park/OSPGeometry.mesh.index.vec4ui.bin" \
         "data/park/OSPGeometry.mesh.vertex.normal.vec3f.bin" \
         "data/park/OSPGeometry.mesh.vertex.position.vec3f.bin" \
