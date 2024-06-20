@@ -116,3 +116,29 @@ export const latlng_to_cartesian_vec3 = (latitude, longitude, altitude) => {
 
     return new THREE.Vector3(x, y, z);
 }
+
+export const mean_position = (arr, index, range) => {
+    let mean_x = 0;
+    let mean_y = 0;
+    let mean_z = 0;
+
+    let begin = Math.max(index - range, 0);
+    let end = Math.min(index + range, arr.length);
+   
+    // Loop <range> indices ahead and average the components of the positions
+    for (
+        let i = begin;
+        i < end;
+        i++
+    ) {
+        mean_x += arr[i].x;
+        mean_y += arr[i].y;
+        mean_z += arr[i].z;
+    }
+
+    return new THREE.Vector3(
+        mean_x / (end - begin),
+        mean_y / (end - begin),
+        mean_z / (end - begin)
+    );
+}

@@ -12,7 +12,7 @@ import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
 import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
-import { Point, linear_interp } from '../../utils';
+import { Point, linear_interp, mean_position } from '../../utils';
 
 // TODO: Remove this array and use data from the configuration instead
 const species_list = [
@@ -23,6 +23,10 @@ const species_list = [
     { 
         name: "Sugar Maple", 
         irma_id: "0000341" 
+    },
+    { 
+        name: "Greater Red Dart", 
+        irma_id: "0000172" 
     },
 ];
 export const [species, setSpecies] = createSignal(species_list[0].irma_id);
@@ -111,17 +115,45 @@ export function Selection() {
 
         while (pathIsPlaying()) {
             setPathIsPlaying(true);
-            for (let i = pathIndex(); i < path.length; i++) {
+            for (let i = pathIndex(); i < path.length-1; i++) {
                 await new Promise((res) => {
                     if (!pathIsPlaying()) {
                         return;
                     }
-                    gotoPoint(path[i]);
+                    gotoPoint(path[i], mean_path_position(i+1, 5));
+                    renderFrame("low");
                     setTimeout(res, 50);
                     setPathIndex(i+1);
                 });
             }
         }
+    }
+
+    function mean_path_position(index, range) {
+        let mean_lat = 0;
+        let mean_lng = 0;
+        let mean_alt = 0;
+
+        let begin = Math.max(index - range, 0);
+        let end = Math.min(index + range, path.length);
+       
+        // Loop <range> indices ahead and average the components of the positions
+        for (
+            let i = begin;
+            i < end;
+            i++
+        ) {
+            mean_lat += path[i].lat;
+            mean_lng += path[i].lng;
+            mean_alt += path[i].alt;
+        }
+
+        return new Point(Math.floor(mean_lat / (end-begin)), Math.floor(mean_lng / (end-begin)), Math.floor(mean_alt / (begin-end)));
+    }
+
+    function pausePath() {
+        setPathIsPlaying(false);
+        renderFrame("high");
     }
 
     // Create the GeoJSON from a list of coordinates
@@ -157,6 +189,7 @@ export function Selection() {
                         callback: () => {
                             setPathIndex(i);
                             gotoPoint(prev);
+                            renderFrame("high");
                             // gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]), i);
                         }
                     },
@@ -208,7 +241,7 @@ export function Selection() {
             await new Promise((res) => {
                 console.log(`Hour: ${currHour()}`);
                 setRendererTime(currHour());
-                renderFrame();
+                renderFrame("low");
                 
                 setCurrHour(currHour()+STEP);
                 setTimeout(res, 50)
@@ -222,6 +255,7 @@ export function Selection() {
     }
 
     function endSunriseAnimation() {
+        renderFrame("high");
         setSunriseIsPlaying(false);
     }
 
@@ -327,11 +361,14 @@ export function Selection() {
                                 color: '#CC5500',
                             }
                     }}
-                    onClick={() => {
+                    onMouseDown={() => {
                         pathAnimationCallback();
                     }}
+                    onMouseUp={() => {
+                        pausePath();
+                    }}
                     
-                    >{pathIsPlaying() ? "Pause Path" : "Play Path"}</Button>
+                    >Play Path</Button>
                 <Button 
                     variant="contained" 
                     sx={{ 

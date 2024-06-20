@@ -13,8 +13,8 @@ export const Map = (props) => {
         let url = urlCallback(props);
         const map = L.map(styles.selection_map)
             .fitBounds([
-                [35.58730848427449, -83.57321222420362],
-                [35.40251013833028, -84.0265365333673], 
+                [33.58730848427449, -82.57321222420362],
+                [37.40251013833028, -85.0265365333673], 
             ], {
                 maxZoom: 13,
                 minZoom: 9,

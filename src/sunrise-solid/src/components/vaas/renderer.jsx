@@ -194,7 +194,8 @@ export default class Renderer {
         * @description Set the camera position to the desired spot
         * @param {Point} The position to place the camera
     */
-    set_camera_pos(point) {
+    set_camera_pos(point, controls = this.trackball) {
+        this.controls = controls;
         const position = latlng_to_cartesian(point.lat, point.lng, point.alt);
         this.camera.position.set(
             position.x / this.camera_scaling_factor,
@@ -319,7 +320,14 @@ export default class Renderer {
     /**
         * @description API to send a rendering request to the server
     */
-    render_frame() {
+    render_frame(resolution = "high") {
+        if (resolution === "high") {
+            this.current_resolution = this.highRes;
+            this.#reset_tiles();
+        } else if (resolution === "low") {
+            this.current_resolution = this.lowRes;
+            this.#lowq_tiles();
+        }
         this.#render_dispatch();
     }
 
@@ -331,6 +339,8 @@ export default class Renderer {
         this.current_time = hour;
     }
 
+
+
     /**
         * @description Place the camera at a position according to lat, long, alt points
         * @param {Point} point The point to render at
@@ -340,6 +350,7 @@ export default class Renderer {
         this.controls = this.panning;
         this.current_light = 'sunSky';
         console.log(`Going to: ${point.lat}, ${point.lng}, ${point.alt}`);
+        console.log(`Target: ${target.lat}, ${target.lng}, ${target.alt}`);
         const spatial = latlng_to_cartesian(point.lat, point.lng, (point.alt / 1000) + 0.7);
         const lookat = latlng_to_cartesian(target.lat, target.lng, (target.alt / 1000) + 0.7);
         // const target = latlng_to_cartesian(this.central_point.lat, this.central_point.lng, (this.central_point.alt / 1000) + 0.7)
@@ -359,7 +370,6 @@ export default class Renderer {
             lookat.z / this.camera_scaling_factor)
         );
         this.#set_current_direction(this.#world_dir());
-        this.#render_dispatch();
     }
 
     /**
@@ -516,12 +526,12 @@ export default class Renderer {
             this.is_dragging = false;
         });
 
-        this.primary.addEventListener('wheel', (e) => {
+        this.primary.addEventListener('wheel', () => {
             this.#throttle(() => {
-                //this.controls.update();
+                this.controls.update();
                 this.#lowq_tiles();
                 this.#render_dispatch();
-            }, 20);
+            }, 75);
         });
     }
 

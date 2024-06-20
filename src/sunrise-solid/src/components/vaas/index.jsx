@@ -5,8 +5,8 @@ import { Point } from '../../utils';
 /** @description Place the renderer at a specific point
     * @param {Point} point The point that we want to go to
 */
-export function gotoPoint(point) {
-    renderer().goto_point(point);
+export function gotoPoint(point, target) {
+    renderer().goto_point(point, target);
 }
 
 /** @description Change which observation species we are looking at
@@ -46,9 +46,10 @@ export const playSunrise = () => {
 
 /**
     * @description Tell the renderer to render a frame
+    * @param {String} res The resolution we want to render at
 */
-export const renderFrame = () => {
-    renderer().render_frame();
+export const renderFrame = (res) => {
+    renderer().render_frame(res);
 }
 
 // The renderer API to the server that gets images
