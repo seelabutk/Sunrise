@@ -1092,6 +1092,16 @@ class Scene(WithExitStackMixin):
         # num_x_bins = 2
         # num_y_bins = 2
 
+        img_start_x, img_end_x = col_id / num_x_bins, (1+col_id) / num_x_bins
+        img_start_y, img_end_y = row_id / num_y_bins, (1+row_id) / num_y_bins
+
+        GHOST = 16
+        dx = (img_end_x - img_start_x) / request.width
+        dy = (img_end_y - img_start_y) / request.height
+
+        img_start_x, img_end_x = img_start_x - GHOST * dx, img_end_x + GHOST * dx
+        img_start_y, img_end_y = img_start_y - GHOST * dy, img_end_y + GHOST * dy
+
         # px = (col + 0.5) / (2 ** (zoom))
         # px = 1 - px  # flip x
         # py = (row + 0.5) / (2 ** (zoom))
@@ -1104,14 +1114,16 @@ class Scene(WithExitStackMixin):
         # print(f'{px=}, {py=}, {pz=} {height=}')
 
         lib.ospSetVec2f(camera, b'imageStart', *(
-            0.0 + (col_id / num_x_bins), 0.0 + (row_id / num_y_bins)
+            img_start_x, img_start_y
+            # 0.0 + (col_id / num_x_bins), 0.0 + (row_id / num_y_bins)
             # 0.0 + (col / num_x_bins), 0.0 + (row / num_y_bins)
             # 1.0, 0.0,  # flip x
             # 0.0, 1.0,  # flip y
             # 1.0, 1.0,  # flip x and y
         ))
         lib.ospSetVec2f(camera, b'imageEnd', *(
-            0.0 + ((1+col_id) / num_x_bins), 0.0 + ((1+row_id) / num_y_bins)
+            img_end_x, img_end_y
+            # 0.0 + ((1+col_id) / num_x_bins), 0.0 + ((1+row_id) / num_y_bins)
             # 0.0 + ((1+col) / num_x_bins), 0.0 + ((1+row) / num_y_bins)
             # 1.0, 1.0,  # flip none
             # 0.0, 1.0  # flip x
@@ -1132,7 +1144,7 @@ class Scene(WithExitStackMixin):
         lib.ospSetVec3f(camera, b'up', *(
             request.up
             # 0.0, 1.0, 0.0,  # y+ up
-            # 0.0, -1.0, 0.0,  # y- up
+            # 0.0, -1.0, 0.0,  # y- p
             # 0.0, 0.0, 1.0,
         ))
         lib.ospSetVec3f(camera, b'direction', *(
@@ -1145,8 +1157,8 @@ class Scene(WithExitStackMixin):
         lib.ospCommit(camera)
 
         framebuffer = lib.ospNewFrameBuffer(
-            request.width,
-            request.height,
+            request.width + 2 * GHOST,
+            request.height + 2 * GHOST,
             (
                 # lib.OSP_FB_RGBA8
                 lib.OSP_FB_SRGBA
@@ -1168,13 +1180,15 @@ class Scene(WithExitStackMixin):
         encoding_start = time.time_ns()
         image = PIL.Image.frombytes(
             'RGBA',
-            (request.width, request.height),
-            ctypes.string_at(rgba, size=(request.width * request.height * 4)),
+            (request.width + 2*GHOST, request.height + 2*GHOST),
+            ctypes.string_at(rgba, size=((request.width + 2*GHOST)* (request.height + 2*GHOST) * 4)),
             'raw',
             'RGBA',
             0,
             1,
         )
+        w, h = image.size
+        print(f'W: {w}, H: {h}')
         image.load()
         encoding_time = time.time_ns() - encoding_start
         self.logger.info(event='encoding_time_ns', time=encoding_time, dimension=[request.width, request.height])
@@ -1189,6 +1203,14 @@ class Scene(WithExitStackMixin):
 
         time_rendering = time.time_ns() - render_start
         self.logger.info(event='rendering_time_ns', time=time_rendering, dimension=[request.width, request.height])
+        image = image.crop((
+            GHOST,
+            GHOST,
+            w - GHOST,
+            h - GHOST,
+        ))
+        w, h = image.size
+        print(f'After Crop: W: {w}, H: {h}')
 
         return sunrise.model.RenderingResponse(
             image=image,
