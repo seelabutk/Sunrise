@@ -924,11 +924,13 @@ class Scene(WithExitStackMixin):
         sunlight = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=15, tzinfo=datetime.timezone(
-                    offset=datetime.timedelta(hours=-5),
+                    offset=datetime.timedelta(hours=0),
+                    # offset=datetime.timedelta(hours=-5),
                     name='EST'
                     ))
                 + 
-                datetime.timedelta(hours=5)
+                datetime.timedelta(hours=0)
+                # datetime.timedelta(hours=5)
                 # datetime.timedelta(hours=request.hour)
             ),
             light_type='distant',
@@ -1037,7 +1039,8 @@ class Scene(WithExitStackMixin):
         self.distant = self.enter(Sunlight(
             now=(
                 datetime.datetime(year=2023, month=6, day=1, hour=0, tzinfo=datetime.timezone(
-                    offset=datetime.timedelta(hours=6),  # Eastern Time
+                    offset=datetime.timedelta(hours=0),  # Eastern Time
+                    # offset=datetime.timedelta(hours=6),  # Eastern Time
                     # offset=datetime.timedelta(hours=-5),  # Eastern Time
                     name='EST'
                 ))

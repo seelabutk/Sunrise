@@ -114,7 +114,7 @@ export class TrackballCameraControls extends CameraControls {
         const maxSpeed = 30.0;
         const minSpeed = 0.01;
         const maxZoomSpeed = 1.5;
-        const minZoomSpeed = 0.4;
+        const minZoomSpeed = 0.03;
         const maxZoomDist = this.#controls.maxDistance;
         const minZoomDist = this.#controls.minDistance;
 

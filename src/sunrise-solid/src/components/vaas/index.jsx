@@ -32,7 +32,7 @@ export function gotoPark() {
             35.602848,
             -83.5 - 13,
             //37,
-            8
+            29
         )
     );
 }

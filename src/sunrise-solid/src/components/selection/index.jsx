@@ -225,7 +225,7 @@ export function Selection() {
         );
     });
 
-    const [currHour, setCurrHour] = createSignal(new Date().getHours() - 5);
+    const [currHour, setCurrHour] = createSignal(new Date().getHours());
     const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
     async function sunriseAnimation() {
         if (sunriseIsPlaying()) {
@@ -235,7 +235,7 @@ export function Selection() {
             setSunriseIsPlaying(true);
         }
         const STEP = 0.1;
-        const END = new Date().getHours() - 5 + 24;
+        const END = new Date().getHours() + 24;
 
         while (currHour() < END && sunriseIsPlaying()) {
             await new Promise((res) => {
