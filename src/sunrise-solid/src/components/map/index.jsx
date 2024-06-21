@@ -58,9 +58,15 @@ export const Map = (props) => {
                     });
                     circle.bindPopup(
                         <div>
-                            <a target="_" href="">
-                                <h3>Clingman's Dome</h3>
+                            <a target="_" href="" style="display: flex; flex-direction: column; align-items: center;">
+                                <h3>Clingmans Dome</h3>
                             </a>
+                            <p style="font-size: 16px;">
+                                A mountain in the Great Smoky Mountains of Tennessee and North Carolina in the Southeastern United States. Its name in Cherokee is Kuwahi or Kuwohi[4] (ᎫᏩᎯ or ᎫᏬᎯ), meaning "mulberry place." 
+                            </p>
+                            <p style="font-size: 16px;">
+                                At an elevation of 6,643 feet (2,025 m), it is the highest mountain in the Great Smoky Mountains National Park, the highest point in the state of Tennessee, and the highest point along the 2,192-mile (3,528 km) Appalachian Trail. It is also the third highest point in eastern mainland North America, after Mount Mitchell (6,684 feet or 2,037 metres) and Mount Craig (6,647 feet or 2,026 metres).
+                            </p>
                         </div>
                     );
                     circle.on('mouseover', () => {
