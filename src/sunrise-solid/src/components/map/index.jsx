@@ -56,6 +56,17 @@ export const Map = (props) => {
                     circle.on('click', () => {
                         feature.properties.callback()
                     });
+                    circle.bindPopup(
+                        <div>
+                            <a target="_" href="">
+                                <h3>Clingman's Dome</h3>
+                            </a>
+                        </div>
+                    );
+                    circle.on('mouseover', () => {
+                        circle.openPopup();
+                    });
+                    // TODO: Close popup without clicking? 
                     return circle;
                 }
             },
