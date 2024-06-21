@@ -31,7 +31,7 @@ export const Map = (props) => {
         L.geoJSON(pathData(props), {
             style: (feature) => {
                 return {
-                    color: "green",
+                    // color: "green",
                     weight: 10,
                     opacity: 1.0,
                 }
@@ -41,16 +41,27 @@ export const Map = (props) => {
                     let circle = L.circleMarker(latlng, {
                         radius: 5,
                         tolerance: 10,
-                        color: 'blue',
+                        color: '#00006f',
                     });
                     circle.on('click', () => {
                         feature.properties.callback()
                     });
                     return circle;
-                } 
+                } else if (feature.properties.type === "Dome") {
+                    let circle = L.circleMarker(latlng, {
+                        radius: 5,
+                        tolerance: 10,
+                        color: 'yellow',
+                    });
+                    circle.on('click', () => {
+                        feature.properties.callback()
+                    });
+                    return circle;
+                }
             },
             onEachFeature: () => {},
         }).addTo(map);
+
     });
 
     return (
