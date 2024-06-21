@@ -181,17 +181,27 @@ export function Selection() {
                 ));
             }
             // Add the points that we want to diplay
+            let type = "";
+            if (data[i]["lat"] === 35.5621322 && data[i]["lng"] === -83.5035302) {
+                console.log("FOUND DOME");
+                type = "Dome";
+            } else {
+                type = "Point";
+            }
             skeleton["features"].push(
                 {
                     "type": "Feature",
                     "properties": {
-                        "type": "Point",
+                        "type": type,
+                        // "type": "Point",
                         callback: () => {
                             setPathIndex(i);
-                            gotoPoint(prev);
+                            gotoPoint(prev, curr);
                             renderFrame("high");
                             // gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]), i);
-                        }
+                        },
+                        openPopup: () => {
+                        },
                     },
                     "geometry": {
                         "type": "Point",
@@ -209,9 +219,12 @@ export function Selection() {
                         "type": "LineString",
                     },
                 "geometry": {
+                    "style": {
+                        "color": "#ffffff",
+                    },
                     "type": "LineString",
                     "coordinates": coordinates
-                }
+                },
             }
         );
 	    
