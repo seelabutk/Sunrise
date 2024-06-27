@@ -15,6 +15,7 @@ dependencies = [
     "fastapi",
     "jinja2",
     "bs4",
+    "pandas",
     "pickleshare",
     "matplotlib",
     "uvicorn",
