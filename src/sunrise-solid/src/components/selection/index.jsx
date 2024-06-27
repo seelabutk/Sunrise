@@ -29,7 +29,21 @@ const species_list = [
         irma_id: "0000172" 
     },
 ];
-export const [species, setSpecies] = createSignal(species_list[0].irma_id);
+
+/**
+    * @description Find a species with the name in the list
+    * @param {String} name The common name of the species
+*/
+function find_species_by_id(id) {
+    for(let i = 0; i < species_list.length; i++) {
+        if (species_list[i].irma_id === id) {
+            return species_list[i];
+        }
+    }
+
+    return null;
+}
+export const [species, setSpecies] = createSignal(species_list[0]);
 
 export function Selection() {
     // TODO: Read the config from the server to get the available urls
@@ -72,7 +86,6 @@ export function Selection() {
         }
     };
 
-
     // Signals for keeping track of relevant information
     const [mapUrl, setMapUrl] = createSignal('Satellite');
     const [pathIndex, setPathIndex] = createSignal(0);
@@ -82,8 +95,9 @@ export function Selection() {
 
     // Event handler function to switch the values of the selection
     const speciesHandler = (event) => {
-        setSpecies(event.target.value.toString());
-        setObservation(event.target.value.toString());
+        const s = find_species_by_id(event.target.value.toString());
+        setSpecies(s);
+        setObservation(s.irma_id);
         renderFrame();
     }
 
@@ -272,6 +286,11 @@ export function Selection() {
         setSunriseIsPlaying(false);
     }
 
+    const [infoIsOpen, setInfoIsOpen] = createSignal(false);
+    const openSpeciesInfo = () => {
+        setInfoIsOpen(!infoIsOpen());
+    }
+
     return (
         <div class={styles.container}>
             <div class={styles.species}>
@@ -281,7 +300,7 @@ export function Selection() {
                         id='species-selector'
                         displayEmpty
                         defaultValue=""
-                        value={species()}
+                        value={species().irma_id}
                         sx={{
                             width: '100%',
                             height: '3vh',
@@ -296,6 +315,31 @@ export function Selection() {
                             species => <MenuItem value={species.irma_id}>{species.name}</MenuItem>
                         }</For>
                     </Select>
+                    <Button variant="outlined" onClick={openSpeciesInfo} sx={{color: 'white', border: '1px solid white'}}>View More</Button>
+                    <Dialog
+                        maxWidth='md'
+                        open={infoIsOpen()}
+                        onClose={openSpeciesInfo}
+                    >
+                        <DialogTitle sx={{backgroundColor: '#141414', color: 'white'}}>{species().name}</DialogTitle>
+                        <DialogContent sx={{backgroundColor: '#141414'}}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                backgroundColor: '#1e1e1e',
+                            }}
+                        >
+                            <div style="height: 80vh; width: 80vw;">
+                                BLAH BLAH BLAH BLAH LOREM IPSUM
+                                BLAH BLAH BLAH BLAH LOREM IPSUM
+                                BLAH BLAH BLAH BLAH LOREM IPSUM
+                                BLAH BLAH BLAH BLAH LOREM IPSUM
+                                BLAH BLAH BLAH BLAH LOREM IPSUM
+                            </div>
+                        </Box>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 

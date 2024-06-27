@@ -252,7 +252,7 @@ async def reccomendation(
     # slist = slist.loc
     # top_related_species = species_matrix.groupby('Species').first().loc[29846].sort_values(ascending=False)[:10]
     top_related_species = species_matrix.groupby('Species').first().loc[species_id].sort_values(ascending=False)[:10]
-    recc_obj = json.dumps({ "related_species": top_related_species.tolist() })
+    recc_obj = json.dumps({ "related_species": top_related_species.keys().tolist() })
     # print(top_related_species)
 
     return auto.fastapi.Response(

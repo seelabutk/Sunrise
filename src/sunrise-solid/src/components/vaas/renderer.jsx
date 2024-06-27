@@ -84,7 +84,7 @@ export default class Renderer {
     current_light = "distant";
 
     /** @type {String} */
-    current_species = species();
+    current_species = species().irma_id;
 
     /** @type {Event} */
     render_event;
