@@ -337,7 +337,7 @@ export default class Renderer {
         * @param {Number} hour The hour of the day we want to use
     */
     set_hour(hour) {
-        this.current_time = hour;
+        this.current_time = hour - 5;
     }
 
 
