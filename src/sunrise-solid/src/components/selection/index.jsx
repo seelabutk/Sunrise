@@ -286,8 +286,40 @@ export function Selection() {
         setSunriseIsPlaying(false);
     }
 
+    async function getSpeciesRecs() {
+        // http://sahara.eecs.utk.edu:5000/api/reccomendation?irma_id=29846
+        const base = "http://sahara.eecs.utk.edu:5000";
+        let url = new URL('api/reccomendation', base);
+        // url.searchParams.append('irma_id', species().irma_id);
+        url.searchParams.append('irma_id', '29846');
+        console.log(`URL: ${url}`);
+        
+        try {
+            const response = await fetch(
+                url,
+                {
+                    method: "GET",
+                    mode: 'cors',
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                }
+            );
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const json = await response.json();
+            console.log(`Recs: ${json}`);
+        } catch (error) {
+            console.error(error.message);
+        }
+    }
+
     const [infoIsOpen, setInfoIsOpen] = createSignal(false);
+    const [speciesRecs, setSpeciesRecs] = createSignal([]);
     const openSpeciesInfo = () => {
+        getSpeciesRecs();
         setInfoIsOpen(!infoIsOpen());
     }
 
@@ -331,11 +363,7 @@ export function Selection() {
                             }}
                         >
                             <div style="height: 80vh; width: 80vw;">
-                                BLAH BLAH BLAH BLAH LOREM IPSUM
-                                BLAH BLAH BLAH BLAH LOREM IPSUM
-                                BLAH BLAH BLAH BLAH LOREM IPSUM
-                                BLAH BLAH BLAH BLAH LOREM IPSUM
-                                BLAH BLAH BLAH BLAH LOREM IPSUM
+                                
                             </div>
                         </Box>
                         </DialogContent>

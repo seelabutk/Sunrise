@@ -7,6 +7,7 @@ from ._auto import auto
 from . import scene
 from . import model
 from . import config as conf
+from fastapi.middleware.cors import CORSMiddleware
 import json
 import asyncio
 import structlog
@@ -121,6 +122,19 @@ app.mount(
             auto.pathlib.Path(__file__).parent / 'static'
         ),
     ),
+)
+
+origins = [
+    "http://localhost:5000",
+    "http://localhost:3000",
+]
+        
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins="*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Read the configuration from the "config.toml" file 
