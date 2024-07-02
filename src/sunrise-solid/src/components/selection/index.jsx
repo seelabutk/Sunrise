@@ -143,14 +143,15 @@ export function Selection() {
         }
     }
 
+    /** @description Get a point that is from the averages of 'range' on either direction along the path */
     function mean_path_position(index, range) {
         let mean_lat = 0;
         let mean_lng = 0;
         let mean_alt = 0;
-
+    
         let begin = Math.max(index - range, 0);
         let end = Math.min(index + range, path.length);
-       
+      
         // Loop <range> indices ahead and average the components of the positions
         for (
             let i = begin;
@@ -161,7 +162,7 @@ export function Selection() {
             mean_lng += path[i].lng;
             mean_alt += path[i].alt;
         }
-
+    
         return new Point(Math.floor(mean_lat / (end-begin)), Math.floor(mean_lng / (end-begin)), Math.floor(mean_alt / (begin-end)));
     }
 
@@ -284,11 +285,11 @@ export function Selection() {
         setSunriseIsPlaying(false);
     }
 
+    /** @description Get the related species from the species that we are looking at currently */
     async function getSpeciesRecs() {
         const base = "http://sahara.eecs.utk.edu:5000";
         let url = new URL('api/reccomendation', base);
         url.searchParams.append('irma_id', '29846');
-        // console.log(`URL: ${url}`);
 
         try {
             const response = await fetch(
@@ -320,10 +321,39 @@ export function Selection() {
         }
     }
 
+    async function getSpeciesInfo() {
+        const base = "http://sahara.eecs.utk.edu:5000";
+        let url = new URL('api/wikipedia', base);
+        url.searchParams.append('irma_id', '0029846');
+
+        try {
+            const response = await fetch(
+                url,
+                {
+                    method: "GET",
+                    mode: 'cors',
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const json = await response.json();
+            setSpeciesInfo(json);
+        } catch (error) {
+            console.error(error.message);
+        }
+     }
+
     const [infoIsOpen, setInfoIsOpen] = createSignal(false);
     const [speciesRecs, setSpeciesRecs] = createSignal([]);
     const [speciesInfo, setSpeciesInfo] = createSignal({});
     const openSpeciesInfo = async () => {
+        await getSpeciesInfo();
         await getSpeciesRecs();
         setInfoIsOpen(!infoIsOpen());
     }
@@ -369,12 +399,27 @@ export function Selection() {
                         >
                             <div class={styles.species_info_container}>
                                 <div class={styles.species_info}>
-                                    
+                                    <img src={speciesInfo().image} height="80px"/>
+                                    {speciesInfo().summary}
                                 </div>
                                 <div class={styles.related}>
-                                    You may be interested in:
+                                    You may also be interested in:
                                     <For each={speciesRecs()}>{
-                                        related => <Button variant='outlined'>{related.common_name}</Button>
+                                        related => <Button 
+                                                        variant='outlined' 
+                                                    sx={{
+                                                        width: '70%',
+                                                        color: 'white',
+                                                        border: '0',
+                                                        borderBottom: '1px solid white',
+                                                        borderRadius: '0',
+
+                                                        '&:hover': {
+                                                            border: '0',
+                                                            backgroundColor: 'gray',
+                                                        }
+                                                    }}
+                                                    >{related.common_name}</Button>
                                     }</For>
                                 </div>
                             </div>

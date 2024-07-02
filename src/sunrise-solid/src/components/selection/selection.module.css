@@ -76,14 +76,29 @@
 .species_info_container {
     height: 80vh;
     width: 80vw;
+    font-size: 20px;
+    color: white;
 }
 
 .species_info {
-    font-size: 16px;
-    color: white;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 13px 0;
+
+}
+
+.species_img {
+    width: 10vw;
+    height: 10vh;
 }
 
 .related {
     display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    border-top: 1.5px solid gray;
     flex-direction: column;
 }
