@@ -1,4 +1,5 @@
 import { createSignal, onCleanup } from 'solid-js';
+import Species from '../assets/species.json'
 
 /**
     * @description Represents a point in lat, lng and alt
@@ -16,6 +17,25 @@ export class Point {
         this.lat = lat;
         this.lng = lng;
         this.alt = alt;
+    }
+}
+
+/**
+    * @description Find a species object based on the irma id
+    * @param {Number} id The irma id of the species that we want to find
+*/
+export function species_lookup_by_irma_id(id) {
+    // Ensure the id is in correct format
+    id = id.toString();
+    while (id.length < 7) {
+        id = '0' + id;
+    }
+
+    for (let i = 0; i < Species.length; i++) {
+        if (Species[i].irma_id == id) {
+            console.log("FOUND SPECIES");
+            return Species[i];
+        }
     }
 }
 

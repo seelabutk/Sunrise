@@ -12,7 +12,7 @@ import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
 import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
-import { Point, linear_interp, mean_position } from '../../utils';
+import { Point, linear_interp, species_lookup_by_irma_id } from '../../utils';
 
 // TODO: Remove this array and use data from the configuration instead
 const species_list = [
@@ -287,12 +287,13 @@ export function Selection() {
     }
 
     async function getSpeciesRecs() {
-        // http://sahara.eecs.utk.edu:5000/api/reccomendation?irma_id=29846
         const base = "http://sahara.eecs.utk.edu:5000";
         let url = new URL('api/reccomendation', base);
-        // url.searchParams.append('irma_id', species().irma_id);
         url.searchParams.append('irma_id', '29846');
         console.log(`URL: ${url}`);
+
+        let species = species_lookup_by_irma_id(29846);
+        console.log(species);
         
         try {
             const response = await fetch(
@@ -310,7 +311,7 @@ export function Selection() {
             }
 
             const json = await response.json();
-            console.log(`Recs: ${json}`);
+            console.log(json);
         } catch (error) {
             console.error(error.message);
         }
