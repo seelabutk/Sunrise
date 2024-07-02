@@ -71,3 +71,19 @@
     align-items: center;
     justify-content: space-around;
 }
+
+/* RELATED SPECIES DIALOG */
+.species_info_container {
+    height: 80vh;
+    width: 80vw;
+}
+
+.species_info {
+    font-size: 16px;
+    color: white;
+}
+
+.related {
+    display: flex;
+    flex-direction: column;
+}

@@ -23,12 +23,15 @@ export class Point {
 /**
     * @description Find a species object based on the irma id
     * @param {Number} id The irma id of the species that we want to find
+    * @param {Boolean} isnum Whether the input is a number or string. If it is a number we have to manipulate it
 */
-export function species_lookup_by_irma_id(id) {
+export function species_lookup_by_irma_id(id, isnum=false) {
     // Ensure the id is in correct format
-    id = id.toString();
-    while (id.length < 7) {
-        id = '0' + id;
+    if (isnum) {
+        id = id.toString();
+        while (id.length < 7) {
+            id = '0' + id;
+        }
     }
 
     for (let i = 0; i < Species.length; i++) {
@@ -37,6 +40,20 @@ export function species_lookup_by_irma_id(id) {
             return Species[i];
         }
     }
+}
+
+/**
+    * @description Search wikipedia using their API for the query
+    * @param {String} query What we are searching for
+*/
+export const wikipedia_query = async (searchQuery) => {
+    const endpoint = `https://en.wikipedia.org/w/api.php?action=query&list=search&prop=info&inprop=url&utf8=&format=json&origin=*&srlimit=20&srsearch=${searchQuery}`;
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+        throw Error(response.statusText);
+    }
+    const json = await response.json();
+    return json;
 }
 
 export function debounce(signalSetter, delay) {

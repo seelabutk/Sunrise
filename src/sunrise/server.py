@@ -243,6 +243,24 @@ async def index(
         ),
     )
 
+# API Endpoint for getting data from the wikipedia page for 
+# the given species
+@app.get('/api/wikipedia')
+async def wikipedia(
+    *,
+    irma_id: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(alias='irma_id')
+    ],
+    request: auto.fastapi.Request,
+):
+    with open('wikipedia.json') as f:
+        data = auto.json.load(f)
+        return auto.fastapi.Response(
+            content=auto.json.dumps(data[irma_id]),
+            media_type='application/json',
+        )
+
 # API Route to get the 10 most relevant
 # species for the one specifies
 @app.get('/api/reccomendation')

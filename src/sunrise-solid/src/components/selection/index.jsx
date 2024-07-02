@@ -12,7 +12,7 @@ import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
 import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
-import { Point, linear_interp, species_lookup_by_irma_id } from '../../utils';
+import { Point, linear_interp, species_lookup_by_irma_id, wikipedia_query } from '../../utils';
 
 // TODO: Remove this array and use data from the configuration instead
 const species_list = [
@@ -197,7 +197,6 @@ export function Selection() {
             // Add the points that we want to diplay
             let type = "";
             if (data[i]["lat"] === 35.5621322 && data[i]["lng"] === -83.5035302) {
-                console.log("FOUND DOME");
                 type = "Dome";
             } else {
                 type = "Point";
@@ -266,7 +265,6 @@ export function Selection() {
 
         while (currHour() < END && sunriseIsPlaying()) {
             await new Promise((res) => {
-                console.log(`Hour: ${currHour()}`);
                 setRendererTime(currHour());
                 renderFrame("low");
                 
@@ -290,11 +288,8 @@ export function Selection() {
         const base = "http://sahara.eecs.utk.edu:5000";
         let url = new URL('api/reccomendation', base);
         url.searchParams.append('irma_id', '29846');
-        console.log(`URL: ${url}`);
+        // console.log(`URL: ${url}`);
 
-        let species = species_lookup_by_irma_id(29846);
-        console.log(species);
-        
         try {
             const response = await fetch(
                 url,
@@ -306,12 +301,20 @@ export function Selection() {
                     }
                 }
             );
+            
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
             }
 
             const json = await response.json();
-            console.log(json);
+            let related = json.related_species;
+            console.log(related);
+            
+            let recs = []
+            for (let i = 0; i < related.length; i++) {
+                recs.push(species_lookup_by_irma_id(json.related_species[i]));
+            }
+            setSpeciesRecs(recs);
         } catch (error) {
             console.error(error.message);
         }
@@ -319,8 +322,9 @@ export function Selection() {
 
     const [infoIsOpen, setInfoIsOpen] = createSignal(false);
     const [speciesRecs, setSpeciesRecs] = createSignal([]);
-    const openSpeciesInfo = () => {
-        getSpeciesRecs();
+    const [speciesInfo, setSpeciesInfo] = createSignal({});
+    const openSpeciesInfo = async () => {
+        await getSpeciesRecs();
         setInfoIsOpen(!infoIsOpen());
     }
 
@@ -363,8 +367,16 @@ export function Selection() {
                                 backgroundColor: '#1e1e1e',
                             }}
                         >
-                            <div style="height: 80vh; width: 80vw;">
-                                
+                            <div class={styles.species_info_container}>
+                                <div class={styles.species_info}>
+                                    
+                                </div>
+                                <div class={styles.related}>
+                                    You may be interested in:
+                                    <For each={speciesRecs()}>{
+                                        related => <Button variant='outlined'>{related.common_name}</Button>
+                                    }</For>
+                                </div>
                             </div>
                         </Box>
                         </DialogContent>
