@@ -1,17 +1,11 @@
 import styles from './selection.module.css';
 import {
-    Box,
     Select,
     MenuItem,
     Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
-import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
-import park from '../../assets/park.json';
-
+import { gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import {
     MapSelect
 } from './map.jsx';
@@ -20,7 +14,6 @@ import {
     find_species_by_id,
 } from './species.jsx';
 import { 
-    coordsToPath, 
     setPathIsPlaying, 
     pathAnimationCallback,
 } from './path.jsx';
@@ -28,18 +21,20 @@ import {
     Reccomendations,
 } from './reccomendation.jsx';
 
+// List of all species
 let species_list = setup_species();
+
+// State for selectors to be able to read and set
+// the species that we are looking at
 export const [species, setSpecies] = createSignal(species_list[0]);
 
+/**
+    * @description Component for selecting the species, path, and map information
+*/
 export function Selection() {
-
     // Signals for keeping track of relevant information
-    const [mapUrl, setMapUrl] = createSignal('Satellite');
-    const [mapIsOpen, setMapIsOpen] = createSignal(false);
-    const [pathJson, setPathJson] = createSignal({});
     const [currHour, setCurrHour] = createSignal(new Date().getHours());
     const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
-    const [infoIsOpen, setInfoIsOpen] = createSignal(false);
 
     /// HANDLERS ///
     
@@ -51,21 +46,6 @@ export function Selection() {
         renderFrame();
     }
 
-    // // Callback function that sets the current choice of the url we want to use
-    // const mapUrlHandler = (event) => {
-    //     setMapUrl(event.target.value.toString());
-    // }
-    //
-    // // Open the leaflet map component
-    // const openMap = () => {
-    //     setMapIsOpen(!mapIsOpen());
-    // }
-    //
-    // // Callback function that gets the url we want for the styling of the leaflet tiles
-    // const urlCallback = () => {
-    //     return backgroundUrls[mapUrl()];
-    // }
-
     /** @description Pause the path animation */
     function pausePath() {
         setPathIsPlaying(false);
@@ -75,9 +55,6 @@ export function Selection() {
     onMount(() => {
         /** Uncomment for the sine plot for the day/night cycle **/
         // vegaEmbed("#sunPlot", sunVegaSpec);
-        // setPathJson(
-        //     coordsToPath(park)
-        // );
     });
 
     // For the sunrise animation controls
@@ -145,7 +122,6 @@ export function Selection() {
             
             <div class={styles.verticalMarker}></div>
 
-            {/**/}
             <div class={styles.rendererSelections}>
                 <Button 
                     variant="contained" 
@@ -177,6 +153,7 @@ export function Selection() {
                     }}
                     
                     >Play Path</Button>
+                
                 <Button 
                     variant="contained" 
                     sx={{ 

@@ -107,12 +107,10 @@ export const coordsToPath = (data) => {
                 "type": "Feature",
                 "properties": {
                     "type": type,
-                    // "type": "Point",
                     callback: () => {
                         setPathIndex(i);
                         gotoPoint(prev, curr);
                         renderFrame("high");
-                        // gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]), i);
                     },
                     openPopup: () => {
                     },
