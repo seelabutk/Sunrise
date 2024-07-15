@@ -43,6 +43,24 @@ export function species_lookup_by_irma_id(id, isnum=false) {
 }
 
 /**
+    * @param {String} id The irma id we want to sanitize
+*/
+export function sanitizeId(id) {
+    let newid = '';
+    let i = 0;
+
+    for (i = 0; i < id.length; i++) {
+        if (id[i] === '0') break;
+    }
+
+    newid = id.substr(i);
+
+    console.log(`Sanitized: ${newid}`);
+    return newid;
+}
+
+
+/**
     * @description Search wikipedia using their API for the query
     * @param {String} query What we are searching for
 */

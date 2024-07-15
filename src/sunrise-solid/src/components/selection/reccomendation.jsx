@@ -1,3 +1,80 @@
+import { createSignal } from "solid-js";
+import { species_lookup_by_irma_id, sanitizeId } from '../../utils';
+
+export const [speciesRecs, setSpeciesRecs] = createSignal([]);
+export const [speciesInfo, setSpeciesInfo] = createSignal({});
+
+
+export async function getSpeciesInfo(species) {
+    const base = "http://sahara.eecs.utk.edu:5000";
+    let url = new URL('api/wikipedia', base);
+    // url.searchParams.append('irma_id', species().irma_id);
+    url.searchParams.append('irma_id', sanitizeId(species.irma_id));
+    // url.searchParams.append('irma_id', '0029846');
+
+    try {
+        const response = await fetch(
+            url,
+            {
+                method: "GET",
+                mode: 'cors',
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
+
+        const json = await response.json();
+        setSpeciesInfo(json);
+    } catch (error) {
+        console.error(error.message);
+    }
+ }
+
+/** @description Get the related species from the species that we are looking at currently */
+export async function getSpeciesRecs(species) {
+    const base = "http://sahara.eecs.utk.edu:5000";
+    let url = new URL('api/reccomendation', base);
+    url.searchParams.append('irma_id', species.irma_id);
+    // url.searchParams.append('irma_id', species().irma_id);
+    // url.searchParams.append('irma_id', sanitizeId(species().irma_id));
+    // url.searchParams.append('irma_id', '29846');
+
+    try {
+        const response = await fetch(
+            url,
+            {
+                method: "GET",
+                mode: 'cors',
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
+
+        const json = await response.json();
+        let related = json.related_species;
+        console.log(related);
+        
+        let recs = []
+        for (let i = 0; i < related.length; i++) {
+            recs.push(species_lookup_by_irma_id(json.related_species[i]));
+        }
+        setSpeciesRecs(recs);
+    } catch (error) {
+        console.error(error.message);
+    }
+}
+
+
 // import styles from './selection.module.css';
 // import { AiFillInfoCircle } from 'solid-icons/ai';
 // import {

@@ -1,5 +1,8 @@
 import allspecies from '../../assets/species.json';
 
+// The list of species that we want to hold
+let species_list = [];
+
 /**
 * @description Find a species with the name in the list
 * @param {String} name The common name of the species
@@ -14,8 +17,21 @@ export function find_species_by_id(id) {
     return null;
 }
 
+/**
+* @description Find a species with the name in the list
+* @param {String} name The common name of the species
+*/
+export function find_in_list(id) {
+    for(let i = 0; i < species_list.length; i++) {
+        if (species_list[i].irma_id === id) {
+            return species_list[i];
+        }
+    }
+
+    return null;
+}
+
 export function setup_species() {
-    let species_list = [];
     const species_ids = [
         '0029846',
         '0009671',

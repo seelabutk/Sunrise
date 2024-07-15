@@ -13,15 +13,23 @@ import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
 import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
-import { Point, linear_interp, species_lookup_by_irma_id, wikipedia_query } from '../../utils';
 
-import { setup_species, find_species_by_id } from './species.jsx';
+import { 
+    setup_species, 
+    find_species_by_id,
+    find_in_list,
+} from './species.jsx';
 import { 
     coordsToPath, 
     setPathIsPlaying, 
     pathAnimationCallback 
 } from './path.jsx';
-import { sunVegaSpec } from './vega.jsx';
+import {
+    getSpeciesRecs,
+    getSpeciesInfo,
+    speciesRecs,
+    speciesInfo,
+} from './reccomendation.jsx';
 
 let species_list = setup_species();
 export const [species, setSpecies] = createSignal(species_list[0]);
@@ -40,15 +48,11 @@ export function Selection() {
 
     // Signals for keeping track of relevant information
     const [mapUrl, setMapUrl] = createSignal('Satellite');
-    // const [pathIndex, setPathIndex] = createSignal(0);
-    // const [pathIsPlaying, setPathIsPlaying] = createSignal(false);
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
     const [pathJson, setPathJson] = createSignal({});
     const [currHour, setCurrHour] = createSignal(new Date().getHours());
     const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
     const [infoIsOpen, setInfoIsOpen] = createSignal(false);
-    const [speciesRecs, setSpeciesRecs] = createSignal([]);
-    const [speciesInfo, setSpeciesInfo] = createSignal({});
 
     /// HANDLERS ///
     
@@ -121,91 +125,10 @@ export function Selection() {
         setSunriseIsPlaying(false);
     }
 
-    function sanitizeId(id) {
-        let newid = '';
-        let i = 0;
-
-        for (i = 0; i < id.length; i++) {
-            if (id[i] === '0') break;
-        }
-
-        newid = id.substr(i);
-
-        console.log(`Sanitized: ${newid}`);
-        return newid;
-    }
-
-    /** @description Get the related species from the species that we are looking at currently */
-    async function getSpeciesRecs() {
-        const base = "http://sahara.eecs.utk.edu:5000";
-        let url = new URL('api/reccomendation', base);
-        url.searchParams.append('irma_id', species().irma_id);
-        // url.searchParams.append('irma_id', sanitizeId(species().irma_id));
-        // url.searchParams.append('irma_id', '29846');
-
-        try {
-            const response = await fetch(
-                url,
-                {
-                    method: "GET",
-                    mode: 'cors',
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    }
-                }
-            );
-            
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-
-            const json = await response.json();
-            let related = json.related_species;
-            console.log(related);
-            
-            let recs = []
-            for (let i = 0; i < related.length; i++) {
-                recs.push(species_lookup_by_irma_id(json.related_species[i]));
-            }
-            setSpeciesRecs(recs);
-        } catch (error) {
-            console.error(error.message);
-        }
-    }
-
-    async function getSpeciesInfo() {
-        const base = "http://sahara.eecs.utk.edu:5000";
-        let url = new URL('api/wikipedia', base);
-        // url.searchParams.append('irma_id', species().irma_id);
-        url.searchParams.append('irma_id', sanitizeId(species().irma_id));
-        // url.searchParams.append('irma_id', '0029846');
-
-        try {
-            const response = await fetch(
-                url,
-                {
-                    method: "GET",
-                    mode: 'cors',
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    }
-                }
-            );
-            
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-
-            const json = await response.json();
-            setSpeciesInfo(json);
-        } catch (error) {
-            console.error(error.message);
-        }
-     }
 
     const openSpeciesInfo = async () => {
-        await getSpeciesInfo();
-        await getSpeciesRecs();
+        await getSpeciesInfo(species());
+        await getSpeciesRecs(species());
         setInfoIsOpen(!infoIsOpen());
     }
 
@@ -213,7 +136,7 @@ export function Selection() {
         const s = find_in_list(id);
         setSpecies(s);
         setObservation(s.irma_id);
-        getSpeciesInfo();
+        getSpeciesInfo(s);
         renderFrame();
     }
 
