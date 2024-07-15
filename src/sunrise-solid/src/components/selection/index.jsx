@@ -8,41 +8,22 @@ import {
     DialogTitle,
     DialogContent,
 } from '@suid/material';
+import { AiFillInfoCircle } from 'solid-icons/ai'
 import { createSignal, onMount } from 'solid-js';
 import { Map } from '../map';
 import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
 import park from '../../assets/park.json';
 import { Point, linear_interp, species_lookup_by_irma_id, wikipedia_query } from '../../utils';
 
-// TODO: Remove this array and use data from the configuration instead
-const species_list = [
-    { 
-        name: "Malloch`S Non-Biting Midge", 
-        irma_id: "0000223" 
-    },
-    { 
-        name: "Sugar Maple", 
-        irma_id: "0000341" 
-    },
-    { 
-        name: "Greater Red Dart", 
-        irma_id: "0000172" 
-    },
-];
+import { setup_species, find_species_by_id } from './species.jsx';
+import { 
+    coordsToPath, 
+    setPathIsPlaying, 
+    pathAnimationCallback 
+} from './path.jsx';
+import { sunVegaSpec } from './vega.jsx';
 
-/**
-    * @description Find a species with the name in the list
-    * @param {String} name The common name of the species
-*/
-function find_species_by_id(id) {
-    for(let i = 0; i < species_list.length; i++) {
-        if (species_list[i].irma_id === id) {
-            return species_list[i];
-        }
-    }
-
-    return null;
-}
+let species_list = setup_species();
 export const [species, setSpecies] = createSignal(species_list[0]);
 
 export function Selection() {
@@ -56,43 +37,21 @@ export function Selection() {
             "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
     };
 
-    const sunVegaSpec = {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-        description: 'A simple bar chart with embedded data.',
-        data: {
-            "sequence": {
-              "start": 0,
-              "stop": 24,
-              "step": 0.25,
-              "as": "x"
-            }
-        },
-        transform: [
-            {
-                calculate: "sin(datum.x)",
-                as: "sin(x)",
-            },
-            {
-                calculate: "cos(datum.x)",
-                as: "cos(x)",
-            },
-        ],
-        width: 'container',
-        height: 'container',
-        mark: 'line',
-        encoding: {
-            x: {field: 'x', type: 'quantitative', axis: null},
-            y: {field: 'sin(x)', type: 'quantitative', axis: null}
-        }
-    };
 
     // Signals for keeping track of relevant information
     const [mapUrl, setMapUrl] = createSignal('Satellite');
-    const [pathIndex, setPathIndex] = createSignal(0);
-    const [pathIsPlaying, setPathIsPlaying] = createSignal(false);
+    // const [pathIndex, setPathIndex] = createSignal(0);
+    // const [pathIsPlaying, setPathIsPlaying] = createSignal(false);
     const [mapIsOpen, setMapIsOpen] = createSignal(false);
     const [pathJson, setPathJson] = createSignal({});
+    const [currHour, setCurrHour] = createSignal(new Date().getHours());
+    const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
+    const [infoIsOpen, setInfoIsOpen] = createSignal(false);
+    const [speciesRecs, setSpeciesRecs] = createSignal([]);
+    const [speciesInfo, setSpeciesInfo] = createSignal({});
 
+    /// HANDLERS ///
+    
     // Event handler function to switch the values of the selection
     const speciesHandler = (event) => {
         const s = find_species_by_id(event.target.value.toString());
@@ -116,144 +75,21 @@ export function Selection() {
         return backgroundUrls[mapUrl()];
     }
 
-    let path = [];
-
-    /** @description Play the animation of moving through the appalachian trail */
-    async function pathAnimationCallback() {
-        if (pathIsPlaying()) {
-            setPathIsPlaying(false);
-            return;
-        } else {
-            setPathIsPlaying(true);
-        }
-
-        while (pathIsPlaying()) {
-            setPathIsPlaying(true);
-            for (let i = pathIndex(); i < path.length-1; i++) {
-                await new Promise((res) => {
-                    if (!pathIsPlaying()) {
-                        return;
-                    }
-                    gotoPoint(path[i], mean_path_position(i+1, 5));
-                    renderFrame("low");
-                    setTimeout(res, 50);
-                    setPathIndex(i+1);
-                });
-            }
-        }
-    }
-
-    /** @description Get a point that is from the averages of 'range' on either direction along the path */
-    function mean_path_position(index, range) {
-        let mean_lat = 0;
-        let mean_lng = 0;
-        let mean_alt = 0;
-    
-        let begin = Math.max(index - range, 0);
-        let end = Math.min(index + range, path.length);
-      
-        // Loop <range> indices ahead and average the components of the positions
-        for (
-            let i = begin;
-            i < end;
-            i++
-        ) {
-            mean_lat += path[i].lat;
-            mean_lng += path[i].lng;
-            mean_alt += path[i].alt;
-        }
-    
-        return new Point(Math.floor(mean_lat / (end-begin)), Math.floor(mean_lng / (end-begin)), Math.floor(mean_alt / (begin-end)));
-    }
-
+    /** @description Pause the path animation */
     function pausePath() {
         setPathIsPlaying(false);
         renderFrame("high");
     }
 
-    // Create the GeoJSON from a list of coordinates
-    const coordsToPath = (data) => {
-        let coordinates = [];
-        let skeleton = {
-		    "type": "FeatureCollection",
-		    "features": [
-
-		    ]
-        }
-        for (let i = 1; i < data.length; i++) {
-            coordinates.push([data[i]["lng"], data[i]["lat"]]);
-
-            const INTERP_STEPS = 20;
-            const prev = new Point(data[i - 1]['lat'], data[i - 1]['lng']-13, data[i - 1]['alt']);
-            const curr = new Point(data[i]['lat'], data[i]['lng']-13, data[i]['alt']);
-            path.push(prev);
-            let j = 0;
-            for (j = 0; j < INTERP_STEPS; j++) {
-                path.push(new Point(
-                    linear_interp(prev.lat, curr.lat, j / INTERP_STEPS),
-                    linear_interp(prev.lng, curr.lng, j / INTERP_STEPS),
-                    linear_interp(prev.alt, curr.alt, j / INTERP_STEPS),
-                ));
-            }
-            // Add the points that we want to diplay
-            let type = "";
-            if (data[i]["lat"] === 35.5621322 && data[i]["lng"] === -83.5035302) {
-                type = "Dome";
-            } else {
-                type = "Point";
-            }
-            skeleton["features"].push(
-                {
-                    "type": "Feature",
-                    "properties": {
-                        "type": type,
-                        // "type": "Point",
-                        callback: () => {
-                            setPathIndex(i);
-                            gotoPoint(prev, curr);
-                            renderFrame("high");
-                            // gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]), i);
-                        },
-                        openPopup: () => {
-                        },
-                    },
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [data[i]["lng"], data[i]["lat"]]
-                    }
-                }
-            );
-        }
-
-        // Add the path of points for the line
-        skeleton["features"].push(
-            {
-                "type": "Feature",
-                    "properties": {
-                        "type": "LineString",
-                    },
-                "geometry": {
-                    "style": {
-                        "color": "#ffffff",
-                    },
-                    "type": "LineString",
-                    "coordinates": coordinates
-                },
-            }
-        );
-	    
-        return skeleton;
-    }
-
     onMount(() => {
-        vegaEmbed("#sunPlot", sunVegaSpec);
+        /** Uncomment for the sine plot for the day/night cycle **/
+        // vegaEmbed("#sunPlot", sunVegaSpec);
         setPathJson(
             coordsToPath(park)
         );
     });
 
-    const [currHour, setCurrHour] = createSignal(new Date().getHours());
-    const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
+    // For the sunrise animation controls
     async function sunriseAnimation() {
         if (sunriseIsPlaying()) {
             setSunriseIsPlaying(false);
@@ -285,11 +121,27 @@ export function Selection() {
         setSunriseIsPlaying(false);
     }
 
+    function sanitizeId(id) {
+        let newid = '';
+        let i = 0;
+
+        for (i = 0; i < id.length; i++) {
+            if (id[i] === '0') break;
+        }
+
+        newid = id.substr(i);
+
+        console.log(`Sanitized: ${newid}`);
+        return newid;
+    }
+
     /** @description Get the related species from the species that we are looking at currently */
     async function getSpeciesRecs() {
         const base = "http://sahara.eecs.utk.edu:5000";
         let url = new URL('api/reccomendation', base);
-        url.searchParams.append('irma_id', '29846');
+        url.searchParams.append('irma_id', species().irma_id);
+        // url.searchParams.append('irma_id', sanitizeId(species().irma_id));
+        // url.searchParams.append('irma_id', '29846');
 
         try {
             const response = await fetch(
@@ -324,7 +176,9 @@ export function Selection() {
     async function getSpeciesInfo() {
         const base = "http://sahara.eecs.utk.edu:5000";
         let url = new URL('api/wikipedia', base);
-        url.searchParams.append('irma_id', '0029846');
+        // url.searchParams.append('irma_id', species().irma_id);
+        url.searchParams.append('irma_id', sanitizeId(species().irma_id));
+        // url.searchParams.append('irma_id', '0029846');
 
         try {
             const response = await fetch(
@@ -349,64 +203,83 @@ export function Selection() {
         }
      }
 
-    const [infoIsOpen, setInfoIsOpen] = createSignal(false);
-    const [speciesRecs, setSpeciesRecs] = createSignal([]);
-    const [speciesInfo, setSpeciesInfo] = createSignal({});
     const openSpeciesInfo = async () => {
         await getSpeciesInfo();
         await getSpeciesRecs();
         setInfoIsOpen(!infoIsOpen());
     }
 
+    const changeSpecies = (id) => {
+        const s = find_in_list(id);
+        setSpecies(s);
+        setObservation(s.irma_id);
+        getSpeciesInfo();
+        renderFrame();
+    }
+
     return (
         <div class={styles.container}>
             <div class={styles.species}>
-                <div style="width: 70%; display: flex; flex-direction: row; gap: 1vw;">
-                    <label style="color: white">Species: </label>
-                    <Select 
-                        id='species-selector'
-                        displayEmpty
-                        defaultValue=""
-                        value={species().irma_id}
-                        sx={{
-                            width: '100%',
-                            height: '3vh',
-                            background: '#3e3e3e',
-                            color: 'white',
+                <label style="color: white">Species: </label>
+                <Select 
+                    id='species-selector'
+                    displayEmpty
+                    defaultValue=""
+                    value={species().irma_id}
+                    sx={{
+                        width: '100%',
+                        height: '3vh',
+                        background: '#3e3e3e',
+                        color: 'white',
 
-                            '& > fieldset': { border: 'none'},
+                        '& > fieldset': { border: 'none'},
+                    }}
+                    onChange={speciesHandler}
+                >
+                    <For each={species_list}>{
+                        species => <MenuItem value={species.irma_id}>{species.name}</MenuItem>
+                    }</For>
+                </Select>
+                <Button variant="outlined" onClick={openSpeciesInfo} 
+                    sx={{
+                        color: '#1e92f4', 
+                        border: '0',
+                        fontSize: '20px',
+
+                        '&:hover': {
+                            border: '0',
+                            backgroundColor: 'darkgray',
+                            color: '#1A71BA',
+                        }
+                    }}>
+                    <AiFillInfoCircle size={25}/>
+                </Button>
+                <Dialog
+                    maxWidth='md'
+                    open={infoIsOpen()}
+                    onClose={openSpeciesInfo}
+                >
+                    <DialogTitle sx={{backgroundColor: '#141414', color: 'white'}}>{species().name}Name</DialogTitle>
+                    <DialogContent sx={{backgroundColor: '#141414'}}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            backgroundColor: '#1e1e1e',
                         }}
-                        onChange={speciesHandler}
                     >
-                        <For each={species_list}>{
-                            species => <MenuItem value={species.irma_id}>{species.name}</MenuItem>
-                        }</For>
-                    </Select>
-                    <Button variant="outlined" onClick={openSpeciesInfo} sx={{color: 'white', border: '1px solid white'}}>View More</Button>
-                    <Dialog
-                        maxWidth='md'
-                        open={infoIsOpen()}
-                        onClose={openSpeciesInfo}
-                    >
-                        <DialogTitle sx={{backgroundColor: '#141414', color: 'white'}}>{species().name}</DialogTitle>
-                        <DialogContent sx={{backgroundColor: '#141414'}}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                backgroundColor: '#1e1e1e',
-                            }}
-                        >
-                            <div class={styles.species_info_container}>
-                                <div class={styles.species_info}>
-                                    <img src={speciesInfo().image} height="80px"/>
+                        <div class={styles.species_info_container}>
+                            <div class={styles.species_info}>
+                                <img src={speciesInfo().image} height="80px"/>
+                                <div class={styles.species_summary}>
                                     {speciesInfo().summary}
                                 </div>
-                                <div class={styles.related}>
-                                    You may also be interested in:
-                                    <For each={speciesRecs()}>{
-                                        related => <Button 
-                                                        variant='outlined' 
+                            </div>
+                            <div class={styles.related}>
+                                You may also be interested in:
+                                <For each={speciesRecs()}>{
+                                    related => <Button 
+                                                    variant='outlined' 
                                                     sx={{
                                                         width: '70%',
                                                         color: 'white',
@@ -419,14 +292,14 @@ export function Selection() {
                                                             backgroundColor: 'gray',
                                                         }
                                                     }}
-                                                    >{related.common_name}</Button>
-                                    }</For>
-                                </div>
+                                                    onMouseDown={() => changeSpecies(related.irma_id)}
+                                                >{related.common_name}</Button>
+                                }</For>
                             </div>
-                        </Box>
-                        </DialogContent>
-                    </Dialog>
-                </div>
+                        </div>
+                    </Box>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div class={styles.verticalMarker}></div>
