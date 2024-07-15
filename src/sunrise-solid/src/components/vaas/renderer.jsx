@@ -71,6 +71,7 @@ export default class Renderer {
     config = null;
 
     /** @type {String} */
+    // server_url = "http://160.36.58.111:8888";
     server_url = "http://sahara.eecs.utk.edu:5000";
 
     /** @type {Date} */
@@ -83,7 +84,7 @@ export default class Renderer {
     current_light = "distant";
 
     /** @type {String} */
-    current_species = species();
+    current_species = species().irma_id;
 
     /** @type {Event} */
     render_event;
@@ -336,7 +337,7 @@ export default class Renderer {
         * @param {Number} hour The hour of the day we want to use
     */
     set_hour(hour) {
-        this.current_time = hour;
+        this.current_time = hour - 5;
     }
 
 

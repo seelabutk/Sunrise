@@ -7,6 +7,8 @@ from ._auto import auto
 from . import scene
 from . import model
 from . import config as conf
+from fastapi.middleware.cors import CORSMiddleware
+import json
 import asyncio
 import structlog
 import logging
@@ -122,6 +124,19 @@ app.mount(
     ),
 )
 
+origins = [
+    "http://localhost:5000",
+    "http://localhost:3000",
+]
+        
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins="*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Read the configuration from the "config.toml" file 
 @auto.functools.cache
 def get_config():
@@ -129,6 +144,13 @@ def get_config():
         config = auto.tomli.load(f)
         con = conf.Config(config)
         return con
+
+# Load the species relation matrix 
+# for potential queries
+@auto.functools.cache
+def load_matrix():
+    df = auto.pd.read_csv("species_matrix.csv")
+    return df
 
 
 # Run the fastapi server
@@ -220,6 +242,58 @@ async def index(
             request=request,
         ),
     )
+
+# API Endpoint for getting data from the wikipedia page for 
+# the given species
+@app.get('/api/wikipedia')
+async def wikipedia(
+    *,
+    irma_id: auto.typing.Annotated[
+        str,
+        auto.fastapi.Query(alias='irma_id')
+    ],
+    request: auto.fastapi.Request,
+):
+    with open('wikipedia.json') as f:
+        data = auto.json.load(f)
+        return auto.fastapi.Response(
+            content=auto.json.dumps(data[irma_id]),
+            media_type='application/json',
+        )
+
+# API Route to get the 10 most relevant
+# species for the one specifies
+@app.get('/api/reccomendation')
+async def reccomendation(
+    *,
+    species_matrix: auto.typing.Annotated[
+        auto.typing.Any,
+        auto.fastapi.Depends(load_matrix),
+    ],
+    species_id: auto.typing.Annotated[
+        int,
+        auto.fastapi.Query(
+            alias='irma_id',
+        ),
+    ],
+):
+    # sanitized_id = [int(i) for i in species_id.split() if i.isdigit()]
+    
+    # Take the top ten species for the 
+    # slist = species_matrix.groupby('Species').first()
+    # slist = slist.loc
+    # top_related_species = species_matrix.groupby('Species').first().loc[29846].sort_values(ascending=False)[:10]
+    top_related_species = species_matrix.groupby('Species').first().loc[species_id].sort_values(ascending=False)[:10]
+    recc_obj = json.dumps({ "related_species": top_related_species.keys().tolist() })
+    # print(top_related_species)
+
+    return auto.fastapi.Response(
+            # content="Hello",
+            # media_type="text/plain",
+        content=recc_obj,
+        media_type='application/json'
+    )
+    
 
 @app.get('/api/config')
 async def config(

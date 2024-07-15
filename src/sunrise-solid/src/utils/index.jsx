@@ -1,4 +1,5 @@
 import { createSignal, onCleanup } from 'solid-js';
+import Species from '../assets/species.json'
 
 /**
     * @description Represents a point in lat, lng and alt
@@ -17,6 +18,60 @@ export class Point {
         this.lng = lng;
         this.alt = alt;
     }
+}
+
+/**
+    * @description Find a species object based on the irma id
+    * @param {Number} id The irma id of the species that we want to find
+    * @param {Boolean} isnum Whether the input is a number or string. If it is a number we have to manipulate it
+*/
+export function species_lookup_by_irma_id(id, isnum=false) {
+    // Ensure the id is in correct format
+    if (isnum) {
+        id = id.toString();
+        while (id.length < 7) {
+            id = '0' + id;
+        }
+    }
+
+    for (let i = 0; i < Species.length; i++) {
+        if (Species[i].irma_id == id) {
+            console.log("FOUND SPECIES");
+            return Species[i];
+        }
+    }
+}
+
+/**
+    * @param {String} id The irma id we want to sanitize
+*/
+export function sanitizeId(id) {
+    let newid = '';
+    let i = 0;
+
+    for (i = 0; i < id.length; i++) {
+        if (id[i] === '0') break;
+    }
+
+    newid = id.substr(i);
+
+    console.log(`Sanitized: ${newid}`);
+    return newid;
+}
+
+
+/**
+    * @description Search wikipedia using their API for the query
+    * @param {String} query What we are searching for
+*/
+export const wikipedia_query = async (searchQuery) => {
+    const endpoint = `https://en.wikipedia.org/w/api.php?action=query&list=search&prop=info&inprop=url&utf8=&format=json&origin=*&srlimit=20&srsearch=${searchQuery}`;
+    const response = await fetch(endpoint);
+    if (!response.ok) {
+        throw Error(response.statusText);
+    }
+    const json = await response.json();
+    return json;
 }
 
 export function debounce(signalSetter, delay) {

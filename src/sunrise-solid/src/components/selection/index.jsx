@@ -1,245 +1,63 @@
 import styles from './selection.module.css';
 import {
-    Box,
     Select,
     MenuItem,
     Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
 } from '@suid/material';
 import { createSignal, onMount } from 'solid-js';
-import { Map } from '../map';
-import { gotoPoint, gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
-import park from '../../assets/park.json';
-import { Point, linear_interp, mean_position } from '../../utils';
+import { gotoPark, renderFrame, setObservation, setRendererTime } from '../vaas';
+import {
+    MapSelect
+} from './map.jsx';
+import { 
+    setup_species, 
+    find_species_by_id,
+} from './species.jsx';
+import { 
+    setPathIsPlaying, 
+    pathAnimationCallback,
+} from './path.jsx';
+import {
+    Reccomendations,
+} from './reccomendation.jsx';
 
-// TODO: Remove this array and use data from the configuration instead
-const species_list = [
-    { 
-        name: "Malloch`S Non-Biting Midge", 
-        irma_id: "0000223" 
-    },
-    { 
-        name: "Sugar Maple", 
-        irma_id: "0000341" 
-    },
-    { 
-        name: "Greater Red Dart", 
-        irma_id: "0000172" 
-    },
-];
-export const [species, setSpecies] = createSignal(species_list[0].irma_id);
+// List of all species
+let species_list = setup_species();
 
+// State for selectors to be able to read and set
+// the species that we are looking at
+export const [species, setSpecies] = createSignal(species_list[0]);
+
+/**
+    * @description Component for selecting the species, path, and map information
+*/
 export function Selection() {
-    // TODO: Read the config from the server to get the available urls
-    const backgroundUrls = {
-        "Satellite": 
-            "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
-        "Streets": 
-            "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA",
-        "Outdoors": 
-            "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicmF1c3RpbjkiLCJhIjoiY2x3Zmg1d2psMXRlMDJubW5uMDI1b2VkbSJ9.jB4iAzkxNFa8tRo5SrawGA"
-    };
-
-    const sunVegaSpec = {
-        $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
-        description: 'A simple bar chart with embedded data.',
-        data: {
-            "sequence": {
-              "start": 0,
-              "stop": 24,
-              "step": 0.25,
-              "as": "x"
-            }
-        },
-        transform: [
-            {
-                calculate: "sin(datum.x)",
-                as: "sin(x)",
-            },
-            {
-                calculate: "cos(datum.x)",
-                as: "cos(x)",
-            },
-        ],
-        width: 'container',
-        height: 'container',
-        mark: 'line',
-        encoding: {
-            x: {field: 'x', type: 'quantitative', axis: null},
-            y: {field: 'sin(x)', type: 'quantitative', axis: null}
-        }
-    };
-
-
     // Signals for keeping track of relevant information
-    const [mapUrl, setMapUrl] = createSignal('Satellite');
-    const [pathIndex, setPathIndex] = createSignal(0);
-    const [pathIsPlaying, setPathIsPlaying] = createSignal(false);
-    const [mapIsOpen, setMapIsOpen] = createSignal(false);
-    const [pathJson, setPathJson] = createSignal({});
+    const [currHour, setCurrHour] = createSignal(new Date().getHours());
+    const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
 
+    /// HANDLERS ///
+    
     // Event handler function to switch the values of the selection
     const speciesHandler = (event) => {
-        setSpecies(event.target.value.toString());
-        setObservation(event.target.value.toString());
+        const s = find_species_by_id(event.target.value.toString());
+        setSpecies(s);
+        setObservation(s.irma_id);
         renderFrame();
     }
 
-    // Callback function that sets the current choice of the url we want to use
-    const mapUrlHandler = (event) => {
-        setMapUrl(event.target.value.toString());
-    }
-
-    // Open the leaflet map component
-    const openMap = () => {
-        setMapIsOpen(!mapIsOpen());
-    }
-
-    // Callback function that gets the url we want for the styling of the leaflet tiles
-    const urlCallback = () => {
-        return backgroundUrls[mapUrl()];
-    }
-
-    let path = [];
-
-    /** @description Play the animation of moving through the appalachian trail */
-    async function pathAnimationCallback() {
-        if (pathIsPlaying()) {
-            setPathIsPlaying(false);
-            return;
-        } else {
-            setPathIsPlaying(true);
-        }
-
-        while (pathIsPlaying()) {
-            setPathIsPlaying(true);
-            for (let i = pathIndex(); i < path.length-1; i++) {
-                await new Promise((res) => {
-                    if (!pathIsPlaying()) {
-                        return;
-                    }
-                    gotoPoint(path[i], mean_path_position(i+1, 5));
-                    renderFrame("low");
-                    setTimeout(res, 50);
-                    setPathIndex(i+1);
-                });
-            }
-        }
-    }
-
-    function mean_path_position(index, range) {
-        let mean_lat = 0;
-        let mean_lng = 0;
-        let mean_alt = 0;
-
-        let begin = Math.max(index - range, 0);
-        let end = Math.min(index + range, path.length);
-       
-        // Loop <range> indices ahead and average the components of the positions
-        for (
-            let i = begin;
-            i < end;
-            i++
-        ) {
-            mean_lat += path[i].lat;
-            mean_lng += path[i].lng;
-            mean_alt += path[i].alt;
-        }
-
-        return new Point(Math.floor(mean_lat / (end-begin)), Math.floor(mean_lng / (end-begin)), Math.floor(mean_alt / (begin-end)));
-    }
-
+    /** @description Pause the path animation */
     function pausePath() {
         setPathIsPlaying(false);
         renderFrame("high");
     }
 
-    // Create the GeoJSON from a list of coordinates
-    const coordsToPath = (data) => {
-        let coordinates = [];
-        let skeleton = {
-		    "type": "FeatureCollection",
-		    "features": [
-
-		    ]
-        }
-        for (let i = 1; i < data.length; i++) {
-            coordinates.push([data[i]["lng"], data[i]["lat"]]);
-
-            const INTERP_STEPS = 20;
-            const prev = new Point(data[i - 1]['lat'], data[i - 1]['lng']-13, data[i - 1]['alt']);
-            const curr = new Point(data[i]['lat'], data[i]['lng']-13, data[i]['alt']);
-            path.push(prev);
-            let j = 0;
-            for (j = 0; j < INTERP_STEPS; j++) {
-                path.push(new Point(
-                    linear_interp(prev.lat, curr.lat, j / INTERP_STEPS),
-                    linear_interp(prev.lng, curr.lng, j / INTERP_STEPS),
-                    linear_interp(prev.alt, curr.alt, j / INTERP_STEPS),
-                ));
-            }
-            // Add the points that we want to diplay
-            let type = "";
-            if (data[i]["lat"] === 35.5621322 && data[i]["lng"] === -83.5035302) {
-                console.log("FOUND DOME");
-                type = "Dome";
-            } else {
-                type = "Point";
-            }
-            skeleton["features"].push(
-                {
-                    "type": "Feature",
-                    "properties": {
-                        "type": type,
-                        // "type": "Point",
-                        callback: () => {
-                            setPathIndex(i);
-                            gotoPoint(prev, curr);
-                            renderFrame("high");
-                            // gotoPoint(new Point(data[i]["lat"], data[i]["lng"]-13, data[i]["alt"]), i);
-                        },
-                        openPopup: () => {
-                        },
-                    },
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [data[i]["lng"], data[i]["lat"]]
-                    }
-                }
-            );
-        }
-
-        // Add the path of points for the line
-        skeleton["features"].push(
-            {
-                "type": "Feature",
-                    "properties": {
-                        "type": "LineString",
-                    },
-                "geometry": {
-                    "style": {
-                        "color": "#ffffff",
-                    },
-                    "type": "LineString",
-                    "coordinates": coordinates
-                },
-            }
-        );
-	    
-        return skeleton;
-    }
-
     onMount(() => {
-        vegaEmbed("#sunPlot", sunVegaSpec);
-        setPathJson(
-            coordsToPath(park)
-        );
+        /** Uncomment for the sine plot for the day/night cycle **/
+        // vegaEmbed("#sunPlot", sunVegaSpec);
     });
 
-    const [currHour, setCurrHour] = createSignal(new Date().getHours());
-    const [sunriseIsPlaying, setSunriseIsPlaying] = createSignal(false);
+    // For the sunrise animation controls
     async function sunriseAnimation() {
         if (sunriseIsPlaying()) {
             setSunriseIsPlaying(false);
@@ -252,7 +70,6 @@ export function Selection() {
 
         while (currHour() < END && sunriseIsPlaying()) {
             await new Promise((res) => {
-                console.log(`Hour: ${currHour()}`);
                 setRendererTime(currHour());
                 renderFrame("low");
                 
@@ -275,82 +92,36 @@ export function Selection() {
     return (
         <div class={styles.container}>
             <div class={styles.species}>
-                <div style="width: 70%; display: flex; flex-direction: row; gap: 1vw;">
-                    <label style="color: white">Species: </label>
-                    <Select 
-                        id='species-selector'
-                        displayEmpty
-                        defaultValue=""
-                        value={species()}
-                        sx={{
-                            width: '100%',
-                            height: '3vh',
-                            background: '#3e3e3e',
-                            color: 'white',
+                <label style="color: white">Species: </label>
+                <Select 
+                    id='species-selector'
+                    displayEmpty
+                    defaultValue=""
+                    value={species().irma_id}
+                    sx={{
+                        width: '100%',
+                        height: '3vh',
+                        background: '#3e3e3e',
+                        color: 'white',
 
-                            '& > fieldset': { border: 'none'},
-                        }}
-                        onChange={speciesHandler}
-                    >
-                        <For each={species_list}>{
-                            species => <MenuItem value={species.irma_id}>{species.name}</MenuItem>
-                        }</For>
-                    </Select>
-                </div>
+                        '& > fieldset': { border: 'none'},
+                    }}
+                    onChange={speciesHandler}
+                >
+                    <For each={species_list}>{
+                        species => <MenuItem value={species.irma_id}>{species.name}</MenuItem>
+                    }</For>
+                </Select>
+
+                <Reccomendations />
             </div>
 
             <div class={styles.verticalMarker}></div>
 
-            <div class={styles.mapcontrols}>
-                <p class={styles.controlsHeader}>Map Controls</p>
-                <div class={styles.mapSelections}>
-                    <label class={styles.urlLabel}>Tile Style:</label>
-	                <Select
-	                    defaultValue="Satellite"
-	                    value={mapUrl()}
-	                    onChange={mapUrlHandler}
-			            sx={{
-			                width: '30%',
-			                height: '3vh',
-			                background: '#3e3e3e',
-	                        color: 'white',
-	
-	                        '& > fieldset': { border: 'none'},
-			            }}
-	                >
-			            <MenuItem value="Satellite">Satellite</MenuItem>
-			            <MenuItem value="Outdoors">Outdoors</MenuItem>
-			            <MenuItem value="Streets">Streets</MenuItem>
-	                </Select>
-
-                    <Button variant="outlined" onClick={openMap} sx={{color: 'white', border: '1px solid white'}}>Open Map</Button>
-                    <Dialog
-                        maxWidth='md'
-                        open={mapIsOpen()}
-                        onClose={openMap}
-                    >
-                        <DialogTitle sx={{backgroundColor: '#141414', color: 'white'}}>Choose Location to View</DialogTitle>
-                        <DialogContent sx={{backgroundColor: '#141414'}}>
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                backgroundColor: '#1e1e1e',
-                            }}
-                        >
-                            <div style="height: 80vh; width: 80vw;">
-                                <Map urlCallback={urlCallback} pathData={pathJson()}/>
-                            </div>
-                        </Box>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-
-            </div>
+            <MapSelect />
             
             <div class={styles.verticalMarker}></div>
 
-            {/**/}
             <div class={styles.rendererSelections}>
                 <Button 
                     variant="contained" 
@@ -382,6 +153,7 @@ export function Selection() {
                     }}
                     
                     >Play Path</Button>
+                
                 <Button 
                     variant="contained" 
                     sx={{ 

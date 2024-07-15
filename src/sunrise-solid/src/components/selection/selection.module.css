@@ -20,8 +20,8 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: space-around;
-    gap: 1vw;
+    justify-content: center;
+    gap: 0.5vw;
 }
 
 .mapcontrols {
@@ -70,4 +70,41 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-around;
+}
+
+/* RELATED SPECIES DIALOG */
+.species_info_container {
+    height: 80vh;
+    width: 80vw;
+    font-size: 20px;
+    color: white;
+}
+
+.species_info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 13px 0;
+
+}
+
+.species_summary {
+    overflow-y: scroll;
+    font-size: 16px;
+    max-height: 200px;
+}
+
+.species_img {
+    width: 10vw;
+    height: 20%;
+}
+
+.related {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    border-top: 1.5px solid gray;
+    flex-direction: column;
 }

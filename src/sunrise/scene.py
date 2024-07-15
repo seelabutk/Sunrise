@@ -26,6 +26,7 @@ import ospray
 import PIL.Image
 import skyfield, skyfield.api, skyfield.toposlib
 import threading
+import json
 
 obs_cond = threading.Condition()
 obs_lock = threading.Lock()
@@ -619,6 +620,7 @@ class Park(WithExitStackMixin):
         self.path = path
     
     def make(self):
+        
         self.observations = {
                 '0000341': self.enter(Observation(
                     path=self.path / 'observation_0000341'
@@ -630,10 +632,18 @@ class Park(WithExitStackMixin):
                     path=self.path / 'observation_0000223'
                 )),
         }
+        with open('species_matrix.csv', 'r') as f:
+            slist = auto.pd.read_csv(f, header=0).groupby('Species').first()
+            for s in slist:
+                self.observations[s] = self.enter(Observation(
+                    path=self.path / f'observation_{s}'
+                ))
+
+
         # self.observation = self.observations['0000341']
         # self.observation = self.observations['0000172']
-        self.observation_id = '0000223'
-        self.observation = self.observations['0000223']
+        self.observation_id = '0000172'
+        self.observation = self.observations['0000172']
         environment = self.enter(Environment(
                 terrain=self.enter(Terrain(
                     path=self.path / 'park',
