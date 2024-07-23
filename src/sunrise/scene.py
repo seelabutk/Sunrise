@@ -636,7 +636,7 @@ class Park(WithExitStackMixin):
             slist = auto.pd.read_csv(f, header=0).groupby('Species').first()
             for s in slist:
                 self.observations[s] = self.enter(Observation(
-                    path=self.path / f'observation_{s}'
+                    path=self.path / 'observations' / f'observation_{s}'
                 ))
 
 
