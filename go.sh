@@ -116,6 +116,14 @@ go-service() {
         # sleep infinity
 }
 
+go-city() {
+    pexec "${self:?}" \
+        --docker \
+        --virtualenv \
+        --city \
+    ##
+}
+
 go-server() {
     pexec "${self:?}" \
         --docker \
@@ -136,18 +144,11 @@ go---server() {
     ##
 }
 
-go-scalene() {
-    pexec "${self:?}" \
-        --docker \
-        --virtualenv \
-        --scalene \
-    ##
-}
-go---scalene() {
+go---city() {
     PYTHONPATH=${root:?}/src${PYTHONPATH:+:${PYTHONPATH:?}} \
     SUNRISE_SCENE_PATH=${root:?}/data \
-    pexec scalene run src/sunrise/main.py\
-        # FLASK_APP=sunrise.server:app \
+    pexec python -m \
+        city.server \
     ##
 }
 

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>Sunrise Dev</title>
+<link href="https://www.nps.gov/lib/assets/img/favicon.ico" rel="shortcut icon">
+<link
+    rel=stylesheet
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+>
+<link
+    rel=stylesheet
+    href="static/app.css"
+>
+    <nav id="navbar">
+	    <div class="left">
+		<p class="title">Great Smoky Mountains National Park</p>
+		<p class="sub-title">Atlas of the Smokies</p>
+
+		<div class="header-data">
+        		<div class="selector-container">
+				<label name="species">Species:
+                			<select name="species">
+                				<option value="Species 1">Species 1</option>
+                				<option value="Species 2">Species 2</option>
+                			</select>
+				</label>
+        		</div>
+        		<div>
+        			<label name="map-tiles">
+        				Map Style:
+        				<select id="map-url-selector">
+        				</select>
+        			</label>
+        		</div>
+		</div>
+	    </div>
+    </nav>
+<div class="App">
+    <div class="b" id="hyperimage"
+        ></div>
+    <div class="c Map js--map"></div>
+</div>
+
+<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+<script src="./static/sylvester.src.js"></script>
+<script src="./static/math.js"></script>
+<script type="importmap">
+{
+    "imports": {
+        "leaflet": "https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.esm.js",
+        "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/",
+        "arcball": "./static/arcball.js",
+        "missions": "./static/mission.js",
+        "map": "./static/map.js",
+        "trackball": "./static/trackball.js",
+        "tapestry-arcball": "./static/tapestry-arcball.js",
+        "path": "./static/path.js",
+        "utils": "./static/utils.js",
+        "d3": "https://d3js.org/d3.v5.min.js"
+    }
+}
+</script>
+<script
+    type="module"
+    src="static/index.js"
+></script>
