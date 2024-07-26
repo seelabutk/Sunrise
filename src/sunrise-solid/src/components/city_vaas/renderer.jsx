@@ -157,11 +157,18 @@ export default class Renderer {
 
         // Find the original position where we want to place the camera
         // and later return to
+        // const pos = latlng_to_cartesian(
+        //     35.562744,
+        //     -83.5 - 13,
+        //     // 100,
+        //     10000,
+        // );
+        // POSITION OF THE BUILDINGS \/
         const pos = latlng_to_cartesian(
-            35.562744,
-            -83.5 - 13,
-            // 100,
-            10000,
+            35.46709430572086
+            ,-88.38224625102681
+            // ,1000 + 10.34000033088
+            ,10.34000033088
         );
         this.central_point = new Point(
             35.562744,
@@ -422,7 +429,7 @@ export default class Renderer {
         this.trackball = new TrackballCameraControls(this.camera, this.primary)
             .set_bounds(
                 (6371 + 10_000) / this.camera_scaling_factor, 
-                (6371 + 10) / this.camera_scaling_factor
+                (6100) / this.camera_scaling_factor
             )
             .enable();
         

@@ -45,7 +45,7 @@ export class TrackballCameraControls extends CameraControls {
         this.#controls.noPan = true; // we do not want pannning
         this.#controls.staticMoving = true;
         this.#controls.maxDistance = (6371 + 10000);
-        this.#controls.minDistance = (6371 + 10);
+        this.#controls.minDistance = (6000);
         this.#controls.dynamicDampingFactor = 0.3;
     }
     

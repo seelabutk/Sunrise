@@ -357,7 +357,8 @@ class Background(WithExitStackMixin):
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
         lib.ospSetAffine3f(instance, b'transform', Affine3f(
-            sx=-1.0 * self.scale,
+            sx=1.0 * self.scale,
+            # sx=-1.0 * self.scale,
             sy=-1.0 * self.scale,
             sz=-1.0 * self.scale,
         ))
@@ -977,10 +978,10 @@ class Scene(WithExitStackMixin):
         lib.ospCommit(world)
 
         renderer = (
-            # b'ao'  # does not use lights
+            b'ao'  # does not use lights
             # b'pathtracer'
             # b'scivis'
-            self.config.renderer.type().encode('utf-8')
+            # self.config.renderer.type().encode('utf-8')
         )
         renderer = lib.ospNewRenderer(renderer)
         self.defer(lib.ospRelease, renderer)
