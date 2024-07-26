@@ -704,7 +704,7 @@ class Park(WithExitStackMixin):
             print(f"{self.observation_id} != {obs_id}")
             self.observation_id = obs_id
             self.observation = self.observations[obs_id]
-            self.environment.update_index(self.observation.index)
+            # self.environment.update_index(self.observation.index)
         else:
             print("SAME ID")
 
@@ -1083,7 +1083,7 @@ class Scene(WithExitStackMixin):
         camera = self.camera
 
         id = self.request.observation 
-        self.update_observation(id)
+        # self.update_observation(id)
         
         lib.ospRelease(self.lights)
         self.lights = self.update_lights(request.hour)
@@ -1263,13 +1263,13 @@ def Render(
     request = yield response
 
     scene = enter(Scene(
-        # what=enter(City(
-        #     path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
-        # )),
-        what=enter(Park(
-            observation_id='0000341',
-            path=auto.pathlib.Path('data'),
+        what=enter(City(
+            path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
         )),
+        # what=enter(Park(
+        #     observation_id='0000341',
+        #     path=auto.pathlib.Path('data'),
+        # )),
     ))
     world = scene.world
     renderer = scene.renderer

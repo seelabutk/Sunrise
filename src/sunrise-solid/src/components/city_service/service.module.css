@@ -1,0 +1,10 @@
+.service {
+    width: 100%;
+    height: calc(100vh - 23vh - 2px); /* this is based on the height of the 
+                                         header bar in the App.jsx file */
+                                      /* perfect height when subtracting 2px? */
+    background: #010101;
+
+    display: flex;
+    flex-direction: row;
+}

@@ -158,7 +158,7 @@ async def run_server():
     config_info = get_config()
     configure_logger(config_info.server.logfile())
     custom_logger.debug('Server Started', whom='world')
-    config = auto.uvicorn.Config("sunrise.server:app", port=config_info.server.port(), host=config_info.server.host())
+    config = auto.uvicorn.Config("city.server:app", port=config_info.server.port(), host=config_info.server.host())
     server = auto.uvicorn.Server(config)
     await server.serve()
 
@@ -209,9 +209,12 @@ async def get_scene(
 #        what.make()
 
         for _ in range(6):
-            what = scene.Park(
-                path=auto.pathlib.Path('data'),
+            what=scene.City(
+                path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
             )
+            # what = scene.Park(
+            #     path=auto.pathlib.Path('data'),
+            # )
             what.make()
             scene_ = scene.Scene(
                 what=what,
