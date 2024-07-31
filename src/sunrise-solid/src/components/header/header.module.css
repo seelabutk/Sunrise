@@ -1,0 +1,90 @@
+/* The header bar at the top of the Home page */
+.header {
+    height: 13vh; /* this height impacts fitting everything on one screen.
+                     this is because the <Service/> component calculates 
+                     based on the assumtion of this value */
+    background-color: #000;
+    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.aotsContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 5%;
+    align-items: center;
+}
+
+/* The title text for the Home page */
+.title {
+    font-weight: 300;
+    margin: 0 0 0 1vw;
+    font-size: 4vh;
+    color: #fff;
+}
+
+.subtitle {
+    margin: 0 0 0 1vw;
+    font-weight: 200;
+    font-size: 3vh;
+    color: gray;
+}
+
+/* The main container for the meat of the header */
+.headerbody {
+    display: flex;
+    flex-direction: column;
+    gap: 1vh;
+}
+
+/* The main container for the meat of the header */
+.cityheaderbody {
+    display: flex;
+    flex-direction: row;
+    gap: 2vw;
+}
+/* The NPS watermark in the top right */
+.watermark {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1vw;
+    margin: 0 1vw 0 0;
+}
+
+.watermark h4 {
+    font-size: 2vh;
+    font-weight: 200;
+    color: #fff;
+}
+
+.usa {
+    font-family: 'Times New Roman';
+    display: flex;
+    flex-direction: column;
+    gap: 0.1vh;
+    height: 100%;
+}
+
+.arrowhead {
+    width: 3.5vw;
+}
+
+.kclogo {
+    width: 15vw;
+}
+
+.ornllogo {
+    width: 8vw;
+}
+
+.selection {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    border: 1px solid red;
+}
