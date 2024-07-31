@@ -212,7 +212,8 @@ async def get_scene(
         # NUM_THREADS = 6
         for _ in range(NUM_THREADS):
             what=scene.City(
-                path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
+                path=auto.pathlib.Path('data/city'),
+                # path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
             )
             # what = scene.Park(
             #     path=auto.pathlib.Path('data'),

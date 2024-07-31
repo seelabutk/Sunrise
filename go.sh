@@ -59,6 +59,8 @@ go---archive() {
         "data/pink1/OSPTexture.texture2d.data.vec3f.bin" \
         "data/pink2/OSPTexture.texture2d.data.vec3f.bin" \
         "data/pink3/OSPTexture.texture2d.data.vec3f.bin" \
+        "data/observations" \
+        "data/city" \
     ##
 }
 

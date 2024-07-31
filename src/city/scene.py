@@ -960,9 +960,9 @@ class Scene(WithExitStackMixin):
         self.defer(lib.ospRelease, self.imageops)
 
         lights = Data([
-            # ambient.light,
-            # distant.light,
-            # point.light,
+            ambient.light,
+            distant.light,
+            point.light,
             # sunlight.light,
             hdri.light,
         ], type=lib.OSP_LIGHT)
@@ -1265,7 +1265,8 @@ def Render(
 
     scene = enter(Scene(
         what=enter(City(
-            path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
+            path=auto.pathlib.Path('data/city'),
+            # path=auto.pathlib.Path('/mnt/seenas2/data/2023_ORNL_Building_Energy_Models/gen'),
         )),
         # what=enter(Park(
         #     observation_id='0000341',
