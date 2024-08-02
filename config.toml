@@ -5,6 +5,7 @@ host="0.0.0.0"
 port=5000
 city_port=4000
 logfile="server.log"
+city_logfile="city.log"
 observations=[
     '0000341'
 ]

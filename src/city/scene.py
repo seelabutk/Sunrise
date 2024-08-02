@@ -198,10 +198,11 @@ class WithExitStackMixin:
 
 
 class Building(WithExitStackMixin):
-    def __init__(self, path: auto.pathlib.Path):
+    def __init__(self, path: auto.pathlib.Path, scale: float):
         super().__init__()
 
         self.path = path
+        self.scale = scale
     
     def make(self):
         box = self.path / 'OSPGeometry.box.box3f[].box.bin'
@@ -278,6 +279,15 @@ class Building(WithExitStackMixin):
         instance = lib.ospNewInstance(None)
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
+        lib.ospSetAffine3f(instance, b'transform', Affine3f(
+            sx=-1.0 * self.scale,
+            # sx=1.0 * self.scale,
+            # sy=1.0 * self.scale,
+            # sy=1.0 * self.scale,
+            sy=-1.0 * self.scale,
+            # sz=1.0 * self.scale,
+            sz=-1.0 * self.scale,
+        ))
         lib.ospCommit(instance)
         print('loaded instance')
 
@@ -357,9 +367,12 @@ class Background(WithExitStackMixin):
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
         lib.ospSetAffine3f(instance, b'transform', Affine3f(
-            sx=1.0 * self.scale,
-            # sx=-1.0 * self.scale,
+            sx=-1.0 * self.scale,
+            # sx=1.0 * self.scale,
+            # sy=1.0 * self.scale,
+            # sy=1.0 * self.scale,
             sy=-1.0 * self.scale,
+            # sz=1.0 * self.scale,
             sz=-1.0 * self.scale,
         ))
         lib.ospCommit(instance)
@@ -379,6 +392,7 @@ class City(WithExitStackMixin):
         print(f'loading building {building}')
         building = self.enter(Building(
             path=building,
+            scale=1,
         ))
         print('loaded building')
         
@@ -386,7 +400,7 @@ class City(WithExitStackMixin):
         print(f'loading earth {earth}')
         earth = self.enter(Background(
             path=earth,
-            scale=0.99 ** 4,
+            scale=0.9999 ** 4,
         ))
         print('loaded earth')
 
@@ -394,7 +408,7 @@ class City(WithExitStackMixin):
         print(f'loading usa {usa}')
         usa = self.enter(Background(
             path=usa,
-            scale=0.99 ** 3,
+            scale=0.9999 ** 3,
         ))
         print('loaded usa')
 
@@ -402,7 +416,7 @@ class City(WithExitStackMixin):
         print(f'loading tn {tn}')
         tn = self.enter(Background(
             path=tn,
-            scale=0.99 ** 2,
+            scale=0.9999 ** 2,
         ))
         print('loaded tn')
 
@@ -410,7 +424,7 @@ class City(WithExitStackMixin):
         print(f'loading knox {knox}')
         knox = self.enter(Background(
             path=knox,
-            scale=0.99 ** 1,
+            scale=0.9999 ** 1,
         ))
         print('loaded knox')
 
@@ -1144,6 +1158,9 @@ class Scene(WithExitStackMixin):
 #         lib.ospSetFloat(camera, b'height', *(
 #             height,
 #         ))
+        campos = (-88.38224625102681,
+                  35.46709430572086,
+                  10.34000033088)
         coef = 201.0
         lib.ospSetVec3f(camera, b'position', *(
             request.position
