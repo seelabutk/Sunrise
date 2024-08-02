@@ -52,7 +52,7 @@ class ServerConfig:
         self._version = self.data['version']
         self._host = self.data['host']
         self._port = self.data['city_port']
-        self._logfile = self.data['logfile']
+        self._logfile = self.data['city_logfile']
         self._observations = self.data['observations']
 
     def validate(self):
