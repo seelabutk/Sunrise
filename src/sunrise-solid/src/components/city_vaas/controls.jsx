@@ -39,7 +39,8 @@ export class TrackballCameraControls extends CameraControls {
 
         let scene = new THREE.Scene();
         this.#controls = new TrackballControls(this.camera, this.element, scene);
-        this.#controls.rotateSpeed = 30.0;
+        this.#controls.rotateSpeed = 6.0;
+        // this.#controls.rotateSpeed = 30.0;
         this.#controls.zoomSpeed = 1.5;
         this.#controls.noZoom = false;
         this.#controls.noPan = true; // we do not want pannning
@@ -125,7 +126,8 @@ export class TrackballCameraControls extends CameraControls {
             maxZoomDist,
             minSpeed,
             maxSpeed,
-        );
+        ) / 100;
+        
         const zoomSpeed = THREE.MathUtils.mapLinear(
             dist,
             minZoomDist,

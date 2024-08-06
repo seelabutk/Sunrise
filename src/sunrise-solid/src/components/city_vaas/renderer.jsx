@@ -165,10 +165,11 @@ export default class Renderer {
         // );
         // POSITION OF THE BUILDINGS \/
         const pos = latlng_to_cartesian(
-            35.46709430572086
-            ,-88.38224625102681
+            35.9641
+            ,-83.9202
             // ,1000 + 10.34000033088
-            ,10.34000033088
+            ,1.00
+            // ,0.15
         );
         this.central_point = new Point(
             35.562744,
@@ -192,7 +193,7 @@ export default class Renderer {
         this.#setup_camera(this.original_position);
         this.#setup_path();
         this.#setup_controls();
-        this.#set_current_direction(this.#trackball_dir());
+        // this.#set_current_direction(this.#trackball_dir());
 
         // Setup the event listeners for the camera and controls
         this.#setup_event_listeners();
@@ -435,6 +436,7 @@ export default class Renderer {
         
         this.panning = new PanningCameraControls(this.camera, this.primary, 0.002);
 
+        this.#set_current_direction(this.#trackball_dir());
         this.controls = this.trackball;
     }
 
