@@ -204,35 +204,83 @@ class Building(WithExitStackMixin):
         self.path = path
     
     def make(self):
-        box = self.path / 'OSPGeometry.box.box3f[].box.bin'
-        print(f'Loading box {box}')
-        box = Map(box, dtype=[
-            ('xlo', 'f4'), ('ylo', 'f4'), ('zlo', 'f4'),
-            ('xhi', 'f4'), ('yhi', 'f4'), ('zhi', 'f4'),
+        position = self.path / 'TOSPGeometry.mesh.vec3f[].vertex.position.bin'
+        print(f'Loading vertices {position}')
+        position = Map(position, dtype=[
+            ('x', 'f4'),
+            ('y', 'f4'),
+            ('z', 'f4'),
         ])
-        self.hold(box)
-        box = Data(box, type=10_000+2, share=True)
-        self.defer(lib.ospRelease, box)
-        print('loaded box')
+        self.hold(position)
+        position = Data(position, type=lib.OSP_VEC3F, share=True)
+        self.defer(lib.ospRelease, position)
 
-        print(f'loading geometry')
-        geometry = lib.ospNewGeometry(b'box')
+        quad_index = self.path / 'TOSPGeometry.mesh.vec4u[].index.bin'
+        print(f'Loading quads {quad_index}')
+        quad_index = Map(quad_index, dtype=[
+            ('a', 'u4'),
+            ('b', 'u4'),
+            ('c', 'u4'),
+            ('d', 'u4'),
+        ])
+        self.hold(quad_index)
+        quad_index = Data(quad_index, type=lib.OSP_VEC4UI, share=True)
+        self.defer(lib.ospRelease, quad_index)
+
+        xlo = position['x'].min()
+        xhi = position['x'].max()
+        xmi = (xlo + xhi) / 2
+        ylo = position['y'].min()
+        yhi = position['y'].max()
+        ymi = (ylo + yhi) / 2
+        zlo = position['z'].min()
+        zhi = position['z'].max()
+        zmi = (zlo + zhi) / 2
+        
+        print(self.path)
+        print(f'[ {xlo:.1f} ]-[ {xmi:.1f} ]-[ {xhi:.1f} ] ({position["x"][0]:.1f})')
+        print(f'[ {ylo:.1f} ]-[ {ymi:.1f} ]-[ {yhi:.1f} ] ({position["y"][0]:.1f})')
+        print(f'[ {zlo:.1f} ]-[ {zmi:.1f} ]-[ {zhi:.1f} ] ({position["z"][0]:.1f})')
+
+        geometry = lib.ospNewGeometry(b'mesh')
         self.defer(lib.ospRelease, geometry)
-        lib.ospSetObject(geometry, b'box', box)
+        lib.ospSetObject(geometry, b'vertex.position', position)
+        lib.ospSetObject(geometry, b'index', quad_index)
         lib.ospCommit(geometry)
-        print('loaded geometry')
+        
+        # box = self.path / 'OSPGeometry.box.box3f[].box.bin'
+        # print(f'Loading box {box}')
+        # box = Map(box, dtype=[
+        #     ('xlo', 'f4'), ('ylo', 'f4'), ('zlo', 'f4'),
+        #     ('xhi', 'f4'), ('yhi', 'f4'), ('zhi', 'f4'),
+        # ])
+        # self.hold(box)
+        # box = Data(box, type=10_000+2, share=True)
+        #
+        # self.defer(lib.ospRelease, box)
+        # print('loaded box')
+        #
+        # print(f'loading geometry')
+        # geometry = lib.ospNewGeometry(b'box')
+        # self.defer(lib.ospRelease, geometry)
+        # lib.ospSetObject(geometry, b'box', box)
+        # lib.ospCommit(geometry)
+        # print('loaded geometry')
 
         print(f'loading materials')
         materials = []
         with open(self.path / 'OSPMaterial[].obj.vec3f.kd.bin', 'rb') as f:
-            for _ in range(256):
+            for i in range(256):
                 r, g, b = auto.struct.unpack('fff', f.read(12))
+
 
                 material = lib.ospNewMaterial(b'obj')
                 self.defer(lib.ospRelease, material)
                 lib.ospSetVec3f(material, b'kd', r, g, b)
+                if i == 0:
+                    lib.ospSetFloat(material, b'd', 0.1)
+                
                 lib.ospCommit(material)
-
                 materials.append(material)
         
         materials = Data([
@@ -241,7 +289,8 @@ class Building(WithExitStackMixin):
         self.defer(lib.ospRelease, materials)
         print('loaded materials')
 
-        index = self.path / 'OSPGeometricModel.uchar[].index.bin'
+        index = self.path / 'TOSPGeometricModel.uchar[].index.bin'
+        # index = self.path / 'OSPGeometricModel.uchar[].index.bin'
         print(f'loading index {index}')
         index = Map(index, dtype=[
             ('i', 'u1'),
