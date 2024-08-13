@@ -74,7 +74,7 @@ class ServerConfig:
     # Get the port the server should run on
     def port(self):
         if 'SUNRISE_SERVER_PORT' in auto.os.environ:
-            return auto.os.environ['SUNRISE_SERVER_PORT']
+            return int(auto.os.environ['SUNRISE_SERVER_PORT'])
         
         return self._port
 
