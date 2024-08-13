@@ -41,7 +41,7 @@ export class TrackballCameraControls extends CameraControls {
         this.#controls = new TrackballControls(this.camera, this.element, scene);
         this.#controls.rotateSpeed = 6.0;
         // this.#controls.rotateSpeed = 30.0;
-        this.#controls.zoomSpeed = 1.5;
+        this.#controls.zoomSpeed = 0.5;
         this.#controls.noZoom = false;
         this.#controls.noPan = true; // we do not want pannning
         this.#controls.staticMoving = true;
@@ -114,8 +114,9 @@ export class TrackballCameraControls extends CameraControls {
     #update_rotation_speed() {
         const maxSpeed = 30.0;
         const minSpeed = 0.01;
-        const maxZoomSpeed = 1.5;
-        const minZoomSpeed = 0.03;
+        const maxZoomSpeed = 0.05;
+        // const maxZoomSpeed = 0.5;
+        const minZoomSpeed = 0.003;
         const maxZoomDist = this.#controls.maxDistance;
         const minZoomDist = this.#controls.minDistance;
 

@@ -277,7 +277,7 @@ class Building(WithExitStackMixin):
                 lib.ospSetVec3f(material, b'kd', r, g, b)
 
                 if i == 0:
-                    lib.ospSetFloat(material, b'd', 0.1)
+                    lib.ospSetFloat(material, b'd', 0.8)
                 lib.ospCommit(material)
 
                 materials.append(material)
@@ -447,7 +447,7 @@ class City(WithExitStackMixin):
         print(f'loading earth {earth}')
         earth = self.enter(Background(
             path=earth,
-            scale=0.9999 ** 4,
+            scale=0.9994 ** 4,
         ))
         print('loaded earth')
 
@@ -455,7 +455,7 @@ class City(WithExitStackMixin):
         print(f'loading usa {usa}')
         usa = self.enter(Background(
             path=usa,
-            scale=0.9999 ** 3,
+            scale=0.9994 ** 3,
         ))
         print('loaded usa')
 
@@ -463,7 +463,7 @@ class City(WithExitStackMixin):
         print(f'loading tn {tn}')
         tn = self.enter(Background(
             path=tn,
-            scale=0.9999 ** 2,
+            scale=0.9994 ** 2,
         ))
         print('loaded tn')
 
@@ -471,7 +471,7 @@ class City(WithExitStackMixin):
         print(f'loading knox {knox}')
         knox = self.enter(Background(
             path=knox,
-            scale=0.9999 ** 1,
+            scale=0.9994 ** 1,
         ))
         print('loaded knox')
 
