@@ -6,6 +6,7 @@ import {
 } from '../../utils';
 import { CameraControls, TrackballCameraControls, PanningCameraControls } from './controls';
 import { species } from '../selection'
+import { SUNRISE_PARK_SERVER_HOST } from '../../config.js';
 
 export default class Renderer {
     /** @type {HTMLElement} */
@@ -72,7 +73,8 @@ export default class Renderer {
 
     /** @type {String} */
     // server_url = "http://160.36.58.111:8888";
-    server_url = "http://sahara.eecs.utk.edu:5000";
+    // server_url = "http://sahara.eecs.utk.edu:5000";
+    server_url = SUNRISE_PARK_SERVER_HOST;
 
     /** @type {Date} */
     current_time = null;

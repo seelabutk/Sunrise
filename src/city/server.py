@@ -153,19 +153,6 @@ def load_matrix():
     return df
 
 
-# Run the fastapi server
-async def run_server():
-    config_info = get_config()
-    configure_logger(config_info.server.logfile())
-    custom_logger.debug('Server Started', whom='world')
-    config = auto.uvicorn.Config("city.server:app", port=config_info.server.port(), host=config_info.server.host())
-    server = auto.uvicorn.Server(config)
-    await server.serve()
-
-# Main Function
-if __name__ == "__main__":
-    asyncio.run(run_server())
-
 # templates
 templates = auto.fastapi.templating.Jinja2Templates(
     directory=(
@@ -416,3 +403,20 @@ async def view(
             media_type='image/png',
         )
 
+
+# Run the fastapi server
+async def run_server():
+    config_info = get_config()
+    configure_logger(config_info.server.logfile())
+    custom_logger.debug('Server Started', whom='world')
+    config = auto.uvicorn.Config(
+        "city.server:app",
+        port=config_info.server.port(),
+        host=config_info.server.bind(),
+    )
+    server = auto.uvicorn.Server(config)
+    await server.serve()
+
+# Main Function
+if __name__ == "__main__":
+    asyncio.run(run_server())

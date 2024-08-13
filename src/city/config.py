@@ -1,4 +1,11 @@
+"""
+
+"""
+
+from __future__ import annotations
+from ._auto import auto
 import json
+
 
 class RendererConfig:
     def __init__(self, render_data):
@@ -50,7 +57,7 @@ class ServerConfig:
         
         self._name = self.data['name']
         self._version = self.data['version']
-        self._host = self.data['host']
+        self._bind = self.data['bind']
         self._port = self.data['city_port']
         self._logfile = self.data['city_logfile']
         self._observations = self.data['observations']
@@ -66,11 +73,17 @@ class ServerConfig:
 
     # Get the port the server should run on
     def port(self):
+        if 'SUNRISE_SERVER_PORT' in auto.os.environ:
+            return auto.os.environ['SUNRISE_SERVER_PORT']
+        
         return self._port
 
     # Get the host the server should run on
-    def host(self):
-        return self._host
+    def bind(self):
+        if 'SUNRISE_SERVER_BIND' in auto.os.environ:
+            return auto.os.environ['SUNRISE_SERVER_BIND']
+
+        return self._bind
 
     # Get the name of the server
     def name(self):

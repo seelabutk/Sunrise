@@ -14,3 +14,5 @@ preprocess/target/*
 !preprocess/target/.keep
 /temp
 /render-times.txt
+/city.log
+/server.log
