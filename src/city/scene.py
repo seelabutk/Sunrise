@@ -428,6 +428,58 @@ class Background(WithExitStackMixin):
         self.instance = instance
 
 
+class Roads(WithExitStackMixin):
+    def __init__(self, path: auto.pathlib.Path):
+        super().__init__()
+
+        self.path = path
+    
+    def make(self):
+        vertex_position_radius = self.path / 'OSPGeometry.curve.vertex.position_radius.vec4f[].bin'
+        vertex_position_radius = Map(vertex_position_radius, dtype=[
+            ('x', 'f4'), ('y', 'f4'), ('z', 'f4'), ('r', 'f4'),
+        ])
+        self.hold(vertex_position_radius)
+        vertex_position_radius = Data(vertex_position_radius, type=lib.OSP_VEC4F, share=True)
+        self.defer(lib.ospRelease, vertex_position_radius)
+        
+        index = self.path / 'OSPGeometry.curve.index.uint[].bin'
+        index = Map(index, dtype=[
+            ('a', 'u4'),
+        ])
+        self.hold(index)
+        index = Data(index, type=lib.OSP_UINT, share=True)
+        self.defer(lib.ospRelease, index)
+        
+        geometry = lib.ospNewGeometry(b'curve')
+        self.defer(lib.ospRelease, geometry)
+        lib.ospSetObject(geometry, b'vertex.position_radius', vertex_position_radius)
+        lib.ospSetObject(geometry, b'index', index)
+        lib.ospCommit(geometry)
+        
+        geomodel = lib.ospNewGeometricModel(None)
+        self.defer(lib.ospRelease, geomodel)
+        lib.ospSetObject(geomodel, b'geometry', geometry)
+        lib.ospCommit(geomodel)
+        
+        geomodels = Data([
+            geomodel,
+        ], type=lib.OSP_GEOMETRIC_MODEL)
+        self.defer(lib.ospRelease, geomodels)
+        
+        group = lib.ospNewGroup()
+        self.defer(lib.ospRelease, group)
+        lib.ospSetObject(group, b'geometry', geomodels)
+        lib.ospCommit(group)
+        
+        instance = lib.ospNewInstance(None)
+        self.defer(lib.ospRelease, instance)
+        lib.ospSetObject(instance, b'group', group)
+        lib.ospCommit(instance)
+        
+        self.instance = instance
+
+
 class City(WithExitStackMixin):
     def __init__(self, path: auto.pathlib.Path):
         super().__init__()
@@ -474,6 +526,13 @@ class City(WithExitStackMixin):
             scale=0.9994 ** 1,
         ))
         print('loaded knox')
+        
+        roads = self.path / 'Roads'
+        print(f'loading roads {roads}')
+        roads = self.enter(Roads(
+            path=roads,
+        ))
+        print('loaded roads')
 
         print(f'loading instances')
         instances = Data([
@@ -482,6 +541,7 @@ class City(WithExitStackMixin):
             usa.instance,
             tn.instance,
             knox.instance,
+            roads.instance,
         ], type=lib.OSP_INSTANCE)
         self.defer(lib.ospRelease, instances)
         print('loaded instances')
@@ -965,7 +1025,6 @@ class HDRI(WithExitStackMixin):
         data = Data(data, type=lib.OSP_VEC3F, share=True)
         self.defer(lib.ospRelease, data)
         return data
-
 
 
 class Scene(WithExitStackMixin):
