@@ -67,6 +67,23 @@ export function CitySelection() {
 
     return (
         <div class={styles.container}>
+            <Button 
+                variant="contained" 
+                sx={{ 
+                        backgroundColor: '#eb9f34', 
+                        '&:hover': {
+                            backgroundColor: '#FFD254',
+                            color: '#CC5500',
+                        }
+                }}
+                onMouseDown={() => {
+                    pathAnimationCallback();
+                }}
+                onMouseUp={() => {
+                    pausePath();
+                }}
+                
+                >Play Path</Button>
         </div>
     );
 }

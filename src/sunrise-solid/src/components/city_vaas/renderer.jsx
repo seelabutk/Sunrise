@@ -175,6 +175,7 @@ export default class Renderer {
         );
         this.central_point = new Point(
             35.562744,
+            // -83.5,
             -83.5 - 13,
             477,
         );

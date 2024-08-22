@@ -274,10 +274,14 @@ class Building(WithExitStackMixin):
 
                 material = lib.ospNewMaterial(b'obj')
                 self.defer(lib.ospRelease, material)
-                lib.ospSetVec3f(material, b'kd', r, g, b)
-
+# 
                 if i == 0:
-                    lib.ospSetFloat(material, b'd', 0.8)
+                    # print(f'BUILDING: r:{r} g:{g} b:{b}')
+                    lib.ospSetVec3f(material, b'kd', 0.5, 0.5, 0.5)
+                    lib.ospSetFloat(material, b'd', 0.15)
+                else:
+                    lib.ospSetVec3f(material, b'kd', r, g, b)
+                # lib.ospSetVec3f(material, b'kd', r, g, b)
                 lib.ospCommit(material)
 
                 materials.append(material)
