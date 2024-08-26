@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import { AiFillInfoCircle } from 'solid-icons/ai';
+import { SUNRISE_CITY_SERVER_HOST, SUNRISE_PARK_SERVER_HOST } from '../../config.js';
 import {
     Box,
     Select,
@@ -47,7 +48,8 @@ export function Reccomendations() {
     }
 
     async function getSpeciesInfo(species) {
-        const base = "http://sahara.eecs.utk.edu:5000";
+        const base = SUNRISE_PARK_SERVER_HOST;
+        // const base = `http://sahara.eecs.utk.edu:${SUNRISE_PARK_SERVER_HOST}`;
         let url = new URL('api/wikipedia', base);
         // url.searchParams.append('irma_id', species().irma_id);
         url.searchParams.append('irma_id', sanitizeId(species.irma_id));
@@ -78,7 +80,8 @@ export function Reccomendations() {
 
     /** @description Get the related species from the species that we are looking at currently */
     async function getSpeciesRecs(species) {
-        const base = "http://sahara.eecs.utk.edu:5000";
+        const base = SUNRISE_PARK_SERVER_HOST;
+        // const base = "http://sahara.eecs.utk.edu:5000";
         let url = new URL('api/reccomendation', base);
         url.searchParams.append('irma_id', species.irma_id);
         // url.searchParams.append('irma_id', species().irma_id);

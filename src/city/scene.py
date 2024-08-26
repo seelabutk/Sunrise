@@ -419,8 +419,8 @@ class Background(WithExitStackMixin):
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
         lib.ospSetAffine3f(instance, b'transform', Affine3f(
-            # sx=1.0 * self.scale,
             sx=-1.0 * self.scale,
+            # sx=-1.0 * self.scale,
             # sy=1.0 * self.scale,
             sy=-1.0 * self.scale,
             # sz=1.0 * self.scale,

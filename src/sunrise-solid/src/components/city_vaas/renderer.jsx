@@ -168,12 +168,12 @@ export default class Renderer {
         // POSITION OF THE BUILDINGS \/
         const pos = latlng_to_cartesian(
             // Knoxvillw
-            // 35.9641
-            // ,-83.9202
+            35.9641
+            ,-83.9202
 
             // Henderson
-            35.63981,
-            -88.39155
+            // 35.63981,
+            // -88.39155
 
             // 35.9641 - 0.3
             // ,-83.9202 - 4.3
