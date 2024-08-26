@@ -114,20 +114,13 @@ export class TrackballCameraControls extends CameraControls {
     #update_rotation_speed() {
         const maxSpeed = 30.0;
         const minSpeed = 0.01;
-        const maxZoomSpeed = 0.05;
+        const maxZoomSpeed = 1;
         // const maxZoomSpeed = 0.5;
         const minZoomSpeed = 0.003;
         const maxZoomDist = this.#controls.maxDistance;
         const minZoomDist = this.#controls.minDistance;
 
         const dist = this.camera.position.distanceTo(this.#controls.target);
-        const rotateSpeed = THREE.MathUtils.mapLinear(
-            dist,
-            minZoomDist,
-            maxZoomDist,
-            minSpeed,
-            maxSpeed,
-        ) / 100;
         
         const zoomSpeed = THREE.MathUtils.mapLinear(
             dist,
@@ -136,6 +129,14 @@ export class TrackballCameraControls extends CameraControls {
             minZoomSpeed,
             maxZoomSpeed,
         );
+        const rotateSpeed = THREE.MathUtils.mapLinear(
+            dist,
+            minZoomDist,
+            maxZoomDist,
+            minSpeed,
+            maxSpeed,
+        )  / Math.max(70, 150 * zoomSpeed);
+
         this.#controls.rotateSpeed = rotateSpeed;
         this.#controls.zoomSpeed = zoomSpeed;
     }

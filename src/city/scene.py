@@ -338,6 +338,7 @@ class Building(WithExitStackMixin):
             sy=-1.0 * self.scale,
             # sz=1.0 * self.scale,
             sz=-1.0 * self.scale,
+            
         ))
         lib.ospCommit(instance)
         print('loaded instance')
@@ -419,8 +420,7 @@ class Background(WithExitStackMixin):
         lib.ospSetObject(instance, b'group', group)
         lib.ospSetAffine3f(instance, b'transform', Affine3f(
             sx=-1.0 * self.scale,
-            # sx=1.0 * self.scale,
-            # sy=1.0 * self.scale,
+            # sx=-1.0 * self.scale,
             # sy=1.0 * self.scale,
             sy=-1.0 * self.scale,
             # sz=1.0 * self.scale,
@@ -433,10 +433,11 @@ class Background(WithExitStackMixin):
 
 
 class Roads(WithExitStackMixin):
-    def __init__(self, path: auto.pathlib.Path):
+    def __init__(self, path: auto.pathlib.Path, scale: float):
         super().__init__()
 
         self.path = path
+        self.scale = scale
     
     def make(self):
         vertex_position_radius = self.path / 'OSPGeometry.curve.vertex.position_radius.vec4f[].bin'
@@ -479,8 +480,18 @@ class Roads(WithExitStackMixin):
         instance = lib.ospNewInstance(None)
         self.defer(lib.ospRelease, instance)
         lib.ospSetObject(instance, b'group', group)
-        lib.ospCommit(instance)
+
+        lib.ospSetAffine3f(instance, b'transform', Affine3f(
+            sx=-1.0 * self.scale,
+            # sx=1.0 * self.scale,
+            # sy=1.0 * self.scale,
+            # sy=1.0 * self.scale,
+            sy=-1.0 * self.scale,
+            # sz=1.0 * self.scale,
+            sz=-1.0 * self.scale,
+        ))
         
+        lib.ospCommit(instance)
         self.instance = instance
 
 
@@ -503,7 +514,7 @@ class City(WithExitStackMixin):
         print(f'loading earth {earth}')
         earth = self.enter(Background(
             path=earth,
-            scale=0.9994 ** 4,
+            scale=0.999999 ** 4,
         ))
         print('loaded earth')
 
@@ -511,7 +522,7 @@ class City(WithExitStackMixin):
         print(f'loading usa {usa}')
         usa = self.enter(Background(
             path=usa,
-            scale=0.9994 ** 3,
+            scale=0.999999 ** 3,
         ))
         print('loaded usa')
 
@@ -519,7 +530,7 @@ class City(WithExitStackMixin):
         print(f'loading tn {tn}')
         tn = self.enter(Background(
             path=tn,
-            scale=0.9994 ** 2,
+            scale=0.999999 ** 2,
         ))
         print('loaded tn')
 
@@ -527,7 +538,7 @@ class City(WithExitStackMixin):
         print(f'loading knox {knox}')
         knox = self.enter(Background(
             path=knox,
-            scale=0.9994 ** 1,
+            scale=0.999999 ** 1,
         ))
         print('loaded knox')
         
@@ -535,6 +546,7 @@ class City(WithExitStackMixin):
         print(f'loading roads {roads}')
         roads = self.enter(Roads(
             path=roads,
+            scale=1,
         ))
         print('loaded roads')
 
