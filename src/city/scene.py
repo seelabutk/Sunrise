@@ -274,11 +274,12 @@ class Building(WithExitStackMixin):
 
                 material = lib.ospNewMaterial(b'obj')
                 self.defer(lib.ospRelease, material)
-# 
+                # lib.ospSetVec3f(material, b'kd', r, g, b)
+
                 if i == 0:
                     # print(f'BUILDING: r:{r} g:{g} b:{b}')
                     lib.ospSetVec3f(material, b'kd', 0.5, 0.5, 0.5)
-                    lib.ospSetFloat(material, b'd', 0.15)
+                    # lib.ospSetFloat(material, b'd', 0.15)
                 else:
                     lib.ospSetVec3f(material, b'kd', r, g, b)
                 # lib.ospSetVec3f(material, b'kd', r, g, b)
@@ -359,11 +360,12 @@ class Background(WithExitStackMixin):
         vertex__position = Map(vertex__position, dtype=[
             ('x', 'f4'), ('y', 'f4'), ('z', 'f4'),
         ])
+
         self.hold(vertex__position)
         vertex__position = Data(vertex__position, type=lib.OSP_VEC3F, share=True)
         self.defer(lib.ospRelease, vertex__position)
         print('loaded vertex.position')
-        
+
         vertex__color = self.path / 'OSPGeometry.mesh.vec3f[].vertex.color.bin'
         print(f'loading vertex.color {vertex__color}')
         vertex__color = Map(vertex__color, dtype=[
@@ -373,6 +375,27 @@ class Background(WithExitStackMixin):
         vertex__color = Data(vertex__color, type=lib.OSP_VEC3F, share=True)
         self.defer(lib.ospRelease, vertex__color)
         print('loaded vertex.color')
+
+        texdata = Map(self.path / 'OSPGeometry.mesh.vec3f[].vertex.color.bin', dtype=[
+            ('r', 'f4'), ('g', 'f4'), ('b', 'f4'),
+        ])
+        self.hold(texdata)
+        texdata = Data(texdata, type=lib.OSP_VEC3F, share=True)
+        self.defer(lib.ospRelease, texdata)
+
+        texture = lib.ospNewTexture(b'texture2d')
+        self.defer(lib.ospRelease, texture)
+        lib.ospSetObject(texture, b'data', texdata)
+        lib.ospSetUInt(texture, b'format', lib.OSP_TEXTURE_RGB32F)
+        lib.ospCommit(texture)
+
+        material = lib.ospNewMaterial(b'obj')
+        self.defer(lib.ospRelease, material)
+        lib.ospSetObject(material, b'map_kd', texture)
+        # lib.ospSetObject(material, b'map_ks', texture)
+        lib.ospSetFloat(material, b'ns', 1.0)
+        lib.ospCommit(material)
+        print('loaded materials')
         
         index = self.path / 'OSPGeometry.mesh.vec3ui[].index.bin'
         print(f'loading index {index}')
@@ -389,6 +412,7 @@ class Background(WithExitStackMixin):
         self.defer(lib.ospRelease, geometry)
         lib.ospSetObject(geometry, b'vertex.position', vertex__position)
         lib.ospSetObject(geometry, b'vertex.color', vertex__color)
+        # lib.ospSetObject(geometry, b'material', material)
         lib.ospSetObject(geometry, b'index', index)
         lib.ospCommit(geometry)
         print('loaded geometry')
@@ -397,6 +421,7 @@ class Background(WithExitStackMixin):
         geomodel = lib.ospNewGeometricModel(None)
         self.defer(lib.ospRelease, geomodel)
         lib.ospSetObject(geomodel, b'geometry', geometry)
+        lib.ospSetObject(geomodel, b'material', material)
         lib.ospCommit(geomodel)
         print('loaded geomodel')
 
@@ -405,6 +430,7 @@ class Background(WithExitStackMixin):
             geomodel,
         ], type=lib.OSP_GEOMETRIC_MODEL)
         self.defer(lib.ospRelease, geomodels)
+        
         print('loaded geomodels')
 
         print(f'loading group')
@@ -855,7 +881,7 @@ class Ambient(WithExitStackMixin):
         light = lib.ospNewLight(b'ambient')
         self.defer(lib.ospRelease, light)
         lib.ospSetFloat(light, b'intensity', 0.15)
-        lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospSetInt(light, b'intensityQuantity', 9)
         lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
         lib.ospCommit(light)
 
@@ -912,7 +938,7 @@ class Distant(WithExitStackMixin):
         light = lib.ospNewLight(b'distant')
         self.defer(lib.ospRelease, light)
         lib.ospSetFloat(light, b'intensity', 0.75)
-        lib.ospSetInt(light, b'intensityQuantity', 1)
+        lib.ospSetInt(light, b'intensityQuantity', 13)
         lib.ospSetVec3f(light, b'direction', 0.0, 1.0, 1.0)
         lib.ospCommit(light)
 
@@ -1081,7 +1107,7 @@ class Scene(WithExitStackMixin):
                 # datetime.timedelta(hours=request.hour)
             ),
             light_type='distant',
-            intensity=3.0,
+            intensity=5.0,
         ))
 
         
@@ -1099,7 +1125,7 @@ class Scene(WithExitStackMixin):
             ambient.light,
             distant.light,
             point.light,
-            # sunlight.light,
+            sunlight.light,
             hdri.light,
         ], type=lib.OSP_LIGHT)
         # self.defer(lib.ospRelease, lights)
@@ -1115,14 +1141,16 @@ class Scene(WithExitStackMixin):
 
         renderer = (
             # b'ao'  # does not use lights
-            # b'pathtracer'
-             b'scivis'
+            b'pathtracer'
+            #  b'scivis'
             # self.config.renderer.type().encode('utf-8')
         )
         renderer = lib.ospNewRenderer(renderer)
         self.defer(lib.ospRelease, renderer)
         
-        lib.ospSetInt(renderer, b'pixelSamples', self.config.renderer.samples())
+        # lib.ospSetInt(renderer, b'pixelSamples', self.config.renderer.samples())
+        lib.ospSetInt(renderer, b'pixelSamples', 5)
+
         lib.ospSetVec4f(renderer, b'backgroundColor', *(
             0.0, 0.0, 0.0, 1.0, # Black background
             # 1.0, 1.0, 1.0, 1.0, # White background
@@ -1178,7 +1206,8 @@ class Scene(WithExitStackMixin):
                 # datetime.timedelta(hours=-15)
             ),
             light_type=self.request.light,
-            intensity=0.014,
+            intensity=3.0,
+            # intensity=0.014,
             sky=self.request.position
         ))
 
@@ -1196,7 +1225,7 @@ class Scene(WithExitStackMixin):
                 # datetime.timedelta(hours=-15)
             ),
             light_type='distant',
-            intensity=3.0,
+            intensity=4.0,
             # light_type='distant',
         ))
 
@@ -1204,7 +1233,7 @@ class Scene(WithExitStackMixin):
             self.ambient.light,
             self.distant.light,
             # point.light,
-            # self.sunlight.light,
+            self.sunlight.light,
             self.hdri.light,
         ], type=lib.OSP_LIGHT)
         light_time = time.time_ns() - light_start
@@ -1223,7 +1252,8 @@ class Scene(WithExitStackMixin):
         # self.update_observation(id)
         
         lib.ospRelease(self.lights)
-        self.lights = self.update_lights(request.hour)
+        # self.lights = self.update_lights(request.hour)
+        self.lights = self.update_lights(29)
         lib.ospSetObject(world, b'light', self.lights)
         lib.ospCommit(self.lights)
         # self.defer(lib.ospRelease, lights)
