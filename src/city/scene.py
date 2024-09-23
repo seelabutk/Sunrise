@@ -197,6 +197,7 @@ class WithExitStackMixin:
         return self._stack.enter_context(other)
 
 
+# BUILDING
 class Building(WithExitStackMixin):
     def __init__(self, path: auto.pathlib.Path, scale: float):
         super().__init__()
@@ -335,10 +336,9 @@ class Building(WithExitStackMixin):
             sx=-1.0 * self.scale,
             # sx=1.0 * self.scale,
             # sy=1.0 * self.scale,
-            # sy=1.0 * self.scale,
             sy=-1.0 * self.scale,
-            # sz=1.0 * self.scale,
-            sz=-1.0 * self.scale,
+            # sz=-1.0 * self.scale,
+            sz=1.0 * self.scale,
             
         ))
         lib.ospCommit(instance)
@@ -346,7 +346,7 @@ class Building(WithExitStackMixin):
 
         self.instance = instance
 
-
+# BACKGROUND
 class Background(WithExitStackMixin):
     def __init__(self, path: auto.pathlib.Path, scale: float):
         super().__init__()
@@ -446,11 +446,11 @@ class Background(WithExitStackMixin):
         lib.ospSetObject(instance, b'group', group)
         lib.ospSetAffine3f(instance, b'transform', Affine3f(
             sx=-1.0 * self.scale,
-            # sx=-1.0 * self.scale,
+            # sx=1.0 * self.scale,
             # sy=1.0 * self.scale,
             sy=-1.0 * self.scale,
-            # sz=1.0 * self.scale,
-            sz=-1.0 * self.scale,
+            # sz=-1.0 * self.scale,
+            sz=1.0 * self.scale,
         ))
         lib.ospCommit(instance)
         print('loaded instance')
@@ -511,10 +511,9 @@ class Roads(WithExitStackMixin):
             sx=-1.0 * self.scale,
             # sx=1.0 * self.scale,
             # sy=1.0 * self.scale,
-            # sy=1.0 * self.scale,
             sy=-1.0 * self.scale,
-            # sz=1.0 * self.scale,
-            sz=-1.0 * self.scale,
+            # sz=-1.0 * self.scale,
+            sz=1.0 * self.scale,
         ))
         
         lib.ospCommit(instance)
@@ -881,7 +880,7 @@ class Ambient(WithExitStackMixin):
         light = lib.ospNewLight(b'ambient')
         self.defer(lib.ospRelease, light)
         lib.ospSetFloat(light, b'intensity', 0.15)
-        lib.ospSetInt(light, b'intensityQuantity', 9)
+        lib.ospSetInt(light, b'intensityQuantity', 6)
         lib.ospSetVec3f(light, b'color', 1.0, 0.8, 0.4)
         lib.ospCommit(light)
 
@@ -1107,7 +1106,7 @@ class Scene(WithExitStackMixin):
                 # datetime.timedelta(hours=request.hour)
             ),
             light_type='distant',
-            intensity=5.0,
+            intensity=3.0,
         ))
 
         

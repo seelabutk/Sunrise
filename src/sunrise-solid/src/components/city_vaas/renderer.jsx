@@ -168,8 +168,12 @@ export default class Renderer {
         // POSITION OF THE BUILDINGS \/
         const pos = latlng_to_cartesian(
             // Knoxvillw
+            // 35.9641
+            // ,-83.9202
+           
+            // Knoxville Antipode
             35.9641
-            ,-83.9202
+            ,83.9202
 
             // Henderson
             // 35.63981,
