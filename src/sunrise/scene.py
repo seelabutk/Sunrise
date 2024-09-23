@@ -277,8 +277,8 @@ class Building(WithExitStackMixin):
                 material = lib.ospNewMaterial(b'obj')
                 self.defer(lib.ospRelease, material)
                 lib.ospSetVec3f(material, b'kd', r, g, b)
-                if i == 0:
-                    lib.ospSetFloat(material, b'd', 0.1)
+                # if i == 0:
+                #     lib.ospSetFloat(material, b'd', 0.1)
                 
                 lib.ospCommit(material)
                 materials.append(material)
